@@ -1,0 +1,364 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15
+    container_name: swachvega-postgres
+    environment:
+      POSTGRES_DB: swachvegadb
+      POSTGRES_USER: swachvega
+      POSTGRES_PASSWORD: swachvega123
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  chatservice:
+    image: swachvegaregistry.azurecr.io/chatservice:latest
+    container_name: swachvega-chatservice
+    ports:
+      - "8090:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-default}
+      - SERVER_PORT=8080
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      # Twilio Conversations configuration (provide via env or secrets in prod)
+      - TWILIO_ACCOUNT_SID=${TWILIO_ACCOUNT_SID:-}
+      - TWILIO_API_KEY_SID=${TWILIO_API_KEY_SID:-}
+      - TWILIO_API_KEY_SECRET=${TWILIO_API_KEY_SECRET:-}
+      - TWILIO_CONVERSATIONS_SERVICE_SID=${TWILIO_CONVERSATIONS_SERVICE_SID:-}
+    depends_on:
+      - redis
+    restart: unless-stopped
+
+  notificationservice:
+    image: swachvegaregistry.azurecr.io/notificationservice:latest
+    container_name: swachvega-notificationservice
+    ports:
+      - "8095:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-default}
+      - SERVER_PORT=8095
+      # Twilio SMS configuration (use env or secrets in prod)
+      - TWILIO_ACCOUNT_SID=${TWILIO_ACCOUNT_SID:-}
+      - TWILIO_AUTH_TOKEN=${TWILIO_AUTH_TOKEN:-}
+      - TWILIO_PHONE_NUMBER=${TWILIO_PHONE_NUMBER:-}
+    restart: unless-stopped
+
+  ratingfavoriteservice:
+    image: swachvegaregistry.azurecr.io/ratingfavoriteservice:latest
+    container_name: swachvega-ratingfavoriteservice
+    ports:
+      - "8092:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=default
+      - SERVER_PORT=8080
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/swachvegadb
+      - SPRING_DATASOURCE_USERNAME=swachvega
+      - SPRING_DATASOURCE_PASSWORD=swachvega123
+      - SPRING_REDIS_HOST=redis
+      - SPRING_REDIS_PORT=6379
+      - SPRING_ELASTICSEARCH_URIS=http://elasticsearch:9200
+    depends_on:
+      - postgres
+      - redis
+      - elasticsearch
+    restart: unless-stopped
+
+  redis:
+    image: redis:7
+    container_name: swachvega-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata:/data
+    restart: unless-stopped
+
+  redisinsight:
+    image: redislabs/redisinsight:latest
+    container_name: swachvega-redisinsight
+    ports:
+      - "5540:5540"
+    restart: unless-stopped
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.13.4
+    container_name: swachvega-elasticsearch
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - ES_JAVA_OPTS=-Xms1g -Xmx1g
+      - bootstrap.memory_lock=true
+      - "http.host=0.0.0.0"
+      - "network.host=0.0.0.0"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    volumes:
+      - esdata:/usr/share/elasticsearch/data
+    restart: unless-stopped
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.13.4
+    container_name: swachvega-kibana
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+    ports:
+      - "5601:5601"
+    depends_on:
+      - elasticsearch
+    restart: unless-stopped
+
+  userservice:
+    image: swachvegaregistry.azurecr.io/userservice:latest
+    container_name: swachvega-userservice
+    ports:
+      - "8081:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=default
+      - SERVER_PORT=8080
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-default}
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/${POSTGRES_DB:-swachvegadb}
+      - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER:-swachvega}
+      - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD:-swachvega123}
+      - SPRING_DATA_REDIS_HOST=redis
+      - SPRING_DATA_REDIS_PORT=6379
+      # JWT Configuration
+      - JWT_ACCESS_TOKEN_SECRET=${JWT_ACCESS_TOKEN_SECRET:-myVerySecretKeyForAccessTokenThatIsAtLeast32CharactersLongForHS256Algorithm}
+      - JWT_REFRESH_TOKEN_SECRET=${JWT_REFRESH_TOKEN_SECRET:-myVerySecretKeyForRefreshTokenThatIsAtLeast32CharactersLongForHS256Algorithm}
+      - JWT_ACCESS_TOKEN_EXPIRATION_MINUTES=${JWT_ACCESS_TOKEN_EXPIRATION_MINUTES:-15}
+      - JWT_REFRESH_TOKEN_EXPIRATION_DAYS=${JWT_REFRESH_TOKEN_EXPIRATION_DAYS:-30}s
+    depends_on:
+      - postgres
+      - redis
+      - elasticsearch
+    restart: unless-stopped
+
+  apigateway:
+    image: swachvegaregistry.azurecr.io/apigateway:latest
+    container_name: swachvega-apigateway
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-default}
+      # JWT Configuration
+      - JWT_ACCESS_TOKEN_SECRET=${JWT_ACCESS_TOKEN_SECRET:-myVerySecretKeyForAccessTokenThatIsAtLeast32CharactersLongForHS256Algorithm}
+      - JWT_REFRESH_TOKEN_SECRET=${JWT_REFRESH_TOKEN_SECRET:-myVerySecretKeyForRefreshTokenThatIsAtLeast32CharactersLongForHS256Algorithm}
+      - JWT_ACCESS_TOKEN_EXPIRATION_MINUTES=${JWT_ACCESS_TOKEN_EXPIRATION_MINUTES:-15}
+      - JWT_REFRESH_TOKEN_EXPIRATION_DAYS=${JWT_REFRESH_TOKEN_EXPIRATION_DAYS:-30}
+      # Service URLs
+      - USERSERVICE_URL=${USERSERVICE_URL:-http://userservice:8080}
+      - SERVER_PORT=8080
+    depends_on:
+      - userservice
+      - productservice
+      - orderservice
+      - inventoryservice
+      - searchservice
+      - storeservice
+      - landingpageservice
+      - ratingfavoriteservice
+      - notificationservice
+    restart: unless-stopped
+
+  productservice:
+    image: swachvegaregistry.azurecr.io/productservice:latest
+    container_name: swachvega-productservice
+    ports:
+      - "8082:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=default
+      - SERVER_PORT=8080
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/swachvegadb
+      - SPRING_DATASOURCE_USERNAME=swachvega
+      - SPRING_DATASOURCE_PASSWORD=swachvega123
+      - SPRING_REDIS_HOST=redis
+      - SPRING_REDIS_PORT=6379
+      - SPRING_ELASTICSEARCH_URIS=http://elasticsearch:9200
+    depends_on:
+      - postgres
+      - redis
+      - elasticsearch
+    restart: unless-stopped
+
+  orderservice:
+    image: swachvegaregistry.azurecr.io/orderservice:latest
+    container_name: swachvega-orderservice
+    ports:
+      - "8086:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=default
+      - SERVER_PORT=8080
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/swachvegadb
+      - SPRING_DATASOURCE_USERNAME=swachvega
+      - SPRING_DATASOURCE_PASSWORD=swachvega123
+      - SPRING_REDIS_HOST=redis
+      - SPRING_REDIS_PORT=6379
+      - SPRING_ELASTICSEARCH_URIS=http://elasticsearch:9200
+    depends_on:
+      - postgres
+      - redis
+      - elasticsearch
+    restart: unless-stopped
+
+  couponservice:
+    image: swachvegaregistry.azurecr.io/couponservice:latest
+    container_name: swachvega-couponservice
+    ports:
+      - "8096:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=default
+      - SERVER_PORT=8080
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/swachvegadb
+      - SPRING_DATASOURCE_USERNAME=swachvega
+      - SPRING_DATASOURCE_PASSWORD=swachvega123
+      - SPRING_REDIS_HOST=redis
+      - SPRING_REDIS_PORT=6379
+      - SPRING_ELASTICSEARCH_URIS=http://elasticsearch:9200
+    depends_on:
+      - postgres
+      - redis
+      - elasticsearch
+    restart: unless-stopped
+
+  inventoryservice:
+    image: swachvegaregistry.azurecr.io/inventoryservice:latest
+    container_name: swachvega-inventoryservice
+    ports:
+      - "8084:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=default
+      - SERVER_PORT=8080
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/swachvegadb
+      - SPRING_DATASOURCE_USERNAME=swachvega
+      - SPRING_DATASOURCE_PASSWORD=swachvega123
+      - SPRING_REDIS_HOST=redis
+      - SPRING_REDIS_PORT=6379
+      - SPRING_ELASTICSEARCH_URIS=http://elasticsearch:9200
+    depends_on:
+      - postgres
+      - redis
+      - elasticsearch
+    restart: unless-stopped
+
+  searchservice:
+    image: swachvegaregistry.azurecr.io/searchservice:latest
+    container_name: swachvega-searchservice
+    ports:
+      - "8085:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=default
+      - SERVER_PORT=8080
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/swachvegadb
+      - SPRING_DATASOURCE_USERNAME=swachvega
+      - SPRING_DATASOURCE_PASSWORD=swachvega123
+      - SPRING_REDIS_HOST=redis
+      - SPRING_REDIS_PORT=6379
+      - SPRING_ELASTICSEARCH_URIS=http://elasticsearch:9200
+    depends_on:
+      - postgres
+      - redis
+      - elasticsearch
+    restart: unless-stopped
+
+  storeservice:
+    image: swachvegaregistry.azurecr.io/storeservice:latest
+    container_name: swachvega-storeservice
+    ports:
+      - "8083:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=default
+      - SERVER_PORT=8080
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/swachvegadb
+      - SPRING_DATASOURCE_USERNAME=swachvega
+      - SPRING_DATASOURCE_PASSWORD=swachvega123
+      - SPRING_REDIS_HOST=redis
+      - SPRING_REDIS_PORT=6379
+      - SPRING_ELASTICSEARCH_URIS=http://elasticsearch:9200
+    depends_on:
+      - postgres
+      - redis
+      - elasticsearch
+    restart: unless-stopped
+
+  landingpageservice:
+    image: swachvegaregistry.azurecr.io/landingpageservice:latest
+    container_name: swachvega-landingpageservice
+    ports:
+      - "8087:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=default
+      - SERVER_PORT=8080
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/swachvegadb
+      - SPRING_DATASOURCE_USERNAME=swachvega
+      - SPRING_DATASOURCE_PASSWORD=swachvega123
+      - SPRING_REDIS_HOST=redis
+      - SPRING_REDIS_PORT=6379
+      - SPRING_ELASTICSEARCH_URIS=http://elasticsearch:9200
+    depends_on:
+      - postgres
+      - redis
+      - elasticsearch
+    restart: unless-stopped
+  
+  merchantservice:
+    image: swachvegaregistry.azurecr.io/merchantservice:latest
+    container_name: swachvega-merchantservice
+    ports:
+      - "8089:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=default
+      - SERVER_PORT=8080
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/swachvegadb
+      - SPRING_DATASOURCE_USERNAME=swachvega
+      - SPRING_DATASOURCE_PASSWORD=swachvega123
+      - SPRING_REDIS_HOST=redis
+      - SPRING_REDIS_PORT=6379
+      - SPRING_ELASTICSEARCH_URIS=http://elasticsearch:9200
+      # JWT Configuration
+      - JWT_ACCESS_TOKEN_SECRET=${JWT_ACCESS_TOKEN_SECRET:-myVerySecretKeyForAccessTokenThatIsAtLeast32CharactersLongForHS256Algorithm}
+      - JWT_REFRESH_TOKEN_SECRET=${JWT_REFRESH_TOKEN_SECRET:-myVerySecretKeyForRefreshTokenThatIsAtLeast32CharactersLongForHS256Algorithm}
+      - JWT_ACCESS_TOKEN_EXPIRATION_MINUTES=${JWT_ACCESS_TOKEN_EXPIRATION_MINUTES:-15}
+      - JWT_REFRESH_TOKEN_EXPIRATION_DAYS=${JWT_REFRESH_TOKEN_EXPIRATION_DAYS:-30}s
+    depends_on:
+      - postgres
+      - redis
+      - elasticsearch
+    restart: unless-stopped
+  
+
+  adminservice:
+    image: swachvegaregistry.azurecr.io/adminservice:latest
+    container_name: swachvega-adminservice
+    ports:
+      - "8091:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=default
+      - SERVER_PORT=8080
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/swachvegadb
+      - SPRING_DATASOURCE_USERNAME=swachvega
+      - SPRING_DATASOURCE_PASSWORD=swachvega123
+      - SPRING_REDIS_HOST=redis
+      - SPRING_REDIS_PORT=6379
+      - SPRING_ELASTICSEARCH_URIS=http://elasticsearch:9200
+      # JWT Configuration
+      - JWT_ACCESS_TOKEN_SECRET=${JWT_ACCESS_TOKEN_SECRET:-myVerySecretKeyForAccessTokenThatIsAtLeast32CharactersLongForHS256Algorithm}
+      - JWT_REFRESH_TOKEN_SECRET=${JWT_REFRESH_TOKEN_SECRET:-myVerySecretKeyForRefreshTokenThatIsAtLeast32CharactersLongForHS256Algorithm}
+      - JWT_ACCESS_TOKEN_EXPIRATION_MINUTES=${JWT_ACCESS_TOKEN_EXPIRATION_MINUTES:-15}
+      - JWT_REFRESH_TOKEN_EXPIRATION_DAYS=${JWT_REFRESH_TOKEN_EXPIRATION_DAYS:-30}s
+    depends_on:
+      - postgres
+      - redis
+      - elasticsearch
+    restart: unless-stopped
+
+volumes:
+  pgdata:
+  redisdata:
+  esdata:

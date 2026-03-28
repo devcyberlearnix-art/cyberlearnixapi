@@ -1,0 +1,29 @@
+# Test configuration
+spring:
+  cloud:
+    gateway:
+      routes:
+        - id: test-route
+          uri: http://localhost:8080
+          predicates:
+            - Path=/test/**
+
+# JWT Configuration for testing
+jwt:
+  access-token:
+    secret: testSecretKeyForAccessTokenThatIsAtLeast32CharactersLongForHS256Algorithm
+    expiration-minutes: 15
+  refresh-token:
+    secret: testSecretKeyForRefreshTokenThatIsAtLeast32CharactersLongForHS256Algorithm
+    expiration-days: 30
+
+# Redis configuration for testing
+  data:
+    redis:
+      host: localhost
+      port: 6379
+
+# Logging
+logging:
+  level:
+    com.swachvega.apigateway: DEBUG
