@@ -23,89 +23,34 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
 
     // Public endpoints that don't require authentication
     private static final List<String> PUBLIC_PATHS = List.of(
-            "/api/auth/",
-            "/api/consumer/auth/",
-            // Admin service public auth endpoints
-            "/api/admin/register",
-            "/api/admin/login",
-            "/api/admin/refresh",
-            "/api/admin/change-password",
-            // Merchant public endpoints
-            // Admin bootstrap: allow creating first admin without token
-            "/api/merchant/admin/users",
-            "/api/merchant/admin/user",
-            // Admin auth endpoints should be public (no token required)
-            "/api/merchant/admin/login",
-            "/api/merchant/admin/refresh-token",
-            "/api/merchant/signup",
-            "/api/merchant/verify-otp",
-            "/api/merchant/verify-otp/",
-            "/api/merchant/verify-otp/mobile",
-            "/api/merchant/verify-otp/email",
-            "/api/merchant/verify-mobile-otp",
-            "/api/merchant/verify-email-otp",
-            "/api/merchant/resend-otp",
-            "/api/merchant/resend-otp/",
-            "/api/merchant/resend-otp/mobile",
-            "/api/merchant/resend-otp/email",
-            "/api/merchant/resend-email-otp",
-            // New convenience upload endpoint that accepts merchantId without token
-            "/api/merchant/upload-documents",
-            // Staged signup follow-up endpoints (no tokens until admin approval)
-            "/api/merchant/set-password",
-            "/api/merchant/address",
-            "/api/merchant/complete-registration",
-            "/api/merchant/status",
-            "/api/merchant/store-timings",
-            "/api/merchant/bank-details",
-            "/api/merchant/forgot-password/",
-            "/api/merchant/login",
-            "/api/merchant/refresh-token",
-            // Global search endpoints (for testing/development)
-            "/api/merchant/global-search",
-            "/api/merchant/global-search/",
-            "/api/merchant/global-search/autocomplete",
-            "/api/merchant/global-search/suggestions",
-            // Restaurant public endpoints (same onboarding flow as merchant)
-            "/api/restaurant/signup",
-            "/api/restaurant/verify-otp",
-            "/api/restaurant/verify-mobile-otp",
-            "/api/restaurant/verify-email-otp",
-            "/api/restaurant/resend-otp",
-            "/api/restaurant/resend-email-otp",
-            "/api/restaurant/upload-documents",
-            "/api/restaurant/set-password",
-            "/api/restaurant/address",
-            "/api/restaurant/complete-registration",
-            "/api/restaurant/status",
-            "/api/restaurant/store-timings",
-            "/api/restaurant/bank-details",
-            "/api/restaurant/forgot-password/",
-            "/api/restaurant/login",
-            "/api/restaurant/refresh-token",
+            // User service – auth (login, register, OTP, password reset)
+            "/auth/",
+            "/auth/login",
+            "/auth/register",
+            "/auth/forgot-password",
+            "/auth/reset-password",
+            "/auth/verify-email",
+            "/auth/refresh-token",
+            "/auth/resend-otp",
+            "/auth/send-otp",
+            "/auth/verify-otp",
+            // Course service – public course browsing
+            "/courses/",
+            // Actuator / health
             "/actuator/",
             "/health/",
+            // Swagger / OpenAPI docs
             "/swagger-ui/",
             "/swagger-ui.html",
             "/v3/api-docs/",
             "/userservice/swagger-ui/",
             "/userservice/v3/api-docs/",
-            "/productservice/swagger-ui/",
-            "/productservice/v3/api-docs/",
-            "/orderservice/swagger-ui/",
-            "/orderservice/v3/api-docs/",
-            "/inventoryservice/swagger-ui/",
-            "/inventoryservice/v3/api-docs/",
-            "/searchservice/swagger-ui/",
-            "/searchservice/v3/api-docs/",
-            "/storeservice/swagger-ui/",
-            "/storeservice/v3/api-docs/",
-            "/landingpageservice/swagger-ui/",
-            "/landingpageservice/v3/api-docs/",
-            // PayU payment gateway callbacks – posted by PayU servers (no JWT present)
-            "/api/payment/callback/success",
-            "/api/payment/callback/failure",
-            "/api/payment/webhook"
+            "/courseservice/swagger-ui/",
+            "/courseservice/v3/api-docs/",
+            "/cartservice/swagger-ui/",
+            "/cartservice/v3/api-docs/",
+            "/couponservice/swagger-ui/",
+            "/couponservice/v3/api-docs/"
     );
 
     public JwtAuthenticationFilter(SimpleJwtTokenProvider jwtTokenProvider) {
@@ -148,44 +93,7 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
         return jwtTokenProvider.validateAccessToken(token)
                 .doOnNext(claims -> log.info("Token validated successfully for user: {} on path: {}", claims.get("sub"), path))
                 .flatMap(claims -> {
-                    // If ADMIN or SUPER_ADMIN, allow all APIs across services
-                    String role = String.valueOf(claims.getOrDefault("role", ""));
-                    boolean isAdminAny = "ADMIN".equalsIgnoreCase(role)
-                            || "SUPER_ADMIN".equalsIgnoreCase(role)
-                            || hasAdminRole(claims);
-
-                    if (isAdminAny) {
-                        ServerWebExchange modifiedExchange = addUserHeaders(exchange, claims);
-                        log.info("ADMIN/SUPER_ADMIN detected, allowing access to all APIs: {}", path);
-                        return chain.filter(modifiedExchange);
-                    }
-
-                    // Otherwise apply merchant RBAC for non-admin roles
-                    boolean isAdmin = false; // non-admin flow
-
-                    // Coarse-grained RBAC rules
-                    boolean isAdminOnly = path.startsWith("/api/merchant/admin/") || path.startsWith("/api/merchant/finance/");
-                    boolean isStaffAllowed =
-                            path.startsWith("/api/merchant/orders/") ||
-                            path.startsWith("/api/merchant/inventory/") ||
-                            path.startsWith("/api/merchant/products/lookup") ||
-                            path.startsWith("/api/merchant/store-timings") ||
-                            path.equals("/api/merchant/address") ||
-                            path.startsWith("/api/merchant/address") ||
-                            path.equals("/api/merchant/complete-registration") ||
-                            path.startsWith("/api/merchant/complete-registration");
-
-                    if (isAdminOnly && !isAdmin) {
-                        log.warn("RBAC deny: ADMIN role required for path {} but role='{}'", path, role);
-                        return forbiddenResponse(exchange, "Admin role required");
-                    }
-                    if (path.startsWith("/api/merchant/") && !isAdminOnly && !isStaffAllowed && !isAdmin) {
-                        // Default any other merchant path to ADMIN-only unless explicitly staff-allowed
-                        log.warn("RBAC deny: path {} not permitted for role='{}'", path, role);
-                        return forbiddenResponse(exchange, "Insufficient role for this endpoint");
-                    }
-
-                    // Add user info to request headers for downstream services
+                    // Add user info to request headers and delegate to downstream service
                     ServerWebExchange modifiedExchange = addUserHeaders(exchange, claims);
                     log.info("Proceeding to downstream service for path: {}", path);
                     return chain.filter(modifiedExchange);

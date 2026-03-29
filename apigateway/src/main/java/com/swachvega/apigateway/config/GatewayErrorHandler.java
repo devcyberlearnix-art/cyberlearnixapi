@@ -2,7 +2,6 @@ package com.swachvega.apigateway.config;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.swachvega.commonlibs.dto.ApiResponseWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.web.reactive.error.ErrorWebExceptionHandler;
@@ -48,7 +47,11 @@ public class GatewayErrorHandler implements ErrorWebExceptionHandler {
                 : status == HttpStatus.GATEWAY_TIMEOUT ? "GATEWAY_TIMEOUT"
                 : "INTERNAL_ERROR");
 
-        ApiResponseWrapper<Void> body = new ApiResponseWrapper<>(false, userMessage(status, ex), null, meta);
+        Map<String, Object> body = new HashMap<>();
+        body.put("success", false);
+        body.put("message", userMessage(status, ex));
+        body.put("data", null);
+        body.put("meta", meta);
 
         byte[] bytes = serialize(body);
 
@@ -101,20 +104,10 @@ public class GatewayErrorHandler implements ErrorWebExceptionHandler {
         String message = root.getMessage();
         if (message != null) {
             // Common patterns: "Connection refused: merchantservice:8080"
-            if (message.contains("merchantservice")) return "merchantservice (port 8089)";
             if (message.contains("userservice")) return "userservice (port 8086)";
-            if (message.contains("productservice")) return "productservice (port 8082)";
-            if (message.contains("orderservice")) return "orderservice (port 8081)";
-            if (message.contains("searchservice")) return "searchservice (port 8085)";
-            if (message.contains("cartservice")) return "cartservice (port 8087)";
-            if (message.contains("inventoryservice")) return "inventoryservice (port 8083)";
-            if (message.contains("storeservice")) return "storeservice (port 8084)";
-            if (message.contains("couponservice")) return "couponservice (port 8090)";
-            if (message.contains("chatservice")) return "chatservice (port 8091)";
-            if (message.contains("adminservice")) return "adminservice (port 8088)";
-            if (message.contains("notificationservice")) return "notificationservice (port 8092)";
-            if (message.contains("landingpageservice")) return "landingpageservice (port 8093)";
-            if (message.contains("ratingfavoriteservice")) return "ratingfavoriteservice (port 8094)";
+            if (message.contains("course-service")) return "course-service (port 8083)";
+            if (message.contains("cart-service")) return "cart-service (port 8081)";
+            if (message.contains("coupon-service")) return "coupon-service (port 8082)";
         }
         return null;
     }

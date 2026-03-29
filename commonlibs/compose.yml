@@ -1,7 +1,6 @@
 # CyberLearnix LMS – Full Stack Docker Compose
-# Database-per-Service pattern: each microservice has its own isolated PostgreSQL database.
-# All services share ONE PostgreSQL instance but use SEPARATE databases (practical for small-medium scale).
-# For maximum isolation, replace with separate postgres containers per service.
+# Run from the project root: docker compose -f commonlibs/compose.yml up --build
+# Database-per-Service: each microservice owns its own isolated PostgreSQL database.
 
 services:
 
@@ -14,12 +13,12 @@ services:
     environment:
       POSTGRES_USER: ${DB_USER:-cyberlearnix}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-cyberlearnix123}
-      POSTGRES_DB: lms_user_db          # default db (required by postgres image)
+      POSTGRES_DB: lms_user_db
     ports:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
-      - ./docker/init-databases.sql:/docker-entrypoint-initdb.d/init-databases.sql:ro
+      - ../docker/init-databases.sql:/docker-entrypoint-initdb.d/init-databases.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-cyberlearnix}"]
       interval: 10s
@@ -47,14 +46,14 @@ services:
 
   userservice:
     build:
-      context: ./userservice
+      context: ../userservice
       dockerfile: Dockerfile
     image: cyberlearnix/userservice:latest
     container_name: cyberlearnix-userservice
     ports:
       - "8086:8086"
     environment:
-      # Each service uses its OWN dedicated database
+      SERVER_PORT: 8086
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/lms_user_db
       SPRING_DATASOURCE_USERNAME: ${DB_USER:-cyberlearnix}
       SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-cyberlearnix123}
@@ -62,7 +61,6 @@ services:
       SPRING_DATA_REDIS_PORT: 6379
       JWT_ACCESS_TOKEN_SECRET: ${JWT_ACCESS_SECRET:-myVerySecretKeyForAccessTokenThatIsAtLeast32Chars}
       JWT_REFRESH_TOKEN_SECRET: ${JWT_REFRESH_SECRET:-myVerySecretKeyForRefreshTokenThatIsAtLeast32Chars}
-      SERVER_PORT: 8086
     depends_on:
       postgres:
         condition: service_healthy
@@ -72,19 +70,18 @@ services:
 
   course-service:
     build:
-      context: ./course-service
+      context: ../course-service
       dockerfile: Dockerfile
     image: cyberlearnix/course-service:latest
     container_name: cyberlearnix-course-service
     ports:
       - "8083:8083"
     environment:
-      # course-service uses its OWN dedicated database
+      SERVER_PORT: 8083
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/lms_course_db
       SPRING_DATASOURCE_USERNAME: ${DB_USER:-cyberlearnix}
       SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-cyberlearnix123}
       JWT_SECRET: ${JWT_ACCESS_SECRET:-myVerySecretKeyForAccessTokenThatIsAtLeast32Chars}
-      SERVER_PORT: 8083
     depends_on:
       postgres:
         condition: service_healthy
@@ -92,19 +89,18 @@ services:
 
   cart-service:
     build:
-      context: ./cart-service
+      context: ../cart-service
       dockerfile: Dockerfile
     image: cyberlearnix/cart-service:latest
     container_name: cyberlearnix-cart-service
     ports:
       - "8081:8081"
     environment:
-      # cart-service uses its OWN dedicated database
+      SERVER_PORT: 8081
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/lms_cart_db
       SPRING_DATASOURCE_USERNAME: ${DB_USER:-cyberlearnix}
       SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-cyberlearnix123}
       JWT_ACCESS_TOKEN_SECRET: ${JWT_ACCESS_SECRET:-myVerySecretKeyForAccessTokenThatIsAtLeast32Chars}
-      SERVER_PORT: 8081
     depends_on:
       postgres:
         condition: service_healthy
@@ -112,20 +108,19 @@ services:
 
   coupon-service:
     build:
-      context: ./coupon-service
+      context: ../coupon-service
       dockerfile: Dockerfile
     image: cyberlearnix/coupon-service:latest
     container_name: cyberlearnix-coupon-service
     ports:
       - "8082:8082"
     environment:
-      # coupon-service uses its OWN dedicated database
+      SERVER_PORT: 8082
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/lms_coupon_db
       SPRING_DATASOURCE_USERNAME: ${DB_USER:-cyberlearnix}
       SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-cyberlearnix123}
       SPRING_DATA_REDIS_HOST: redis
       SPRING_DATA_REDIS_PORT: 6379
-      SERVER_PORT: 8082
     depends_on:
       postgres:
         condition: service_healthy
@@ -135,7 +130,7 @@ services:
 
   apigateway:
     build:
-      context: ./apigateway
+      context: ../apigateway
       dockerfile: Dockerfile
     image: cyberlearnix/apigateway:latest
     container_name: cyberlearnix-apigateway

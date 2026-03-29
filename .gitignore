@@ -1,0 +1,28 @@
+# Gradle build outputs and caches
+.gradle/
+**/build/
+**/bin/
+
+# IDE
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+logs/
+*.log
+
+# Uploads
+uploads/
+
+# Environment-specific secrets (never commit)
+.env
+*.env.local
+
+# Spring Boot generated
+HELP.md

@@ -35,16 +35,16 @@ logging:
 
 # Service URLs
 userservice:
-  url: ${USERSERVICE_URL:http://swachvega-userservice:8080}
-  timeout: ${USERSERVICE_TIMEOUT:30s}
-  
-productservice:
-  url: ${PRODUCTSERVICE_URL:http://swachvega-productservice:8080}
-  timeout: ${PRODUCTSERVICE_TIMEOUT:30s}
-  
-orderservice:
-  url: ${ORDERSERVICE_URL:http://swachvega-orderservice:8080}
-  timeout: ${ORDERSERVICE_TIMEOUT:30s}
+  url: ${USERSERVICE_URL:http://userservice:8086}
+
+course-service:
+  url: ${COURSESERVICE_URL:http://course-service:8083}
+
+cart-service:
+  url: ${CARTSERVICE_URL:http://cart-service:8081}
+
+coupon-service:
+  url: ${COUPONSERVICE_URL:http://coupon-service:8082}
 
 # Server Configuration
 server:

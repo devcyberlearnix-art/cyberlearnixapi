@@ -17,35 +17,31 @@ public class OpenApiConfig {
     public OpenAPI gatewayOpenAPI() {
         return new OpenAPI()
                 .info(new Info()
-                        .title("SwachVega API Gateway")
+                        .title("CyberLearnix API Gateway")
                         .version("1.0.0")
-                        .description("Central API Gateway for SwachVega platform - routes to all microservices:\n\n" +
-                                "• **User Service** - Authentication, user management, and profiles\n" +
-                                "• **Product Service** - Product catalog, categories, and details\n" +
-                                "• **Order Service** - Order processing, cart, and checkout\n" +
-                                "• **Inventory Service** - Stock management and availability\n" +
-                                "• **Search Service** - Product search, autocomplete, and recommendations\n" +
-                                "• **Store Service** - Store locations, hours, and details\n\n" +
-                                "**Service Access:**\n" +
+                        .description("Central API Gateway for CyberLearnix LMS - routes to all microservices:\n\n" +
+                                "• **User Service** - Authentication, registration, profiles, and instructors\n" +
+                                "• **Course Service** - Courses, sections, and lectures\n" +
+                                "• **Cart Service** - Shopping cart management\n" +
+                                "• **Coupon Service** - Discount coupons and promotions\n\n" +
+                                "**Service Swagger UIs:**\n" +
                                 "- User Service: `/userservice/swagger-ui/`\n" +
-                                "- Product Service: `/productservice/swagger-ui/`\n" +
-                                "- Order Service: `/orderservice/swagger-ui/`\n" +
-                                "- Inventory Service: `/inventoryservice/swagger-ui/`\n" +
-                                "- Search Service: `/searchservice/swagger-ui/`\n" +
-                                "- Store Service: `/storeservice/swagger-ui/`")
+                                "- Course Service: `/courseservice/swagger-ui/`\n" +
+                                "- Cart Service: `/cartservice/swagger-ui/`\n" +
+                                "- Coupon Service: `/couponservice/swagger-ui/`")
                         .contact(new Contact()
-                                .name("SwachVega API Team")
-                                .email("api@swachvega.com")
-                                .url("https://swachvega.com"))
+                                .name("CyberLearnix API Team")
+                                .email("api@cyberlearnix.com")
+                                .url("https://cyberlearnix.com"))
                         .license(new License()
                                 .name("Apache 2.0")
                                 .url("https://www.apache.org/licenses/LICENSE-2.0")))
                 .servers(Arrays.asList(
                         new Server()
                                 .url("http://localhost:8080")
-                                .description("Development API Gateway"),
+                                .description("Local Development"),
                         new Server()
-                                .url("https://api.swachvega.com")
-                                .description("Production API Gateway")));
+                                .url("https://api.cyberlearnix.com")
+                                .description("Production")));
     }
 }

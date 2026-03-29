@@ -20,8 +20,8 @@ public class JwtProperties {
         private String secret = "myVerySecretKeyForAccessTokenThatIsAtLeast32CharactersLongForHS256Algorithm";
         private int expirationMinutes = 15;
         private String algorithm = "HS256";
-        private String issuer = "swachvega-api-gateway";
-        private String audience = "swachvega-consumers";
+        private String issuer = "cyberlearnix";
+        private String audience = "cyberlearnix-clients";
     }
 
     @Data
@@ -29,8 +29,8 @@ public class JwtProperties {
         private String secret = "myVerySecretKeyForRefreshTokenThatIsAtLeast32CharactersLongForHS256Algorithm";
         private int expirationDays = 30;
         private String algorithm = "HS256";
-        private String issuer = "swachvega-api-gateway";
-        private String audience = "swachvega-consumers";
+        private String issuer = "cyberlearnix";
+        private String audience = "cyberlearnix-clients";
     }
     
     // Security settings

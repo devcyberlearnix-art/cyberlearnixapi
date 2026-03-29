@@ -1,18 +1,15 @@
-#Local apigatway to run application.yml
 server:
   port: 8080
-  # Netty Performance Tuning for API Gateway
   netty:
     connection-timeout: 20s
     max-keep-alive-requests: 10000
   compression:
     enabled: true
-    mime-types: application/json,application/xml,text/html,text/xml,text/plain,application/javascript,text/css
+    mime-types: application/json,application/xml,text/html,text/plain
 
 spring:
   profiles:
     active: ${SPRING_PROFILES_ACTIVE:local}
-  # Increase WebFlux codec buffer to allow large multipart bodies to pass through
   codec:
     max-in-memory-size: 30MB
   cloud:
@@ -29,290 +26,104 @@ spring:
           max-life-time: 60s
           eviction-interval: 10s
       routes:
-        - id: userservice
-          uri: ${USERSERVICE_URL:http://userservice:8080}
+        # ── User Service ────────────────────────────────────────
+        - id: userservice-auth
+          uri: ${USERSERVICE_URL:http://userservice:8086}
           predicates:
-            - Path=/api/users/**
-        
-        # chatservice aliases (allow direct calls like http://127.0.0.1:8080/token)
-        - id: chatservice-token
-          uri: ${CHATSERVICE_URL:http://chatservice:8080}
-          predicates:
-            - Path=/token
-          filters:
-            - StripPrefix=0
+            - Path=/auth/**
 
-        - id: chatservice-create-conv
-          uri: ${CHATSERVICE_URL:http://chatservice:8080}
+        - id: userservice-users
+          uri: ${USERSERVICE_URL:http://userservice:8086}
           predicates:
-            - Path=/create-conversation
-          filters:
-            - StripPrefix=0
+            - Path=/users/**
 
-        - id: chatservice-active-convs
-          uri: ${CHATSERVICE_URL:http://chatservice:8080}
+        - id: userservice-profile
+          uri: ${USERSERVICE_URL:http://userservice:8086}
           predicates:
-            - Path=/active-conversations
-          filters:
-            - StripPrefix=0
+            - Path=/api/v1/profile/**
 
-        - id: chatservice-end-conv
-          uri: ${CHATSERVICE_URL:http://chatservice:8080}
+        - id: userservice-instructors
+          uri: ${USERSERVICE_URL:http://userservice:8086}
           predicates:
-            - Path=/end-conversation
-          filters:
-            - StripPrefix=0
+            - Path=/instructors/**
 
-        - id: chatservice-support-live-request
-          uri: ${CHATSERVICE_URL:http://chatservice:8080}
+        # ── Course Service ──────────────────────────────────────
+        - id: courseservice-courses
+          uri: ${COURSESERVICE_URL:http://course-service:8083}
           predicates:
-            - Path=/support/live-request
-          filters:
-            - StripPrefix=0
+            - Path=/courses/**
 
-        - id: chatservice-conversations
-          uri: ${CHATSERVICE_URL:http://chatservice:8080}
+        - id: courseservice-sections
+          uri: ${COURSESERVICE_URL:http://course-service:8083}
           predicates:
-            - Path=/conversations, /conversations/**
-          filters:
-            - StripPrefix=0
+            - Path=/sections/**
 
-        - id: chatservice-ws
-          uri: ${CHATSERVICE_WS_URL:ws://chatservice:8080}
-          predicates:
-            - Path=/ws
-          filters:
-            - StripPrefix=0
-
-        - id: chatservice-agents
-          uri: ${CHATSERVICE_URL:http://chatservice:8080}
-          predicates:
-            - Path=/agents, /agents/**
-          filters:
-            - StripPrefix=0
-        - id: authservice
-          uri: ${USERSERVICE_URL:http://userservice:8080}
-          predicates:
-            - Path=/api/consumer/auth/**
-        - id: couponservice
-          uri: ${COUPONSERVICE_URL:http://couponservice:8080}
-          predicates:
-            - Path=/api/merchant/coupons/**
-
-        # Admin coupon APIs should go directly to couponservice, not adminservice
-        - id: couponservice-admin
-          uri: ${COUPONSERVICE_URL:http://couponservice:8080}
-          predicates:
-            - Path=/api/admin/coupons/**
-        
-        # Merchant global search - must be BEFORE general merchantservice route
-        - id: merchant-global-search
-          uri: ${SEARCHSERVICE_URL:http://searchservice:8080}
-          predicates:
-            - Path=/api/merchant/global-search/**
-        
-        - id: merchantservice
-          uri: ${MERCHANTSERVICE_URL:http://merchantservice:8080}
-          predicates:
-            - Path=/api/merchant/**
-
-        - id: restaurantservice
-          uri: ${RESTAURANTSERVICE_URL:http://restaurantservice:8096}
-          predicates:
-            - Path=/api/restaurant/**
-        - id: productservice
-          uri: ${PRODUCTSERVICE_URL:http://productservice:8080}
-          predicates:
-            - Path=/api/products/**
-        - id: productservice-v1
-          uri: ${PRODUCTSERVICE_URL:http://productservice:8080}
-          predicates:
-            - Path=/api/v1/products/**
-        - id: categoryservice
-          uri: ${PRODUCTSERVICE_URL:http://productservice:8080}
-          predicates:
-            - Path=/api/categories/**
-        - id: productservice-subcategories
-          uri: ${PRODUCTSERVICE_URL:http://productservice:8080}
-          predicates:
-            - Path=/api/subcategories/**
-        - id: productservice-subsubcategories
-          uri: ${PRODUCTSERVICE_URL:http://productservice:8080}
-          predicates:
-            - Path=/api/subsubcategories/**
-        # Rating/favorite service routes come FIRST with specific sub-paths
-        # These will match before the general orderservice /** pattern
-        - id: ratingfavoriteservice
-          uri: ${RATINGFAVORITESERVICE_URL:http://ratingfavoriteservice:8080}
-          predicates:
-            - Path=/api/orders/ratings, /api/orders/ratings/**, /api/orders/favorites, /api/orders/favorites/**, /api/orders/consumer/ratings, /api/orders/consumer/ratings/**, /api/orders/*/ratings, /api/orders/*/ratings/**, /api/consumer/favorites, /api/consumer/favorites/**
-        # Order service catches all other /api/orders/** paths
-        - id: orderservice
-          uri: ${ORDERSERVICE_URL:http://orderservice:8080}
-          predicates:
-            - Path=/api/orders/**, /api/trends/**
-        - id: orderservice-consumer-coupons
-          uri: ${ORDERSERVICE_URL:http://orderservice:8080}
-          predicates:
-            - Path=/api/consumer/coupons/**
-        # Payment endpoints handled by orderservice (PayUController)
-        - id: paymentservice
-          uri: ${ORDERSERVICE_URL:http://orderservice:8080}
-          predicates:
-            - Path=/api/payment/**
-        - id: inventoryservice
-          uri: ${INVENTORYSERVICE_URL:http://inventoryservice:8080}
-          predicates:
-            - Path=/api/inventory/**
-        - id: searchservice
-          uri: ${SEARCHSERVICE_URL:http://searchservice:8080}
-          predicates:
-            - Path=/api/search/**
-        - id: storeservice
-          uri: ${STORESERVICE_URL:http://storeservice:8080}
-          predicates:
-            - Path=/api/stores/**
-        - id: landingpageservice
-          uri: ${LANDINGPAGESERVICE_URL:http://landingpageservice:8080}
-          predicates:
-            - Path=/api/home/**
+        # ── Cart Service ────────────────────────────────────────
         - id: cartservice
-          uri: ${CARTSERVICE_URL:http://cartservice:8080}
+          uri: ${CARTSERVICE_URL:http://cart-service:8081}
           predicates:
             - Path=/api/cart/**
-        - id: adminservice
-          uri: ${ADMINSERVICE_URL:http://adminservice:8080}
-          predicates:
-            - Path=/api/admin/**
 
-        - id: analytics
-          uri: ${ADMINSERVICE_URL:http://adminservice:8080}
+        # ── Coupon Service ──────────────────────────────────────
+        - id: couponservice
+          uri: ${COUPONSERVICE_URL:http://coupon-service:8082}
           predicates:
-            - Path=/api/analytics/**
-        - id: notificationservice
-          uri: ${NOTIFICATIONSERVICE_URL:http://notificationservice:8080}
-          predicates:
-            - Path=/api/notifications/**
-            
-        # Swagger UI and API Docs routing
+            - Path=/api/coupons/**
+
+        # ── Swagger / API Docs routing ──────────────────────────
         - id: userservice-swagger-ui
-          uri: ${USERSERVICE_URL:http://userservice:8080}
+          uri: ${USERSERVICE_URL:http://userservice:8086}
           predicates:
             - Path=/userservice/swagger-ui/**
           filters:
             - RewritePath=/userservice/swagger-ui/(?<segment>.*), /swagger-ui/$\{segment}
         - id: userservice-api-docs
-          uri: ${USERSERVICE_URL:http://userservice:8080}
+          uri: ${USERSERVICE_URL:http://userservice:8086}
           predicates:
             - Path=/userservice/v3/api-docs/**
           filters:
             - RewritePath=/userservice/v3/api-docs/(?<segment>.*), /v3/api-docs/$\{segment}
-            
-        - id: productservice-swagger-ui
-          uri: ${PRODUCTSERVICE_URL:http://productservice:8080}
+
+        - id: courseservice-swagger-ui
+          uri: ${COURSESERVICE_URL:http://course-service:8083}
           predicates:
-            - Path=/productservice/swagger-ui/**
+            - Path=/courseservice/swagger-ui/**
           filters:
-            - RewritePath=/productservice/swagger-ui/(?<segment>.*), /swagger-ui/$\{segment}
-        - id: productservice-api-docs
-          uri: ${PRODUCTSERVICE_URL:http://productservice:8080}
+            - RewritePath=/courseservice/swagger-ui/(?<segment>.*), /swagger-ui/$\{segment}
+        - id: courseservice-api-docs
+          uri: ${COURSESERVICE_URL:http://course-service:8083}
           predicates:
-            - Path=/productservice/v3/api-docs/**
+            - Path=/courseservice/v3/api-docs/**
           filters:
-            - RewritePath=/productservice/v3/api-docs/(?<segment>.*), /v3/api-docs/$\{segment}
-            
-        - id: orderservice-swagger-ui
-          uri: ${ORDERSERVICE_URL:http://orderservice:8080}
-          predicates:
-            - Path=/orderservice/swagger-ui/**
-          filters:
-            - RewritePath=/orderservice/swagger-ui/(?<segment>.*), /swagger-ui/$\{segment}
-        - id: orderservice-api-docs
-          uri: ${ORDERSERVICE_URL:http://orderservice:8080}
-          predicates:
-            - Path=/orderservice/v3/api-docs/**
-          filters:
-            - RewritePath=/orderservice/v3/api-docs/(?<segment>.*), /v3/api-docs/$\{segment}
-            
-        - id: inventoryservice-swagger-ui
-          uri: ${INVENTORYSERVICE_URL:http://inventoryservice:8080}
-          predicates:
-            - Path=/inventoryservice/swagger-ui/**
-          filters:
-            - RewritePath=/inventoryservice/swagger-ui/(?<segment>.*), /swagger-ui/$\{segment}
-        - id: inventoryservice-api-docs
-          uri: ${INVENTORYSERVICE_URL:http://inventoryservice:8080}
-          predicates:
-            - Path=/inventoryservice/v3/api-docs/**
-          filters:
-            - RewritePath=/inventoryservice/v3/api-docs/(?<segment>.*), /v3/api-docs/$\{segment}
-            
-        - id: searchservice-swagger-ui
-          uri: ${SEARCHSERVICE_URL:http://searchservice:8080}
-          predicates:
-            - Path=/searchservice/swagger-ui/**
-          filters:
-            - RewritePath=/searchservice/swagger-ui/(?<segment>.*), /swagger-ui/$\{segment}
-        - id: searchservice-api-docs
-          uri: ${SEARCHSERVICE_URL:http://searchservice:8080}
-          predicates:
-            - Path=/searchservice/v3/api-docs/**
-          filters:
-            - RewritePath=/searchservice/v3/api-docs/(?<segment>.*), /v3/api-docs/$\{segment}
-            
-        - id: storeservice-swagger-ui
-          uri: ${STORESERVICE_URL:http://storeservice:8080}
-          predicates:
-            - Path=/storeservice/swagger-ui/**
-          filters:
-            - RewritePath=/storeservice/swagger-ui/(?<segment>.*), /swagger-ui/$\{segment}
-        - id: storeservice-api-docs
-          uri: ${STORESERVICE_URL:http://storeservice:8080}
-          predicates:
-            - Path=/storeservice/v3/api-docs/**
-          filters:
-            - RewritePath=/storeservice/v3/api-docs/(?<segment>.*), /v3/api-docs/$\{segment}
-            
-        - id: orderservice-swagger-ui
-          uri: ${ORDERSERVICE_URL:http://orderservice:8080}
-          predicates:
-            - Path=/orderservice/swagger-ui/**
-          filters:
-            - RewritePath=/orderservice/swagger-ui/(?<segment>.*), /swagger-ui/$\{segment}
-        - id: orderservice-api-docs
-          uri: ${ORDERSERVICE_URL:http://orderservice:8080}
-          predicates:
-            - Path=/orderservice/v3/api-docs/**
-          filters:
-            - RewritePath=/orderservice/v3/api-docs/(?<segment>.*), /v3/api-docs/$\{segment}
-            
+            - RewritePath=/courseservice/v3/api-docs/(?<segment>.*), /v3/api-docs/$\{segment}
+
         - id: cartservice-swagger-ui
-          uri: ${CARTSERVICE_URL:http://cartservice:8080}
+          uri: ${CARTSERVICE_URL:http://cart-service:8081}
           predicates:
             - Path=/cartservice/swagger-ui/**
           filters:
             - RewritePath=/cartservice/swagger-ui/(?<segment>.*), /swagger-ui/$\{segment}
         - id: cartservice-api-docs
-          uri: ${CARTSERVICE_URL:http://cartservice:8080}
+          uri: ${CARTSERVICE_URL:http://cart-service:8081}
           predicates:
             - Path=/cartservice/v3/api-docs/**
           filters:
-            - RewritePath=/cartservice/v3/api-docs/(?<segment>.*), /v3/api-docs/${segment}
-        
-        - id: notificationservice-swagger-ui
-          uri: ${NOTIFICATIONSERVICE_URL:http://notificationservice:8080}
+            - RewritePath=/cartservice/v3/api-docs/(?<segment>.*), /v3/api-docs/$\{segment}
+
+        - id: couponservice-swagger-ui
+          uri: ${COUPONSERVICE_URL:http://coupon-service:8082}
           predicates:
-            - Path=/notificationservice/swagger-ui/**
+            - Path=/couponservice/swagger-ui/**
           filters:
-            - RewritePath=/notificationservice/swagger-ui/(?<segment>.*), /swagger-ui/${segment}
-        - id: notificationservice-api-docs
-          uri: ${NOTIFICATIONSERVICE_URL:http://notificationservice:8080}
+            - RewritePath=/couponservice/swagger-ui/(?<segment>.*), /swagger-ui/$\{segment}
+        - id: couponservice-api-docs
+          uri: ${COUPONSERVICE_URL:http://coupon-service:8082}
           predicates:
-            - Path=/notificationservice/v3/api-docs/**
+            - Path=/couponservice/v3/api-docs/**
           filters:
-            - RewritePath=/notificationservice/v3/api-docs/(?<segment>.*), /v3/api-docs/${segment}
-            
-        # Main API Gateway Swagger UI (aggregated view)
+            - RewritePath=/couponservice/v3/api-docs/(?<segment>.*), /v3/api-docs/$\{segment}
+
+        # Gateway's own Swagger UI (aggregated)
         - id: apigateway-swagger-ui-html
           uri: no://op
           predicates:
@@ -326,7 +137,6 @@ spring:
           predicates:
             - Path=/v3/api-docs/**
 
-  # Redis Configuration
   data:
     redis:
       host: ${SPRING_DATA_REDIS_HOST:${REDIS_HOST:localhost}}
@@ -339,10 +149,10 @@ spring:
           max-idle: 8
           min-idle: 0
 
-# JWT Configuration
+# JWT – must match the secret used by userservice
 jwt:
-  issuer: ${JWT_ISSUER:swachvega}
-  audience: ${JWT_AUDIENCE:swachvega-clients}
+  issuer: ${JWT_ISSUER:cyberlearnix}
+  audience: ${JWT_AUDIENCE:cyberlearnix-clients}
   access-token:
     secret: ${JWT_ACCESS_SECRET:myVerySecretKeyForAccessTokenThatIsAtLeast32CharactersLongForHS256Algorithm}
     expiration-minutes: 15
@@ -350,89 +160,25 @@ jwt:
     secret: ${JWT_REFRESH_SECRET:myVerySecretKeyForRefreshTokenThatIsAtLeast32CharactersLongForHS256Algorithm}
     expiration-days: 30
 
-# Actuator Configuration
 management:
   endpoints:
     web:
       exposure:
-        include: "*"
+        include: health,info,metrics
       base-path: /actuator
   endpoint:
     health:
       show-details: always
-      show-components: always
-      roles: ["ACTUATOR"]
-      group:
-        readiness:
-          include: readinessState,redis,diskSpace
-          show-details: always
-        liveness:
-          include: livenessState,diskSpace,ping
-          show-details: always
-        detailed:
-          include: "*"
-          show-details: always
-    metrics:
-      enabled: true
-    prometheus:
-      enabled: true
-    info:
-      enabled: true
-    env:
-      enabled: true
-      show-values: always
-  health:
-    defaults:
-      enabled: true
-    redis:
-      enabled: true
-      timeout: 5s
-    diskspace:
-      enabled: true
-      threshold: 100MB
-    ping:
-      enabled: true
-    livenessstate:
-      enabled: true
-    readinessstate:
-      enabled: true
-  metrics:
-    export:
-      prometheus:
-        enabled: true
-    distribution:
-      percentiles-histogram:
-        http.server.requests: true
-      percentiles:
-        http.server.requests: 0.5, 0.9, 0.95, 0.99
-  info:
-    env:
-      enabled: true
-    java:
-      enabled: true
-    os:
-      enabled: true
-    git:
-      mode: full
-    build:
-      enabled: true
 
-# User Service Configuration
+# Service URLs
 userservice:
-  url: ${USERSERVICE_URL:http://userservice:8080}
+  url: ${USERSERVICE_URL:http://userservice:8086}
 
-# Security Configuration
 security:
   rate-limit:
     login-attempts: 5
     login-window-minutes: 15
-    refresh-requests: 10
-    refresh-window-minutes: 1
-  session:
-    max-concurrent-sessions: 5
-    cleanup-interval-seconds: 3600
 
-# SpringDoc OpenAPI Configuration
 springdoc:
   api-docs:
     path: /v3/api-docs
@@ -443,27 +189,16 @@ springdoc:
       - url: /v3/api-docs
         name: API Gateway
       - url: /userservice/v3/api-docs
-        name: User Service (Auth)
-      - url: /productservice/v3/api-docs
-        name: Product Service
-      - url: /orderservice/v3/api-docs
-        name: Order Service
-      - url: /inventoryservice/v3/api-docs
-        name: Inventory Service
-      - url: /searchservice/v3/api-docs
-        name: Search Service
-      - url: /storeservice/v3/api-docs
-        name: Store Service
+        name: User Service
+      - url: /courseservice/v3/api-docs
+        name: Course Service
       - url: /cartservice/v3/api-docs
         name: Cart Service
-      - url: /adminservice/v3/api-docs
-        name: Admin Service
-      - url: /notificationservice/v3/api-docs
-        name: Notification Service
+      - url: /couponservice/v3/api-docs
+        name: Coupon Service
 
-# Enable debug logging for troubleshooting
 logging:
   level:
-    root: INFO
-    com.swachvega.apigateway: DEBUG
-    org.springframework.cloud.gateway: DEBUG
+    com.swachvega: INFO
+    org.springframework.security: INFO
+    org.springframework.cloud.gateway: INFO
