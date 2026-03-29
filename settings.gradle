@@ -1,0 +1,8 @@
+rootProject.name = 'cyberlearnix'
+
+include 'commonlibs'
+include 'userservice'
+include 'course-service'
+include 'coupon-service'
+include 'cart-service'
+include 'apigateway'

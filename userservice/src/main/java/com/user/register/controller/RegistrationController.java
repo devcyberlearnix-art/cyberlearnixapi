@@ -313,30 +313,30 @@ public class RegistrationController {
 
             responseData.setUserId(user.getId());
 
-            responseData.setEmail(SecurityUtils.encrypt(user.getEmail(), encryptionKey));
-            responseData.setFirstName(SecurityUtils.encrypt(user.getFirstName(), encryptionKey));
-            responseData.setLastName(SecurityUtils.encrypt(user.getLastName(), encryptionKey));
-            responseData.setMobile(SecurityUtils.encrypt(user.getMobile(), encryptionKey));
+            responseData.setEmail(encryptNullable(user.getEmail()));
+            responseData.setFirstName(encryptNullable(user.getFirstName()));
+            responseData.setLastName(encryptNullable(user.getLastName()));
+            responseData.setMobile(encryptNullable(user.getMobile()));
 
-            responseData.setDob(SecurityUtils.encrypt(user.getDob(), encryptionKey));
-            responseData.setProfilePhoto(SecurityUtils.encrypt(user.getProfilePhoto(), encryptionKey));
-            responseData.setCity(SecurityUtils.encrypt(user.getCity(), encryptionKey));
-            responseData.setState(SecurityUtils.encrypt(user.getState(), encryptionKey));
-            responseData.setCountry(SecurityUtils.encrypt(user.getCountry(), encryptionKey));
-            responseData.setOrganization(SecurityUtils.encrypt(user.getOrganization(), encryptionKey));
+            responseData.setDob(encryptNullable(user.getDob()));
+            responseData.setProfilePhoto(encryptNullable(user.getProfilePhoto()));
+            responseData.setCity(encryptNullable(user.getCity()));
+            responseData.setState(encryptNullable(user.getState()));
+            responseData.setCountry(encryptNullable(user.getCountry()));
+            responseData.setOrganization(encryptNullable(user.getOrganization()));
 
-            responseData.setPreferredLanguage(SecurityUtils.encrypt(user.getPreferredLanguage(), encryptionKey));
-            responseData.setSkills(SecurityUtils.encrypt(user.getSkills(), encryptionKey));
-            responseData.setFieldOfStudy(SecurityUtils.encrypt(user.getFieldOfStudy(), encryptionKey));
-            responseData.setHighestQualification(SecurityUtils.encrypt(user.getHighestQualification(), encryptionKey));
+            responseData.setPreferredLanguage(encryptNullable(user.getPreferredLanguage()));
+            responseData.setSkills(encryptNullable(user.getSkills()));
+            responseData.setFieldOfStudy(encryptNullable(user.getFieldOfStudy()));
+            responseData.setHighestQualification(encryptNullable(user.getHighestQualification()));
 
-            responseData.setRole(SecurityUtils.encrypt(user.getRole().name(), encryptionKey));
-            responseData.setStatus(SecurityUtils.encrypt(user.getStatus().name(), encryptionKey));
+            responseData.setRole(encryptNullable(user.getRole() != null ? user.getRole().name() : null));
+            responseData.setStatus(encryptNullable(user.getStatus() != null ? user.getStatus().name() : null));
 
-            responseData.setLoginDevice(SecurityUtils.encrypt(deviceInfo, encryptionKey));
-            responseData.setLoginIp(SecurityUtils.encrypt(ipAddress, encryptionKey));
-            responseData.setBrowser(SecurityUtils.encrypt(browser, encryptionKey));
-            responseData.setOs(SecurityUtils.encrypt(os, encryptionKey));
+            responseData.setLoginDevice(encryptNullable(deviceInfo));
+            responseData.setLoginIp(encryptNullable(ipAddress));
+            responseData.setBrowser(encryptNullable(browser));
+            responseData.setOs(encryptNullable(os));
             responseData.setLastLoginAt(LocalDateTime.now());
             responseData.setSessionId(String.valueOf(session.getId()));
             // 8️⃣ API Response
@@ -346,7 +346,6 @@ public class RegistrationController {
                     responseData,
                     now
             );
-
             return ResponseEntity.ok(apiResponse);
 
         } catch (LoginFailedException ex) {
@@ -376,6 +375,13 @@ public class RegistrationController {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private String encryptNullable(String value) throws Exception {
+        if (value == null) {
+            return null;
+        }
+        return SecurityUtils.encrypt(value, encryptionKey);
     }
 
     @PostMapping("/login/otp/request")

@@ -29,6 +29,9 @@ dependencies {
     // PostgreSQL
     runtimeOnly 'org.postgresql:postgresql'
 
+    // H2 in-memory DB (local/dev testing without Docker)
+    runtimeOnly 'com.h2database:h2'
+
     // Redis
     implementation 'org.springframework.boot:spring-boot-starter-data-redis'
     implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
