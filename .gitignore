@@ -26,3 +26,11 @@ uploads/
 
 # Spring Boot generated
 HELP.md
+
+# Local machine-specific
+gradle.properties
+bootrun.out
+bootrun.err
+
+# Temp files created during setup
+.temp_pg_client/
