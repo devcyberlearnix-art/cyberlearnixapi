@@ -1,7 +1,8 @@
 package com.lms.cart_service.service;
 
-import com.lms.cart_service.dto.CartRequest;
-import com.lms.cart_service.dto.CartResponse;
+import com.lms.cart_service.client.CourseClient;
+import com.lms.cart_service.client.CouponClient;
+import com.lms.cart_service.dto.*;
 import com.lms.cart_service.entity.CartItem;
 import com.lms.cart_service.repository.CartRepository;
 import lombok.RequiredArgsConstructor;
@@ -16,30 +17,35 @@ import java.util.List;
 public class CartServiceImpl implements CartService {
 
     private final CartRepository cartRepository;
+    private final CourseClient courseClient;
+    private final CouponClient couponClient;
 
     @Override
     @Transactional
     public CartResponse addToCart(String userId, CartRequest request) {
-        // 1. Check if item already exists in the database
+        CourseDetails courseData = courseClient.getCourseById(request.getCourseId());
+
+        if (courseData == null) {
+            throw new RuntimeException("Course not found in the catalog");
+        }
+
         var existing = cartRepository.findByUserIdAndCourseIdAndInstructorId(
-                userId, request.getCourseId(), request.getInstructorId());
+                userId, courseData.getCourseId(), courseData.getInstructorId());
 
         if (existing.isPresent()) {
             CartItem item = existing.get();
             item.setQuantity(item.getQuantity() + 1);
+            item.setPrice(courseData.getPrice());
             cartRepository.save(item);
         } else {
-            // 2. DISCONNECTED LOGIC: No external API calls
             CartItem newItem = new CartItem();
             newItem.setUserId(userId);
-            newItem.setCourseId(request.getCourseId());
-            newItem.setInstructorId(request.getInstructorId());
-
-            // Use data directly from the Request Body (Postman)
-            newItem.setCourseName(request.getCourseName());
-            newItem.setPrice(request.getPrice());
-
+            newItem.setCourseId(courseData.getCourseId());
+            newItem.setInstructorId(courseData.getInstructorId());
+            newItem.setCourseName(courseData.getCourseName());
+            newItem.setPrice(courseData.getPrice());
             newItem.setQuantity(1);
+
             cartRepository.save(newItem);
         }
         return getUserCart(userId);
@@ -62,7 +68,25 @@ public class CartServiceImpl implements CartService {
         }).toList();
 
         Double grandTotal = dtos.stream().mapToDouble(d -> d.getSubTotal()).sum();
+
+        // FIXED: Using your actual DTO field name 'totalCartPrice'
         return new CartResponse(dtos, grandTotal);
+    }
+
+    @Override
+    public CartResponse applyCouponToCart(String userId, String couponCode) {
+        CartResponse response = getUserCart(userId);
+
+        // FIXED: Calling your actual client method 'getDiscount' which returns Double
+        Double discountPercentage = couponClient.getDiscount(couponCode);
+
+        if (discountPercentage != null && discountPercentage > 0) {
+            // FIXED: Using 'totalCartPrice' instead of 'grandTotal'
+            double discountAmount = (response.getTotalCartPrice() * discountPercentage) / 100;
+            response.setTotalCartPrice(response.getTotalCartPrice() - discountAmount);
+        }
+
+        return response;
     }
 
     @Override

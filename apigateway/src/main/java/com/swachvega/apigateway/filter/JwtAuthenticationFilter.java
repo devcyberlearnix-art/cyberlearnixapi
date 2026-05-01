@@ -50,7 +50,9 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
             "/cartservice/swagger-ui/",
             "/cartservice/v3/api-docs/",
             "/couponservice/swagger-ui/",
-            "/couponservice/v3/api-docs/"
+            "/couponservice/v3/api-docs/",
+            "/wishlistservice/swagger-ui/",
+            "/wishlistservice/v3/api-docs/"
     );
 
     public JwtAuthenticationFilter(SimpleJwtTokenProvider jwtTokenProvider) {

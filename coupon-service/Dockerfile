@@ -8,7 +8,7 @@ RUN apk add --no-cache tzdata && \
 WORKDIR /app
 
 # Copy the built jar file for coupon-service (update the jar name if needed)
-COPY build/libs/coupon_service-1.0.0-SNAPSHOT.jar app.jar
+COPY build/libs/*.jar app.jar
 
 EXPOSE 8082
 

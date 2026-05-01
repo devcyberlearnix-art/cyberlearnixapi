@@ -1,0 +1,33 @@
+server:
+  port: 8085
+
+spring:
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/lms_wishlist}
+    username: ${SPRING_DATASOURCE_USERNAME:cyberlearnix}
+    password: ${SPRING_DATASOURCE_PASSWORD:cyberlearnix123}
+
+  jpa:
+    open-in-view: false  # Professional: Disables the warning and improves performance
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true # Makes Hibernate logs easy to read in your terminal
+
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration
+      - org.springframework.boot.autoconfigure.data.redis.RedisRepositoriesAutoConfiguration
+
+  cache:
+    type: none
+
+# JWT (shared secret must match userservice/gateway)
+jwt:
+  access-token:
+    secret: ${JWT_ACCESS_TOKEN_SECRET:myVerySecretKeyForAccessTokenThatIsAtLeast32CharactersLongForHS256Algorithm}
+
+course-service:
+  url: ${COURSE_SERVICE_URL:http://localhost:8083}

@@ -3,35 +3,39 @@ package com.lms.cart_service.security;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.SecretKey;
+import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.function.Function;
 
 @Service
 public class JwtService {
 
-    private static final String SECRET_KEY = "your_ultra_secure_secret_key_for_lms_project_2026";
+    // 1. Injected from application.properties to match Gateway/User Service
+    @Value("${jwt.access-token.secret}")
+    private String secretKey;
 
     public String extractUserId(String token) {
         return extractClaim(cleanToken(token), Claims::getSubject);
     }
 
     public String extractRole(String token) {
-        return extractClaim(cleanToken(token), claims -> claims.get("roles", String.class));
+        // 2. Changed from "roles" to "role" to match your actual JWT payload
+        return extractClaim(cleanToken(token), claims -> claims.get("role", String.class));
     }
 
     public boolean isTokenValid(String token) {
         try {
             final Date expiration = extractClaim(cleanToken(token), Claims::getExpiration);
-            return expiration.after(new Date());
+            return expiration != null && expiration.after(new Date());
         } catch (Exception e) {
             return false;
         }
     }
 
-    // Helper to remove "Bearer " if present
     private String cleanToken(String token) {
         if (token != null && token.startsWith("Bearer ")) {
             return token.substring(7);
@@ -49,6 +53,7 @@ public class JwtService {
     }
 
     private SecretKey getSignInKey() {
-        return Keys.hmacShaKeyFor(SECRET_KEY.getBytes());
+        // 3. Using StandardCharsets to ensure consistent byte conversion
+        return Keys.hmacShaKeyFor(secretKey.getBytes(StandardCharsets.UTF_8));
     }
 }

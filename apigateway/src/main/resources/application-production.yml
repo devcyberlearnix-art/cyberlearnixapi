@@ -46,9 +46,12 @@ cart-service:
 coupon-service:
   url: ${COUPONSERVICE_URL:http://coupon-service:8082}
 
+wishlist-service:
+  url: ${WISHLISTSERVICE_URL:http://wishlist-service:8085}
+
 # Server Configuration
 server:
-  port: ${SERVER_PORT:8080}
+  port: ${SERVER_PORT:9090}
   compression:
     enabled: true
     mime-types: text/html,text/xml,text/plain,text/css,text/javascript,application/javascript,application/json

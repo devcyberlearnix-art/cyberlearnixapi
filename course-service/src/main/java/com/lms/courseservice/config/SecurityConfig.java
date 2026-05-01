@@ -29,8 +29,8 @@ public class SecurityConfig {
                         .requestMatchers("/auth/**").permitAll()
 
                         // Public access
-                        .requestMatchers(HttpMethod.GET, "/sections/*/lectures")
-                        .hasAnyRole("STUDENT","INSTRUCTOR","ADMIN")
+                        // Public course browsing (needed by cart/wishlist/order flows)
+                        .requestMatchers(HttpMethod.GET, "/courses", "/courses/*").permitAll()
                         .requestMatchers(HttpMethod.GET, "/courses/*/sections").permitAll()
 
                         // ✅ STUDENT enroll (put BEFORE /courses/**)

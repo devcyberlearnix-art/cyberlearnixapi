@@ -5,6 +5,7 @@ import com.user.register.service.TokenBlacklistService;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ResponseStatusException;
@@ -21,51 +22,59 @@ public class JwtUtil {
 
     private final TokenBlacklistService blacklistService;
 
-    private static final String SECRET =
-            "aVeryLongSuperSecureSecretKeyForJwtTokenGenerationWith256BitStrength123456789SecureKey";
+    @Value("${jwt.access-token.secret:myVerySecretKeyForAccessTokenThatIsAtLeast32CharactersLongForHS256Algorithm}")
+    private String accessSecret;
 
-    private static final String ISSUER = "user-service";
+    @Value("${jwt.refresh-token.secret:myVerySecretKeyForRefreshTokenThatIsAtLeast32CharactersLongForHS256Algorithm}")
+    private String refreshSecret;
+
+    @Value("${jwt.issuer:cyberlearnix}")
+    private String issuer;
+
+    @Value("${jwt.audience:cyberlearnix-clients}")
+    private String audience;
 
     private static final long ACCESS_TOKEN_EXPIRATION = 15L * 60 * 1000; // 15 minutes
     private static final long REFRESH_TOKEN_EXPIRATION = 30L * 24 * 60 * 60 * 1000; // 30 days
 
 
     // Generate secret key
-    private SecretKey getSecretKey() {
-        return Keys.hmacShaKeyFor(SECRET.getBytes());
+    private SecretKey getSecretKey(String secret) {
+        return Keys.hmacShaKeyFor(secret.getBytes());
     }
 
 
     // ================= TOKEN GENERATION =================
-    private String generateToken(String subject, long expiration, String type, String role) {
+    private String generateToken(String subject, long expiration, String type, String role, String secret) {
 
         return Jwts.builder()
                 .setId(UUID.randomUUID().toString())
                 .setSubject(subject)
-                .setIssuer(ISSUER)
+                .setIssuer(issuer)
+                .claim("aud", audience)
                 .claim("type", type)
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + expiration))
                 .claim("role", role) // ✅ now comes from parameter
-                .signWith(getSecretKey(), SignatureAlgorithm.HS256)
+                .signWith(getSecretKey(secret), SignatureAlgorithm.HS256)
                 .compact();
     }
 
     public String generateAccessToken(String userId, String role) {
-        return generateToken(userId, ACCESS_TOKEN_EXPIRATION, "access", role);
+        return generateToken(userId, ACCESS_TOKEN_EXPIRATION, "access", role, accessSecret);
     }
 
     public String generateRefreshToken(User user, String userId, String role) {
-        return generateToken(userId, REFRESH_TOKEN_EXPIRATION, "refresh", role);
+        return generateToken(userId, REFRESH_TOKEN_EXPIRATION, "refresh", role, refreshSecret);
     }
 
     // ================= CLAIM EXTRACTION =================
 
-    private Claims extractAllClaims(String token) {
+    private Claims extractAllClaims(String token, String secret) {
 
         return Jwts.parserBuilder()
-                .setSigningKey(getSecretKey())
-                .requireIssuer(ISSUER)
+                .setSigningKey(getSecretKey(secret))
+                .requireIssuer(issuer)
                 .build()
                 .parseClaimsJws(token)
                 .getBody();
@@ -73,17 +82,17 @@ public class JwtUtil {
 
 
     public String extractUserId(String token) {
-        return extractAllClaims(token).getSubject();
+        return extractAllClaims(token, accessSecret).getSubject();
     }
 
 
     public String extractTokenType(String token) {
-        return extractAllClaims(token).get("type", String.class);
+        return extractAllClaims(token, accessSecret).get("type", String.class);
     }
 
 
     public Date extractExpiration(String token) {
-        return extractAllClaims(token).getExpiration();
+        return extractAllClaims(token, accessSecret).getExpiration();
     }
 
 
@@ -91,7 +100,7 @@ public class JwtUtil {
 
     public boolean validateToken(String token) {
         try {
-            extractAllClaims(token);
+            extractAllClaims(token, accessSecret);
             return true;
         } catch (JwtException e) {
             return false;
@@ -103,7 +112,7 @@ public class JwtUtil {
 
         try {
 
-            Claims claims = extractAllClaims(token);
+            Claims claims = extractAllClaims(token, refreshSecret);
 
             if (!"refresh".equals(claims.get("type", String.class))) {
                 throw new ResponseStatusException(
@@ -162,8 +171,8 @@ public class JwtUtil {
         try {
 
             Claims claims = Jwts.parserBuilder()
-                    .setSigningKey(getSecretKey())
-                    .requireIssuer(ISSUER)
+                    .setSigningKey(getSecretKey(accessSecret))
+                    .requireIssuer(issuer)
                     .build()
                     .parseClaimsJws(token)
                     .getBody();
@@ -186,7 +195,8 @@ public class JwtUtil {
                 String.valueOf(user.getId()),       // subject
                 JwtUtil.ACCESS_TOKEN_EXPIRATION,    // 15 minutes
                 "access",                           // token type
-                user.getRole().name()               // role
+                user.getRole().name(),              // role
+                accessSecret                        // secret
         );
     }
 

@@ -10,6 +10,7 @@ import com.user.register.repository.UserSessionRepository;
 import com.user.register.security.JwtUtil;
 import com.user.register.util.SecurityUtils;
 import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -32,8 +33,7 @@ public class UserService {
     private final UserRepository userRepository;
     private final UserSessionRepository sessionRepository;
     private final JwtUtil jwtUtil;
-    private final String encryptionKey = "1234567890123456"; // your encryption key
-    private byte[] secretKey;
+    private final String encryptionKey = "1234567890123456";
 
     public UserService(UserRepository userRepository,
                        UserSessionRepository sessionRepository,
@@ -43,95 +43,30 @@ public class UserService {
         this.jwtUtil = jwtUtil;
     }
 
-    public UserProfileResponse getLoggedInUserProfile(HttpServletRequest request) {
-        // 1️⃣ Extract JWT token
-        String authHeader = request.getHeader("Authorization");
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            throw new RuntimeException("Missing or invalid Authorization header");
+    /**
+     * Helper to get the Authenticated User ID from SecurityContext
+     */
+    private Long getAuthenticatedUserId() {
+        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        if (principal == null) {
+            throw new RuntimeException("User not authenticated");
         }
-        String token = authHeader.substring(7);
-        Long userId = Long.parseLong(jwtUtil.validateAccessTokenAndGetUserId(token));
-        // 2️⃣ Fetch user from DB
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
-
-        // 3️⃣ Decrypt fields before returning
-        String firstName = decrypt(user.getFirstName());
-        String lastName = decrypt(user.getLastName());
-        String mobile = decrypt(user.getMobile());
-        String dob = decrypt(user.getDob());
-        String city = decrypt(user.getCity());
-        String state = decrypt(user.getState());
-        String country = decrypt(user.getCountry());
-        String organization = decrypt(user.getOrganization());
-
-        // 4️⃣ Fetch active sessions
-        List<SessionDto> activeSessions = sessionRepository.findByUser(user)
-                .stream()
-                .filter(s -> s.getExpiresAt() == null || s.getExpiresAt().isAfter(LocalDateTime.now()))
-                .map(s -> new SessionDto(
-                        s.getId(),
-                        user.getId(),
-                        s.getDeviceInfo(),
-                        s.getIpAddress(),
-                        s.getCreatedAt(),
-                        user.getEmail()
-                ))
-                .collect(Collectors.toList());
-
-        // 5️⃣ Build profile response
-        return new UserProfileResponse(
-                user.getId(),
-                firstName,
-                lastName,
-                user.getEmail(),
-                mobile,
-                dob,
-                user.getProfilePhoto(),
-                city,
-                state,
-                country,
-                user.getPreferredLanguage(),
-                organization,
-                user.getSkills(),
-                user.getFieldOfStudy(),
-                user.getHighestQualification(),
-                user.getRole().name(),
-                user.getStatus().name(),
-                user.getCreatedAt(),
-                user.getUpdatedAt(),
-                user.getLastLogin(),
-                activeSessions
-        );
+        return Long.parseLong(principal.toString());
     }
 
-    // ----------------------------
-    // Decrypt helper using your SecurityUtils
-    private String decrypt(String value) {
-        if (value == null) return null;
-        try {
-            return SecurityUtils.decrypt(value, encryptionKey);
-        } catch (Exception e) {
-            // If decryption fails, return original encrypted value as fallback
-            return value;
-        }
+    public UserProfileResponse getLoggedInUserProfile(HttpServletRequest request) {
+        Long userId = getAuthenticatedUserId();
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        return buildProfileResponse(user, true);
     }
 
     public UserProfileResponse updateUserProfile(HttpServletRequest request, UpdateUserProfileRequest updateRequest) {
-        // 1️⃣ Extract userId from JWT
-        String authHeader = request.getHeader("Authorization");
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            throw new RuntimeException("Missing or invalid Authorization header");
-        }
-        String token = authHeader.substring(7);
-        Long userId = Long.parseLong(jwtUtil.validateAccessTokenAndGetUserId(token));
-
-        // 2️⃣ Fetch user from DB
+        Long userId = getAuthenticatedUserId();
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         try {
-            // 3️⃣ Update fields if present and encrypt
             if (updateRequest.getFirstName() != null)
                 user.setFirstName(SecurityUtils.encrypt(updateRequest.getFirstName(), encryptionKey));
             if (updateRequest.getLastName() != null)
@@ -149,215 +84,105 @@ public class UserService {
             if (updateRequest.getOrganization() != null)
                 user.setOrganization(SecurityUtils.encrypt(updateRequest.getOrganization(), encryptionKey));
         } catch (Exception e) {
-            throw new RuntimeException("Error encrypting user fields: " + e.getMessage(), e);
+            throw new RuntimeException("Error encrypting user fields", e);
         }
 
-        // 4️⃣ Update other fields
-        if (updateRequest.getPreferredLanguage() != null)
-            user.setPreferredLanguage(updateRequest.getPreferredLanguage());
+        if (updateRequest.getPreferredLanguage() != null) user.setPreferredLanguage(updateRequest.getPreferredLanguage());
         if (updateRequest.getProfilePhoto() != null) user.setProfilePhoto(updateRequest.getProfilePhoto());
         if (updateRequest.getSkills() != null) user.setSkills(updateRequest.getSkills());
         if (updateRequest.getFieldOfStudy() != null) user.setFieldOfStudy(updateRequest.getFieldOfStudy());
-        if (updateRequest.getHighestQualification() != null)
-            user.setHighestQualification(updateRequest.getHighestQualification());
+        if (updateRequest.getHighestQualification() != null) user.setHighestQualification(updateRequest.getHighestQualification());
 
-        // 5️⃣ Save user
         userRepository.save(user);
-
-        // 6️⃣ Build simplified response (decrypted fields only)
-        try {
-            return new UserProfileResponse(
-                    user.getId(),
-                    SecurityUtils.decrypt(user.getFirstName(), encryptionKey),
-                    SecurityUtils.decrypt(user.getLastName(), encryptionKey),
-                    user.getEmail(),
-                    SecurityUtils.decrypt(user.getMobile(), encryptionKey),
-                    SecurityUtils.decrypt(user.getDob(), encryptionKey),
-                    user.getProfilePhoto(),
-                    SecurityUtils.decrypt(user.getCity(), encryptionKey),
-                    SecurityUtils.decrypt(user.getState(), encryptionKey),
-                    SecurityUtils.decrypt(user.getCountry(), encryptionKey),
-                    user.getPreferredLanguage(),
-                    SecurityUtils.decrypt(user.getOrganization(), encryptionKey),
-                    user.getSkills(),
-                    user.getFieldOfStudy(),
-                    user.getHighestQualification(),
-                    user.getRole().name(),
-                    user.getStatus().name(),
-                    null, // createdAt
-                    null, // updatedAt
-                    null, // lastLogin
-                    null  // activeSessions
-
-            );
-        } catch (Exception e) {
-            throw new RuntimeException("Error decrypting user fields: " + e.getMessage(), e);
-        }
+        return buildProfileResponse(user, false);
     }
 
     public UserProfileResponse uploadProfilePhoto(HttpServletRequest request, MultipartFile file) {
-        // 1️⃣ Extract userId from JWT
-        String authHeader = request.getHeader("Authorization");
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            throw new RuntimeException("Missing or invalid Authorization header");
-        }
-        String token = authHeader.substring(7);
-        Long userId = Long.parseLong(jwtUtil.validateAccessTokenAndGetUserId(token));
+        Long userId = getAuthenticatedUserId();
+        User user = userRepository.findById(userId).orElseThrow(() -> new RuntimeException("User not found"));
+        if (file.isEmpty()) throw new RuntimeException("No file uploaded");
 
-        // 2️⃣ Fetch user
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
-
-        // 3️⃣ Validate file
-        if (file.isEmpty()) {
-            throw new RuntimeException("No file uploaded");
-        }
-        if (file.getSize() > 5 * 1024 * 1024) { // 5MB
-            throw new RuntimeException("File size exceeds 5MB limit");
-        }
-
-        String contentType = file.getContentType();
-        if (contentType == null ||
-                !(contentType.equals("image/jpeg") || contentType.equals("image/png") || contentType.equals("image/webp"))) {
-            throw new RuntimeException("Only JPG, PNG, or WEBP files are allowed");
-        }
         try {
-            // 4️⃣ Resize to 512x512
-            BufferedImage originalImage = ImageIO.read(file.getInputStream());
-            BufferedImage resizedImage = new BufferedImage(512, 512, BufferedImage.TYPE_INT_ARGB);
-            Graphics2D g = resizedImage.createGraphics();
-            g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
-            g.drawImage(originalImage, 0, 0, 512, 512, null);
-            g.dispose();
-            // 5️⃣ Save file
-            String extension = contentType.equals("image/jpeg") ? "jpg" : contentType.split("/")[1];
-            String filename = UUID.randomUUID().toString() + "." + extension;
-            String uploadDir = "uploads"; // make sure this folder exists
-            Files.createDirectories(Paths.get(uploadDir));
-            File outputFile = new File(uploadDir + File.separator + filename);
-            ImageIO.write(resizedImage, extension, outputFile);
-
-            // 6️⃣ Update user
+            String filename = processAndSaveImage(file);
             user.setProfilePhoto("/uploads/" + filename);
             user.setUpdatedAt(LocalDateTime.now());
             userRepository.save(user);
-            // 7️⃣ Fetch active sessions
-            List<SessionDto> activeSessions = sessionRepository.findByUser(user)
-                    .stream()
-                    .filter(s -> s.getExpiresAt() == null || s.getExpiresAt().isAfter(LocalDateTime.now()))
-                    .map(s -> new SessionDto(
-                            s.getId(),
-                            user.getId(),
-
-                            s.getDeviceInfo(),
-                            s.getIpAddress(),
-                            s.getCreatedAt(),
-                            user.getEmail()
-                    ))
-                    .collect(Collectors.toList());
-            // 8️⃣ Return simplified response
-            return new UserProfileResponse(
-                    user.getId(),
-                    decrypt(user.getFirstName()),
-                    decrypt(user.getLastName()),
-                    user.getEmail(),
-                    decrypt(user.getMobile()),
-                    decrypt(user.getDob()),
-                    user.getProfilePhoto(),
-                    decrypt(user.getCity()),
-                    decrypt(user.getState()),
-                    decrypt(user.getCountry()),
-                    user.getPreferredLanguage(),
-                    decrypt(user.getOrganization()),
-                    user.getSkills(),
-                    user.getFieldOfStudy(),
-                    user.getHighestQualification(),
-                    user.getRole().name(),
-                    user.getStatus().name(),
-                    null, // createdAt
-                    null, // updatedAt
-                    null, // lastLogin
-                    null  // activeSessions
-            );
+            return buildProfileResponse(user, false);
         } catch (IOException e) {
-            throw new RuntimeException("Failed to process uploaded image: " + e.getMessage(), e);
+            throw new RuntimeException("Failed to process image", e);
         }
     }
+
     public ApiResponse<UserProfileResponse> softDeleteUser(HttpServletRequest request) {
-        // 1️⃣ Extract JWT
-        String authHeader = request.getHeader("Authorization");
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            throw new RuntimeException("Missing or invalid Authorization header");
-        }
-        String token = authHeader.substring(7);
-        Long userId = Long.parseLong(jwtUtil.validateAccessTokenAndGetUserId(token));
-
-        // 2️⃣ Fetch user
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
-
-        // 3️⃣ Soft delete: mark user as SUSPENDED (DB allowed value)
+        Long userId = getAuthenticatedUserId();
+        User user = userRepository.findById(userId).orElseThrow(() -> new RuntimeException("User not found"));
         user.setStatus(User.Status.SUSPENDED);
         user.setUpdatedAt(LocalDateTime.now());
         userRepository.save(user);
-
-        // 4️⃣ Build detailed UserProfileResponse without activeSessions and lastLogin
-        UserProfileResponse profile = new UserProfileResponse(
-                user.getId(),
-                decrypt(user.getFirstName()),
-                decrypt(user.getLastName()),
-                user.getEmail(),
-                decrypt(user.getMobile()),
-                decrypt(user.getDob()),
-                user.getProfilePhoto(),
-                decrypt(user.getCity()),
-                decrypt(user.getState()),
-                decrypt(user.getCountry()),
-                user.getPreferredLanguage(),
-                decrypt(user.getOrganization()),
-                user.getSkills(),
-                user.getFieldOfStudy(),
-                user.getHighestQualification(),
-                user.getRole().name(),
-                user.getStatus().name(), // now SUSPENDED
-                user.getCreatedAt(),
-                user.getUpdatedAt(),
-                null,   // lastLogin removed
-                null    // activeSessions removed
-        );
-
-        // 5️⃣ Return detailed ApiResponse
-        return new ApiResponse<>(
-                true,
-                "Account has been deactivated successfully",
-                profile,
-                LocalDateTime.now()
-        );
+        return new ApiResponse<>(true, "Account deactivated", buildProfileResponse(user, false), LocalDateTime.now());
     }
+
+    // Restored socialLogin method
     public User socialLogin(String email, String provider) {
-        // 1️⃣ Check if user exists
         Optional<User> userOpt = userRepository.findByEmail(email);
         User user;
 
         if (userOpt.isPresent()) {
             user = userOpt.get();
         } else {
-            // 2️⃣ Create new user for social login
             user = new User();
             user.setEmail(email);
-
-            // Use an existing status like PENDING_VERIFICATION or create SOCIAL_LOGIN in enum
             user.setStatus(User.Status.PENDING_VERIFICATION);
-
             user.setRole(User.Role.STUDENT);
-
-            // Store the provider (Google, GitHub, LinkedIn)
             user.setProvider(provider);
-
             userRepository.save(user);
         }
-
-        // 3️⃣ Return user object (later JWT or session can be generated)
         return user;
+    }
+
+    // --- Helper Methods ---
+
+    private String decrypt(String value) {
+        if (value == null) return null;
+        try {
+            return SecurityUtils.decrypt(value, encryptionKey);
+        } catch (Exception e) {
+            return value;
+        }
+    }
+
+    private UserProfileResponse buildProfileResponse(User user, boolean includeSessions) {
+        List<SessionDto> activeSessions = null;
+        if (includeSessions) {
+            activeSessions = sessionRepository.findByUser(user).stream()
+                    .filter(s -> s.getExpiresAt() == null || s.getExpiresAt().isAfter(LocalDateTime.now()))
+                    .map(s -> new SessionDto(s.getId(), user.getId(), s.getDeviceInfo(), s.getIpAddress(), s.getCreatedAt(), user.getEmail()))
+                    .collect(Collectors.toList());
+        }
+
+        return new UserProfileResponse(
+                user.getId(), decrypt(user.getFirstName()), decrypt(user.getLastName()), user.getEmail(),
+                decrypt(user.getMobile()), decrypt(user.getDob()), user.getProfilePhoto(),
+                decrypt(user.getCity()), decrypt(user.getState()), decrypt(user.getCountry()),
+                user.getPreferredLanguage(), decrypt(user.getOrganization()), user.getSkills(),
+                user.getFieldOfStudy(), user.getHighestQualification(), user.getRole().name(),
+                user.getStatus().name(), user.getCreatedAt(), user.getUpdatedAt(), user.getLastLogin(), activeSessions
+        );
+    }
+
+    private String processAndSaveImage(MultipartFile file) throws IOException {
+        BufferedImage originalImage = ImageIO.read(file.getInputStream());
+        BufferedImage resizedImage = new BufferedImage(512, 512, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g = resizedImage.createGraphics();
+        g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+        g.drawImage(originalImage, 0, 0, 512, 512, null);
+        g.dispose();
+
+        String extension = "png";
+        String filename = UUID.randomUUID().toString() + "." + extension;
+        String uploadDir = "uploads";
+        Files.createDirectories(Paths.get(uploadDir));
+        ImageIO.write(resizedImage, extension, new File(uploadDir + File.separator + filename));
+        return filename;
     }
 }

@@ -25,9 +25,8 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
-
         String path = request.getRequestURI();
-
+        // Skip filtering for auth endpoints to prevent circular logic
         return path.startsWith("/auth/")
                 || path.startsWith("/swagger-ui")
                 || path.startsWith("/v3/api-docs");
@@ -41,7 +40,13 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
         String token = null;
 
-        if (request.getCookies() != null) {
+        // 1. Try to get token from Authorization Header (Bearer eyJ...)
+        String authHeader = request.getHeader("Authorization");
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            token = authHeader.substring(7);
+        }
+        // 2. Fallback to Cookies if Header is missing
+        else if (request.getCookies() != null) {
             for (Cookie cookie : request.getCookies()) {
                 if ("accessToken".equals(cookie.getName())) {
                     token = cookie.getValue();
@@ -49,27 +54,26 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                 }
             }
         }
-        System.out.println("REQUEST PATH: " + request.getRequestURI());
+
         if (token != null) {
-
             try {
-
+                // 3. Validate JWT structure and expiration
                 String userId = jwtUtil.validateAccessTokenAndGetUserId(token);
 
+                // 4. Verify token exists in Database (Session Management)
                 userSessionRepository.findByAccessToken(token)
-                        .orElseThrow(() -> new RuntimeException("Session not found"));
+                        .orElseThrow(() -> new RuntimeException("Session not found in DB"));
 
+                // 5. Set authentication in SecurityContext
                 UsernamePasswordAuthenticationToken auth =
                         new UsernamePasswordAuthenticationToken(
-                                userId,
-                                null,
-                                List.of(new SimpleGrantedAuthority("USER"))
-                        );
+                                userId, null, List.of(new SimpleGrantedAuthority("USER")));
 
                 SecurityContextHolder.getContext().setAuthentication(auth);
 
             } catch (Exception e) {
-
+                // Log failure and ensure context is clear
+                System.err.println("JWT Authentication Failed: " + e.getMessage());
                 SecurityContextHolder.clearContext();
             }
         }

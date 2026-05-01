@@ -5,51 +5,65 @@ spring:
   cloud:
     gateway:
       routes:
-        # ── User Service (local: 8086) ──────────────────────────
+        # ── User Service (8086) ──────────────────────────
         - id: userservice-auth
           uri: http://localhost:8086
           predicates:
             - Path=/auth/**
-
         - id: userservice-users
           uri: http://localhost:8086
           predicates:
             - Path=/users/**
-
         - id: userservice-profile
           uri: http://localhost:8086
           predicates:
             - Path=/api/v1/profile/**
-
         - id: userservice-instructors
           uri: http://localhost:8086
           predicates:
             - Path=/instructors/**
 
-        # ── Course Service (local: 8083) ────────────────────────
+        # ── Course Service (8083) ────────────────────────
         - id: courseservice-courses
           uri: http://localhost:8083
           predicates:
             - Path=/courses/**
-
         - id: courseservice-sections
           uri: http://localhost:8083
           predicates:
             - Path=/sections/**
 
-        # ── Cart Service (local: 8081) ──────────────────────────
+        # ── Cart Service (8081) ──────────────────────────
         - id: cartservice
           uri: http://localhost:8081
           predicates:
             - Path=/api/cart/**
 
-        # ── Coupon Service (local: 8082) ────────────────────────
+        # ── Coupon Service (8082) ────────────────────────
         - id: couponservice
           uri: http://localhost:8082
           predicates:
             - Path=/api/coupons/**
 
-        # ── Swagger / API Docs ──────────────────────────────────
+        # ── Wishlist Service (8085) ──────────────────────
+        - id: wishlistservice
+          uri: http://localhost:8085
+          predicates:
+            - Path=/api/wishlist/**
+          filters:
+            - RewritePath=/api/wishlist/(?<segment>.*), /wishlist/$\{segment}
+        - id: wishlistservice-direct
+          uri: http://localhost:8085
+          predicates:
+            - Path=/wishlist/**
+
+        # ── Order Service (8084) ─────────────────────────
+        - id: orderservice
+          uri: http://localhost:8084
+          predicates:
+            - Path=/orders/**
+
+        # ── Swagger / API Docs ──────────────────────────
         - id: userservice-swagger-ui
           uri: http://localhost:8086
           predicates:
@@ -102,8 +116,18 @@ spring:
           filters:
             - RewritePath=/couponservice/v3/api-docs/(?<segment>.*), /v3/api-docs/$\{segment}
 
-userservice:
-  url: http://localhost:8086
+        - id: wishlistservice-swagger-ui
+          uri: http://localhost:8085
+          predicates:
+            - Path=/wishlistservice/swagger-ui/**
+          filters:
+            - RewritePath=/wishlistservice/swagger-ui/(?<segment>.*), /swagger-ui/$\{segment}
+        - id: wishlistservice-api-docs
+          uri: http://localhost:8085
+          predicates:
+            - Path=/wishlistservice/v3/api-docs/**
+          filters:
+            - RewritePath=/wishlistservice/v3/api-docs/(?<segment>.*), /v3/api-docs/$\{segment}
 
 logging:
   level:

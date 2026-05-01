@@ -8,7 +8,7 @@ RUN apk add --no-cache tzdata && \
 WORKDIR /app
 
 # Copy the built jar file for cart-service (update the jar name if needed)
-COPY build/libs/cart-service-0.0.1-SNAPSHOT.jar app.jar
+COPY build/libs/*.jar app.jar
 
 EXPOSE 8081
 

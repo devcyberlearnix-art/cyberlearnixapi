@@ -51,8 +51,6 @@ services:
       dockerfile: Dockerfile
     image: cyberlearnix/userservice:latest
     container_name: cyberlearnix-userservice
-    ports:
-      - "8086:8086"
     environment:
       # Each service uses its OWN dedicated database
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/lms_user_db
@@ -76,8 +74,6 @@ services:
       dockerfile: Dockerfile
     image: cyberlearnix/course-service:latest
     container_name: cyberlearnix-course-service
-    ports:
-      - "8083:8083"
     environment:
       # course-service uses its OWN dedicated database
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/lms_course_db
@@ -96,14 +92,14 @@ services:
       dockerfile: Dockerfile
     image: cyberlearnix/cart-service:latest
     container_name: cyberlearnix-cart-service
-    ports:
-      - "8081:8081"
     environment:
       # cart-service uses its OWN dedicated database
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/lms_cart_db
       SPRING_DATASOURCE_USERNAME: ${DB_USER:-cyberlearnix}
       SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-cyberlearnix123}
       JWT_ACCESS_TOKEN_SECRET: ${JWT_ACCESS_SECRET:-myVerySecretKeyForAccessTokenThatIsAtLeast32Chars}
+      COURSE_SERVICE_URL: http://course-service:8083
+      COUPON_SERVICE_URL: http://coupon-service:8082
       SERVER_PORT: 8081
     depends_on:
       postgres:
@@ -116,8 +112,6 @@ services:
       dockerfile: Dockerfile
     image: cyberlearnix/coupon-service:latest
     container_name: cyberlearnix-coupon-service
-    ports:
-      - "8082:8082"
     environment:
       # coupon-service uses its OWN dedicated database
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/lms_coupon_db
@@ -133,6 +127,42 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
+  wishlist-service:
+    build:
+      context: ./wishlist-service
+      dockerfile: Dockerfile
+    image: cyberlearnix/wishlist-service:latest
+    container_name: cyberlearnix-wishlist-service
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/lms_wishlist
+      SPRING_DATASOURCE_USERNAME: ${DB_USER:-cyberlearnix}
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-cyberlearnix123}
+      SERVER_PORT: 8085
+      JWT_ACCESS_TOKEN_SECRET: ${JWT_ACCESS_SECRET:-myVerySecretKeyForAccessTokenThatIsAtLeast32Chars}
+      COURSE_SERVICE_URL: http://course-service:8083
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  order-service:
+    build:
+      context: ./order-service
+      dockerfile: Dockerfile
+    image: cyberlearnix/order-service:latest
+    container_name: cyberlearnix-order-service
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/lms_order_db
+      SPRING_DATASOURCE_USERNAME: ${DB_USER:-cyberlearnix}
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-cyberlearnix123}
+      SERVER_PORT: 8084
+      CART_SERVICE_URL: http://cart-service:8081
+      COUPON_SERVICE_URL: http://coupon-service:8082
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
   apigateway:
     build:
       context: ./apigateway
@@ -140,13 +170,15 @@ services:
     image: cyberlearnix/apigateway:latest
     container_name: cyberlearnix-apigateway
     ports:
-      - "8080:8080"
+      - "18080:8080"
     environment:
       SPRING_PROFILES_ACTIVE: production
       USERSERVICE_URL: http://userservice:8086
       COURSESERVICE_URL: http://course-service:8083
       CARTSERVICE_URL: http://cart-service:8081
       COUPONSERVICE_URL: http://coupon-service:8082
+      WISHLISTSERVICE_URL: http://wishlist-service:8085
+      ORDERSERVICE_URL: http://order-service:8084
       SPRING_DATA_REDIS_HOST: redis
       SPRING_DATA_REDIS_PORT: 6379
       JWT_ACCESS_TOKEN_SECRET: ${JWT_ACCESS_SECRET:-myVerySecretKeyForAccessTokenThatIsAtLeast32Chars}
@@ -156,6 +188,8 @@ services:
       - course-service
       - cart-service
       - coupon-service
+      - wishlist-service
+      - order-service
       - redis
     restart: unless-stopped
 

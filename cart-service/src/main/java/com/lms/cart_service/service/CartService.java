@@ -8,4 +8,5 @@ public interface CartService {
     CartResponse getUserCart(String userId);
     CartResponse removeFromCart(String userId, Long cartId, String instructorId, String courseId);
     CartResponse clearFullCart(String userId);
+    CartResponse applyCouponToCart(String userId, String couponCode);
 }

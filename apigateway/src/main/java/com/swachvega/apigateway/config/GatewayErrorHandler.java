@@ -11,6 +11,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.server.reactive.ServerHttpResponse;
 import org.springframework.stereotype.Component;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
+import org.springframework.web.reactive.resource.NoResourceFoundException;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
@@ -45,7 +48,13 @@ public class GatewayErrorHandler implements ErrorWebExceptionHandler {
         Map<String, Object> meta = new HashMap<>();
         meta.put("error", status == HttpStatus.BAD_GATEWAY ? "BAD_GATEWAY"
                 : status == HttpStatus.GATEWAY_TIMEOUT ? "GATEWAY_TIMEOUT"
+                : status == HttpStatus.NOT_FOUND ? "NOT_FOUND"
                 : "INTERNAL_ERROR");
+        Throwable root = rootCause(ex);
+        meta.put("rootCause", root.getClass().getSimpleName());
+        if (root.getMessage() != null) {
+            meta.put("details", root.getMessage());
+        }
 
         Map<String, Object> body = new HashMap<>();
         body.put("success", false);
@@ -70,6 +79,15 @@ public class GatewayErrorHandler implements ErrorWebExceptionHandler {
     private HttpStatus mapStatus(Throwable ex) {
         Throwable root = rootCause(ex);
 
+        if (root instanceof ResponseStatusException rse) {
+            return HttpStatus.valueOf(rse.getStatusCode().value());
+        }
+        if (root instanceof WebClientResponseException wcre) {
+            return HttpStatus.valueOf(wcre.getStatusCode().value());
+        }
+        if (root instanceof NoResourceFoundException) {
+            return HttpStatus.NOT_FOUND;
+        }
         if (root instanceof UnknownHostException || root instanceof ConnectException) {
             return HttpStatus.BAD_GATEWAY;
         }
@@ -95,6 +113,9 @@ public class GatewayErrorHandler implements ErrorWebExceptionHandler {
         if (status == HttpStatus.GATEWAY_TIMEOUT) {
             return "Service is taking too long to respond. Please try again later.";
         }
+        if (status == HttpStatus.NOT_FOUND) {
+            return "Requested API path was not found on gateway or downstream service.";
+        }
         return "Internal server error occurred. Please contact support if the issue persists.";
     }
 
@@ -108,6 +129,8 @@ public class GatewayErrorHandler implements ErrorWebExceptionHandler {
             if (message.contains("course-service")) return "course-service (port 8083)";
             if (message.contains("cart-service")) return "cart-service (port 8081)";
             if (message.contains("coupon-service")) return "coupon-service (port 8082)";
+            if (message.contains("wishlist-service")) return "wishlist-service (port 8085)";
+            if (message.contains("order-service")) return "order-service (port 8084)";
         }
         return null;
     }
