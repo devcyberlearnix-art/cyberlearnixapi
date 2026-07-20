@@ -15,12 +15,12 @@ services:
       POSTGRES_PASSWORD: ${DB_PASSWORD:-cyberlearnix123}
       POSTGRES_DB: lms_user_db
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
       - ../docker/init-databases.sql:/docker-entrypoint-initdb.d/init-databases.sql:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-cyberlearnix}"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-cyberlearnix} -d postgres"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -152,6 +152,117 @@ services:
       - cart-service
       - coupon-service
       - redis
+    restart: unless-stopped
+
+  admin-service:
+    image: cyberlearnix/admin-service:latest
+    container_name: cyberlearnix-admin-service
+    ports:
+      - "8087:8087"
+    environment:
+      SERVER_PORT: 8087
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/lms_admin_db
+      SPRING_DATASOURCE_USERNAME: ${DB_USER:-cyberlearnix}
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-cyberlearnix123}
+      JWT_ACCESS_TOKEN_SECRET: ${JWT_ACCESS_SECRET:-myVerySecretKeyForAccessTokenThatIsAtLeast32Chars}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  order-service:
+    image: cyberlearnix/order-service:latest
+    container_name: cyberlearnix-order-service
+    ports:
+      - "8084:8084"
+    environment:
+      SERVER_PORT: 8084
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/lms_order_db
+      SPRING_DATASOURCE_USERNAME: ${DB_USER:-cyberlearnix}
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-cyberlearnix123}
+      JWT_ACCESS_TOKEN_SECRET: ${JWT_ACCESS_SECRET:-myVerySecretKeyForAccessTokenThatIsAtLeast32Chars}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  payment-service:
+    image: cyberlearnix/payment-service:latest
+    container_name: cyberlearnix-payment-service
+    ports:
+      - "8085:8085"
+    environment:
+      SERVER_PORT: 8085
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/lms_payment_db
+      SPRING_DATASOURCE_USERNAME: ${DB_USER:-cyberlearnix}
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-cyberlearnix123}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  review-service:
+    image: cyberlearnix/review-service:latest
+    container_name: cyberlearnix-review-service
+    ports:
+      - "8089:8089"
+    environment:
+      SERVER_PORT: 8089
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/lms_review_db
+      SPRING_DATASOURCE_USERNAME: ${DB_USER:-cyberlearnix}
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-cyberlearnix123}
+      JWT_ACCESS_TOKEN_SECRET: ${JWT_ACCESS_SECRET:-myVerySecretKeyForAccessTokenThatIsAtLeast32Chars}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  instructor-service:
+    image: cyberlearnix/instructor-service:latest
+    container_name: cyberlearnix-instructor-service
+    ports:
+      - "8088:8088"
+    environment:
+      SERVER_PORT: 8088
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/lms_instructor_db
+      SPRING_DATASOURCE_USERNAME: ${DB_USER:-cyberlearnix}
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-cyberlearnix123}
+      JWT_ACCESS_TOKEN_SECRET: ${JWT_ACCESS_SECRET:-myVerySecretKeyForAccessTokenThatIsAtLeast32Chars}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  wishlist-service:
+    image: cyberlearnix/wishlist-service:latest
+    container_name: cyberlearnix-wishlist-service
+    ports:
+      - "8090:8090"
+    environment:
+      SERVER_PORT: 8090
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/lms_wishlist_db
+      SPRING_DATASOURCE_USERNAME: ${DB_USER:-cyberlearnix}
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-cyberlearnix123}
+      JWT_ACCESS_TOKEN_SECRET: ${JWT_ACCESS_SECRET:-myVerySecretKeyForAccessTokenThatIsAtLeast32Chars}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  notification-service:
+    image: cyberlearnix/notification-service:latest
+    container_name: cyberlearnix-notification-service
+    ports:
+      - "8093:8093"
+    environment:
+      SERVER_PORT: 8093
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/lms_notification_db
+      SPRING_DATASOURCE_USERNAME: ${DB_USER:-cyberlearnix}
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-cyberlearnix123}
+      JWT_ACCESS_TOKEN_SECRET: ${JWT_ACCESS_SECRET:-myVerySecretKeyForAccessTokenThatIsAtLeast32Chars}
+    depends_on:
+      postgres:
+        condition: service_healthy
     restart: unless-stopped
 
 volumes:
