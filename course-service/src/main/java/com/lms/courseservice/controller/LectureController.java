@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/sections")
+@RequestMapping("/api/v1/sections")
 @RequiredArgsConstructor
 public class LectureController {
 

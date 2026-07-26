@@ -15,7 +15,11 @@ services:
       POSTGRES_PASSWORD: ${DB_PASSWORD:-cyberlearnix123}
       POSTGRES_DB: lms_user_db
     ports:
+<<<<<<< HEAD
       - "5433:5432"
+=======
+      - "15432:5432"
+>>>>>>> 590c1b3 (WIP: LMS microservices integration backup)
     volumes:
       - pgdata:/var/lib/postgresql/data
       - ../docker/init-databases.sql:/docker-entrypoint-initdb.d/init-databases.sql:ro

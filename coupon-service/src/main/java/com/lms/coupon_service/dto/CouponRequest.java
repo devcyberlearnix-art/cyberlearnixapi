@@ -1,6 +1,7 @@
 package com.lms.coupon_service.dto;
 
 import lombok.*;
+import java.time.LocalDateTime;
 
 @Data
 @AllArgsConstructor
@@ -11,4 +12,7 @@ public class CouponRequest {
     private String userId;
     private String courseId;
     private Double price;
+    private LocalDateTime startTime;
+    private LocalDateTime endTime;
+    private String creatorRole;
 }

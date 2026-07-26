@@ -18,6 +18,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<Void>> handleWishlistException(WishlistException ex) {
         ApiResponse<Void> response = ApiResponse.<Void>builder()
                 .status("ERROR")
+                .success(false)
                 .timestamp(LocalDateTime.now())
                 .message(ex.getMessage())
                 .build();
@@ -32,6 +33,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<Void>> handleGeneralException(Exception ex) {
         ApiResponse<Void> response = ApiResponse.<Void>builder()
                 .status("SERVER_ERROR")
+                .success(false)
                 .timestamp(LocalDateTime.now())
                 .message("An unexpected error occurred: " + ex.getMessage())
                 .build();

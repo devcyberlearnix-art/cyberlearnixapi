@@ -18,7 +18,7 @@ public class CartItem {
 
     private String userId;       // Extracted from JWT Token
     private String instructorId; // From Request Body
-    private String courseId;     // From Request Body
+    private Long courseId;     // From Request Body
     private String courseName;
     private Double price;
     private Integer quantity;    // Used for the "Minase" (Minus) logic

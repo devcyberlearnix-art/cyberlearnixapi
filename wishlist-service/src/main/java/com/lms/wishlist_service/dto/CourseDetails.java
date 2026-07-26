@@ -12,11 +12,13 @@ import java.math.BigDecimal;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class CourseDetails {
 
-    @JsonProperty("courseId") // Maps Java 'id' to JSON 'courseId'
+    @JsonProperty("id") // Maps JSON 'id' to Java 'courseId'
     private String courseId;
 
     private String title;
     private String subtitle;
+    private String instructorId;
+    private String courseName;
     private BigDecimal price;
 
     @Builder.Default

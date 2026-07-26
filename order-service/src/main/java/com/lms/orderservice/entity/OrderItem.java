@@ -10,7 +10,7 @@ public class OrderItem {
     private String id;
 
     private String orderId;
-    private String courseId;
+    private Long courseId;
 
     // ✅ ADD THESE
 
@@ -26,11 +26,11 @@ public class OrderItem {
         this.orderId = orderId;
     }
 
-    public String getCourseId() {
+    public Long getCourseId() {
         return courseId;
     }
 
-    public void setCourseId(String courseId) { // ✅ FIX
+    public void setCourseId(Long courseId) { // ✅ FIX
         this.courseId = courseId;
     }
 }

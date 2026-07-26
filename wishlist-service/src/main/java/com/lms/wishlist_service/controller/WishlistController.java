@@ -5,52 +5,49 @@ import com.lms.wishlist_service.service.WishlistService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
 
 @RestController
-@RequestMapping("/wishlist")
+@RequestMapping("/api/v1/wishlist")
 @RequiredArgsConstructor
 public class WishlistController {
 
     private final WishlistService service;
 
     /**
-     * Professional ADD: Returns 201 CREATED with the full Envelope.
+     * Professional ADD: Accepts a JSON body with courseId.
      */
-    @PostMapping("/{userId}/add/{courseId}")
-    public ResponseEntity<ApiResponse<WishlistResponse>> add(@PathVariable String userId, @PathVariable String courseId) {
-        try {
-            WishlistResponse data = service.addToWishlist(userId, courseId);
+    @PostMapping
+    public ResponseEntity<ApiResponse<WishlistResponse>> add(Authentication auth,
+            @RequestBody WishlistCreateRequest request) {
+        String userId = auth.getName();
+        WishlistResponse data = service.addToWishlist(userId, request.getCourseId().toString());
 
-            ApiResponse<WishlistResponse> response = ApiResponse.<WishlistResponse>builder()
-                    .status("SUCCESS")
-                    .timestamp(LocalDateTime.now())
-                    .data(data)
-                    .message("Course added to wishlist successfully")
-                    .build();
+        ApiResponse<WishlistResponse> response = ApiResponse.<WishlistResponse>builder()
+                .status("SUCCESS")
+                .success(true)
+                .timestamp(LocalDateTime.now())
+                .data(data)
+                .message("Course added to wishlist successfully")
+                .build();
 
-            return new ResponseEntity<>(response, HttpStatus.CREATED);
-        } catch (RuntimeException e) {
-            ApiResponse<WishlistResponse> errorResponse = ApiResponse.<WishlistResponse>builder()
-                    .status("CONFLICT")
-                    .timestamp(LocalDateTime.now())
-                    .message(e.getMessage())
-                    .build();
-            return ResponseEntity.status(HttpStatus.CONFLICT).body(errorResponse);
-        }
+        return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 
     /**
-     * Professional GET: Returns the exact structure you requested.
+     * Professional GET: Returns the authenticated student's wishlist.
      */
-    @GetMapping("/{userId}")
-    public ResponseEntity<ApiResponse<WishlistListResponse>> get(@PathVariable String userId) {
+    @GetMapping
+    public ResponseEntity<ApiResponse<WishlistListResponse>> get(Authentication auth) {
+        String userId = auth.getName();
         WishlistListResponse data = service.getWishlist(userId);
 
         ApiResponse<WishlistListResponse> response = ApiResponse.<WishlistListResponse>builder()
                 .status("SUCCESS")
+                .success(true)
                 .timestamp(LocalDateTime.now())
                 .data(data)
                 .message("Wishlist retrieved successfully")
@@ -60,15 +57,36 @@ public class WishlistController {
     }
 
     /**
+     * Professional GET: Retrieve a single wishlist item by its ID.
+     */
+    @GetMapping("/{wishlistId}")
+    public ResponseEntity<ApiResponse<WishlistResponse>> getById(Authentication auth, @PathVariable String wishlistId) {
+        String userId = auth.getName();
+        WishlistResponse data = service.getWishlistItemById(userId, wishlistId);
+
+        ApiResponse<WishlistResponse> response = ApiResponse.<WishlistResponse>builder()
+                .status("SUCCESS")
+                .success(true)
+                .timestamp(LocalDateTime.now())
+                .data(data)
+                .message("Wishlist item retrieved successfully")
+                .build();
+
+        return ResponseEntity.ok(response);
+    }
+
+    /**
      * Professional CONTAINS: Wraps the check in the same Envelope.
      */
-    @GetMapping("/{userId}/contains/{courseId}")
-    public ResponseEntity<ApiResponse<WishlistCheckResponse>> contains(@PathVariable String userId, @PathVariable String courseId) {
-        boolean exists = service.checkExists(userId, courseId);
+    @GetMapping("/check/{courseId}")
+    public ResponseEntity<ApiResponse<WishlistCheckResponse>> contains(Authentication auth,
+            @PathVariable Long courseId) {
+        String userId = auth.getName();
+        boolean exists = service.checkExists(userId, courseId.toString());
 
         WishlistCheckResponse checkData = WishlistCheckResponse.builder()
                 .userId(userId)
-                .courseId(courseId)
+                .courseId(courseId.toString())
                 .isInWishlist(exists)
                 .checkedAt(LocalDateTime.now())
                 .statusMessage(exists ? "Course is in your wishlist" : "Course is not in your wishlist")
@@ -76,6 +94,7 @@ public class WishlistController {
 
         ApiResponse<WishlistCheckResponse> response = ApiResponse.<WishlistCheckResponse>builder()
                 .status("SUCCESS")
+                .success(true)
                 .timestamp(LocalDateTime.now())
                 .data(checkData)
                 .message("Status checked successfully")
@@ -87,15 +106,18 @@ public class WishlistController {
     /**
      * Professional MOVE: Returns a success message inside the data block.
      */
-    @PostMapping("/{userId}/move-to-cart/{courseId}")
-    public ResponseEntity<ApiResponse<String>> moveToCart(@PathVariable String userId, @PathVariable String courseId) {
-        service.moveToCart(userId, courseId);
+    @PostMapping("/{courseId}/move-to-cart")
+    public ResponseEntity<ApiResponse<MoveToCartResponse>> moveToCart(Authentication auth,
+            @PathVariable Long courseId) {
+        String userId = auth.getName();
+        MoveToCartResponse data = service.moveToCart(userId, courseId.toString());
 
-        ApiResponse<String> response = ApiResponse.<String>builder()
+        ApiResponse<MoveToCartResponse> response = ApiResponse.<MoveToCartResponse>builder()
                 .status("SUCCESS")
+                .success(true)
                 .timestamp(LocalDateTime.now())
-                .data("COURSE_MOVED")
-                .message("Successfully moved to cart")
+                .data(data)
+                .message("Course moved to cart successfully.")
                 .build();
 
         return ResponseEntity.ok(response);
@@ -104,14 +126,18 @@ public class WishlistController {
     /**
      * Professional REMOVE: Standardizes the response even for deletions.
      */
-    @DeleteMapping("/{userId}/remove/{courseId}")
-    public ResponseEntity<ApiResponse<Void>> remove(@PathVariable String userId, @PathVariable String courseId) {
-        service.removeFromWishlist(userId, courseId);
+    @DeleteMapping("/{courseId}")
+    public ResponseEntity<ApiResponse<RemoveFromWishlistResponse>> remove(Authentication auth,
+            @PathVariable Long courseId) {
+        String userId = auth.getName();
+        RemoveFromWishlistResponse data = service.removeFromWishlist(userId, courseId.toString());
 
-        ApiResponse<Void> response = ApiResponse.<Void>builder()
+        ApiResponse<RemoveFromWishlistResponse> response = ApiResponse.<RemoveFromWishlistResponse>builder()
                 .status("SUCCESS")
+                .success(true)
                 .timestamp(LocalDateTime.now())
-                .message("Item removed successfully")
+                .data(data)
+                .message("Course removed from wishlist successfully.")
                 .build();
 
         return ResponseEntity.ok(response);
@@ -120,12 +146,14 @@ public class WishlistController {
     /**
      * Professional CLEAR: Final cleanup.
      */
-    @DeleteMapping("/{userId}/clear")
-    public ResponseEntity<ApiResponse<Void>> clear(@PathVariable String userId) {
+    @DeleteMapping
+    public ResponseEntity<ApiResponse<Void>> clear(Authentication auth) {
+        String userId = auth.getName();
         String message = service.clearWishlist(userId);
 
         ApiResponse<Void> response = ApiResponse.<Void>builder()
                 .status("SUCCESS")
+                .success(true)
                 .timestamp(LocalDateTime.now())
                 .data(null) // Make sure this is here!
                 .message(message)

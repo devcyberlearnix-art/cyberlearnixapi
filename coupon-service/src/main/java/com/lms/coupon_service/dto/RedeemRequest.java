@@ -5,5 +5,5 @@ import lombok.Data;
 public class RedeemRequest {
     private String couponCode;
     private String userId;
-    private String courseId;
+    private Long courseId;
 }

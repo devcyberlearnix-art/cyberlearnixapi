@@ -5,12 +5,12 @@ import com.lms.courseservice.entity.Enrollment;
 import com.lms.courseservice.entity.Lecture;
 import com.lms.courseservice.repository.CourseRepository;
 import com.lms.courseservice.repository.EnrollmentRepository;
+import com.lms.courseservice.exception.EnrollmentException;
 import com.lms.courseservice.repository.LectureRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -91,7 +91,7 @@ public class CourseService {
     }
 
     // 🔥 FIXED → UUID
-    public List<UUID> getStudents(Long courseId) {
+    public List<java.util.UUID> getStudents(Long courseId) {
 
         return enrollmentRepository.findByCourseId(courseId)
                 .stream()
@@ -100,11 +100,11 @@ public class CourseService {
     }
 
     // 🔥 FIXED → UUID
-    public void enrollUser(Long courseId, UUID userId) {
+    public void enrollUser(Long courseId, java.util.UUID userId) {
 
         // Prevent duplicate enrollment
         if (enrollmentRepository.existsByStudentIdAndCourseId(userId, courseId)) {
-            throw new RuntimeException("Already enrolled");
+            throw new EnrollmentException("Student is already enrolled in this course.");
         }
 
         Enrollment enrollment = new Enrollment();

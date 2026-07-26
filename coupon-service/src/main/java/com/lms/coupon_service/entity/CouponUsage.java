@@ -25,7 +25,7 @@ public class CouponUsage {
 
     // Added to replace Order ID for enrollment tracking
     @Column(nullable = false)
-    private String courseId;
+    private Long courseId;
 
     @Column(nullable = false)
     private LocalDateTime usedAt;

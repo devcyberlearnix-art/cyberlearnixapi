@@ -1,0 +1,243 @@
+{
+	"info": {
+		"name": "CyberLearnix Review Service API",
+		"_postman_id": "review-service-collection",
+		"description": "Complete API collection for CyberLearnix Review Service. All endpoints organized by functionality with authentication, variables, and test scripts.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:8089",
+			"type": "string"
+		},
+		{
+			"key": "accessToken",
+			"value": "",
+			"type": "string"
+		}
+	],
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "{{accessToken}}"
+			}
+		]
+	},
+	"item": [
+		{
+			"name": "Review Management",
+			"item": [
+				{
+					"name": "Create Review",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"courseId\": 1,\n    \"rating\": 5,\n    \"comment\": \"Excellent course!\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/reviews",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "reviews"]
+						},
+						"description": "Create a review for a course. Requires authentication."
+					},
+					"response": []
+				},
+				{
+					"name": "Update Review",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"rating\": 4,\n    \"comment\": \"Updated review\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/reviews/:reviewId",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "reviews", ":reviewId"],
+							"variable": [
+								{
+									"key": "reviewId",
+									"value": "1"
+								}
+							]
+						},
+						"description": "Update own review. Requires authentication."
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Review",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}"
+								}
+							]
+						},
+						"method": "DELETE",
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/reviews/:reviewId",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "reviews", ":reviewId"],
+							"variable": [
+								{
+									"key": "reviewId",
+									"value": "1"
+								}
+							]
+						},
+						"description": "Delete own review. Requires authentication."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Review by ID",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}"
+								}
+							]
+						},
+						"method": "GET",
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/reviews/:reviewId",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "reviews", ":reviewId"],
+							"variable": [
+								{
+									"key": "reviewId",
+									"value": "1"
+								}
+							]
+						},
+						"description": "Get review by ID. Requires authentication."
+					},
+					"response": []
+				},
+				{
+					"name": "Get My Review for Course",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}"
+								}
+							]
+						},
+						"method": "GET",
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/reviews/my/course/:courseId",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "reviews", "my", "course", ":courseId"],
+							"variable": [
+								{
+									"key": "courseId",
+									"value": "1"
+								}
+							]
+						},
+						"description": "Get my review for a specific course. Requires authentication."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Public Reviews",
+			"item": [
+				{
+					"name": "Get Course Reviews",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/reviews/course/:courseId?page=0&size=10",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "reviews", "course", ":courseId"],
+							"query": [
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "10"
+								}
+							],
+							"variable": [
+								{
+									"key": "courseId",
+									"value": "1"
+								}
+							]
+						},
+						"description": "Get public course reviews (ACTIVE only). Supports pagination."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Course Rating Summary",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/reviews/course/:courseId/summary",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "reviews", "course", ":courseId", "summary"],
+							"variable": [
+								{
+									"key": "courseId",
+									"value": "1"
+								}
+							]
+						},
+						"description": "Get course rating summary (ACTIVE only). Public endpoint."
+					},
+					"response": []
+				}
+			]
+		}
+	]
+}

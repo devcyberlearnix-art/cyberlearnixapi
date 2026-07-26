@@ -7,7 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/orders")
+@RequestMapping("/api/v1/orders")
 public class OrderController {
     @Autowired
     private OrderService orderService;
@@ -19,6 +19,11 @@ public class OrderController {
     @GetMapping("/{orderId}")
     public ResponseEntity<?> getOrder(@PathVariable String orderId) {
         return ResponseEntity.ok(orderService.getOrder(orderId));
+    }
+
+    @GetMapping
+    public ResponseEntity<?> getAllOrders() {
+        return ResponseEntity.ok(orderService.getAllOrders());
     }
 
     @GetMapping("/user/{userId}")
@@ -39,6 +44,10 @@ public class OrderController {
 
     @PostMapping("/{orderId}/refund")
     public ResponseEntity<?> refund(@PathVariable String orderId) {
-        return ResponseEntity.ok(orderService.refundOrder(orderId));
+        try {
+            return ResponseEntity.ok(orderService.refundOrder(orderId));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
 }

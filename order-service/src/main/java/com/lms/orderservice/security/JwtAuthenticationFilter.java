@@ -26,8 +26,17 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             throws ServletException, IOException {
 
         String authHeader = request.getHeader("Authorization");
+        String uri = request.getRequestURI();
 
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+        // If the request is for public endpoints and no valid Bearer token is provided, allow it through
+        boolean isPublicPath = uri.startsWith("/api/v1/orders") || uri.startsWith("/api/v1/payments");
+        if (isPublicPath && (authHeader == null || !authHeader.startsWith("Bearer "))) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
+        // Robust check for Bearer token
+        if (authHeader == null || !authHeader.startsWith("Bearer ") || authHeader.length() <= 7) {
             filterChain.doFilter(request, response);
             return;
         }
@@ -40,7 +49,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
             if (userId != null && SecurityContextHolder.getContext().getAuthentication() == null) {
                 List<SimpleGrantedAuthority> authorities = Collections.singletonList(
-                        new SimpleGrantedAuthority("ROLE_" + role)
+                        new SimpleGrantedAuthority("ROLE_" + toSpringSecurityRole(role))
                 );
 
                 UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
@@ -50,6 +59,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 SecurityContextHolder.getContext().setAuthentication(authToken);
             }
         } catch (Exception e) {
+            // For public endpoints, ignore token validation errors and proceed without authentication
+            if (isPublicPath) {
+                filterChain.doFilter(request, response);
+                return;
+            }
             logger.error("Could not set user authentication in security context", e);
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             response.setContentType("application/json");
@@ -58,5 +72,19 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         filterChain.doFilter(request, response);
+    }
+
+    private static String toSpringSecurityRole(String role) {
+        if (role == null || role.isBlank()) {
+            return "STUDENT";
+        }
+        String upper = role.toUpperCase();
+        if ("USER".equals(upper) || "STUDENT".equals(upper)) {
+            return "STUDENT";
+        }
+        if (upper.contains("ADMIN")) {
+            return "ADMIN";
+        }
+        return upper;
     }
 }

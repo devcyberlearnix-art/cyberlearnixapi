@@ -1,0 +1,2558 @@
+{
+  "info": {
+    "name": "CyberLearnix User Service API",
+    "description": "Complete API collection for CyberLearnix User Service microservice. Includes authentication, user management, instructor applications, session management, and profile operations.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_postman_id": "user-service-collection-v1",
+    "version": {
+      "major": 1,
+      "minor": 0,
+      "patch": 0
+    }
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8091",
+      "type": "string",
+      "description": "Base URL for User Service API"
+    },
+    {
+      "key": "accessToken",
+      "value": "",
+      "type": "string",
+      "description": "JWT Access Token for authenticated requests"
+    },
+    {
+      "key": "refreshToken",
+      "value": "",
+      "type": "string",
+      "description": "JWT Refresh Token for token refresh"
+    },
+    {
+      "key": "userId",
+      "value": "",
+      "type": "string",
+      "description": "Current user ID for API calls"
+    },
+    {
+      "key": "testEmail",
+      "value": "test@example.com",
+      "type": "string",
+      "description": "Test email for registration and login"
+    },
+    {
+      "key": "testPassword",
+      "value": "Test@123",
+      "type": "string",
+      "description": "Test password for authentication"
+    }
+  ],
+  "item": [
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "User Registration",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{testEmail}}\",\n  \"password\": \"{{testPassword}}\",\n  \"firstName\": \"John\",\n  \"lastName\": \"Doe\",\n  \"mobile\": \"1234567890\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["register"]
+            },
+            "description": "Register a new user account. Returns access and refresh tokens in HTTP-only cookies."
+          },
+          "response": [
+            {
+              "name": "Success - User Created",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"newuser@example.com\",\n  \"password\": \"Password@123\",\n  \"firstName\": \"John\",\n  \"lastName\": \"Doe\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/register",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["register"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"success\": true,\n  \"message\": \"User registered successfully\",\n  \"data\": {\n    \"id\": \"123e4567-e89b-12d3-a456-426614174000\",\n    \"email\": \"newuser@example.com\",\n    \"firstName\": \"John\",\n    \"lastName\": \"Doe\",\n    \"role\": \"USER\"\n  },\n  \"timestamp\": \"2024-01-01T10:00:00\"\n}",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ]
+            },
+            {
+              "name": "Error - Email Already Exists",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"existing@example.com\",\n  \"password\": \"Password@123\",\n  \"firstName\": \"John\",\n  \"lastName\": \"Doe\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/register",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["register"]
+                }
+              },
+              "status": "Conflict",
+              "code": 409,
+              "body": "{\n  \"success\": false,\n  \"message\": \"Email already registered\",\n  \"data\": null,\n  \"timestamp\": \"2024-01-01T10:00:00\"\n}"
+            }
+          ],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 or 409\", function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 409]);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "    pm.test(\"Response has success property\", function () {",
+                  "        pm.expect(pm.response.json().success).to.be.true;",
+                  "    });",
+                  "    ",
+                  "    pm.test(\"Response contains user data\", function () {",
+                  "        pm.expect(pm.response.json().data).to.have.property('id');",
+                  "        pm.expect(pm.response.json().data).to.have.property('email');",
+                  "    });",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Password Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{testEmail}}\",\n  \"password\": \"{{testPassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/login/password",
+              "host": ["{{baseUrl}}"],
+              "path": ["login", "password"]
+            },
+            "description": "Authenticate user with email and password. Returns access and refresh tokens in HTTP-only cookies."
+          },
+          "response": [
+            {
+              "name": "Success - Login Successful",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"Password@123\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/login/password",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["login", "password"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"success\": true,\n  \"message\": \"Login successful\",\n  \"data\": {\n    \"user\": {\n      \"id\": \"123e4567-e89b-12d3-a456-426614174000\",\n      \"email\": \"user@example.com\",\n      \"firstName\": \"John\",\n      \"lastName\": \"Doe\",\n      \"role\": \"USER\"\n    },\n    \"accessToken\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\",\n    \"refreshToken\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\"\n  },\n  \"timestamp\": \"2024-01-01T10:00:00\"\n}"
+            },
+            {
+              "name": "Error - Invalid Credentials",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"wrongpassword\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/login/password",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["login", "password"]
+                }
+              },
+              "status": "Unauthorized",
+              "code": 401,
+              "body": "{\n  \"success\": false,\n  \"message\": \"Invalid email or password\",\n  \"data\": null,\n  \"timestamp\": \"2024-01-01T10:00:00\"\n}"
+            }
+          ],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 or 401\", function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 401]);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "    pm.test(\"Response has success property\", function () {",
+                  "        pm.expect(pm.response.json().success).to.be.true;",
+                  "    });",
+                  "    ",
+                  "    pm.test(\"Response contains tokens\", function () {",
+                  "        pm.expect(pm.response.json().data).to.have.property('accessToken');",
+                  "        pm.expect(pm.response.json().data).to.have.property('refreshToken');",
+                  "    });",
+                  "    ",
+                  "    // Store tokens in environment variables",
+                  "    if (pm.response.json().data.accessToken) {",
+                  "        pm.environment.set(\"accessToken\", pm.response.json().data.accessToken);",
+                  "    }",
+                  "    if (pm.response.json().data.refreshToken) {",
+                  "        pm.environment.set(\"refreshToken\", pm.response.json().data.refreshToken);",
+                  "    }",
+                  "    if (pm.response.json().data.user && pm.response.json().data.user.id) {",
+                  "        pm.environment.set(\"userId\", pm.response.json().data.user.id);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Request OTP Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{testEmail}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/login/otp/request",
+              "host": ["{{baseUrl}}"],
+              "path": ["login", "otp", "request"]
+            },
+            "description": "Request OTP for login. Sends OTP to user's registered email/mobile."
+          },
+          "response": [
+            {
+              "name": "Success - OTP Sent",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"user@example.com\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/login/otp/request",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["login", "otp", "request"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"success\": true,\n  \"message\": \"OTP sent successfully\",\n  \"data\": {\n    \"expiresIn\": 300,\n    \"otpLength\": 6\n  },\n  \"timestamp\": \"2024-01-01T10:00:00\"\n}"
+            },
+            {
+              "name": "Error - User Not Found",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"nonexistent@example.com\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/login/otp/request",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["login", "otp", "request"]
+                }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "body": "{\n  \"success\": false,\n  \"message\": \"User not found with this email\",\n  \"data\": null,\n  \"timestamp\": \"2024-01-01T10:00:00\"\n}"
+            }
+          ],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 or 400\", function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 400]);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "    pm.test(\"Response has success property\", function () {",
+                  "        pm.expect(pm.response.json().success).to.be.true;",
+                  "    });",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Verify OTP Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{testEmail}}\",\n  \"otp\": \"123456\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/login/otp/verify",
+              "host": ["{{baseUrl}}"],
+              "path": ["login", "otp", "verify"]
+            },
+            "description": "Verify OTP and authenticate user. Returns access and refresh tokens."
+          },
+          "response": [
+            {
+              "name": "Success - OTP Verified",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"user@example.com\",\n  \"otp\": \"123456\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/login/otp/verify",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["login", "otp", "verify"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"success\": true,\n  \"message\": \"OTP verified successfully\",\n  \"data\": {\n    \"user\": {\n      \"id\": \"123e4567-e89b-12d3-a456-426614174000\",\n      \"email\": \"user@example.com\",\n      \"firstName\": \"John\",\n      \"lastName\": \"Doe\",\n      \"role\": \"USER\"\n    },\n    \"accessToken\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\",\n    \"refreshToken\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\"\n  },\n  \"timestamp\": \"2024-01-01T10:00:00\"\n}"
+            },
+            {
+              "name": "Error - Invalid OTP",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"user@example.com\",\n  \"otp\": \"000000\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/login/otp/verify",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["login", "otp", "verify"]
+                }
+              },
+              "status": "Unauthorized",
+              "code": 401,
+              "body": "{\n  \"success\": false,\n  \"message\": \"Invalid OTP\",\n  \"data\": {\n    \"remainingAttempts\": 2,\n    \"expiresInSeconds\": 180\n  },\n  \"timestamp\": \"2024-01-01T10:00:00\"\n}"
+            }
+          ],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 or 401\", function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 401]);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "    pm.test(\"Response has success property\", function () {",
+                  "        pm.expect(pm.response.json().success).to.be.true;",
+                  "    });",
+                  "    ",
+                  "    // Store tokens in environment variables",
+                  "    if (pm.response.json().data.accessToken) {",
+                  "        pm.environment.set(\"accessToken\", pm.response.json().data.accessToken);",
+                  "    }",
+                  "    if (pm.response.json().data.refreshToken) {",
+                  "        pm.environment.set(\"refreshToken\", pm.response.json().data.refreshToken);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Verify Email",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{testEmail}}\",\n  \"otp\": \"123456\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/verify-email",
+              "host": ["{{baseUrl}}"],
+              "path": ["verify-email"]
+            },
+            "description": "Verify user email using OTP sent during registration."
+          },
+          "response": [
+            {
+              "name": "Success - Email Verified",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"user@example.com\",\n  \"otp\": \"123456\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/verify-email",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["verify-email"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"success\": true,\n  \"message\": \"Email verified successfully\",\n  \"data\": {\n    \"userId\": \"123e4567-e89b-12d3-a456-426614174000\",\n    \"emailVerified\": true\n  },\n  \"timestamp\": \"2024-01-01T10:00:00\"\n}"
+            },
+            {
+              "name": "Error - OTP Expired",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"user@example.com\",\n  \"otp\": \"123456\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/verify-email",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["verify-email"]
+                }
+              },
+              "status": "Gone",
+              "code": 410,
+              "body": "{\n  \"success\": false,\n  \"message\": \"OTP has expired\",\n  \"data\": {\n    \"remainingAttempts\": 0,\n    \"expiresInSeconds\": 0\n  },\n  \"timestamp\": \"2024-01-01T10:00:00\"\n}"
+            }
+          ],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 or 410\", function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 410]);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "    pm.test(\"Response has success property\", function () {",
+                  "        pm.expect(pm.response.json().success).to.be.true;",
+                  "    });",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Refresh Token",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/refresh",
+              "host": ["{{baseUrl}}"],
+              "path": ["refresh"]
+            },
+            "description": "Refresh access token using refresh token."
+          },
+          "response": [
+            {
+              "name": "Success - Token Refreshed",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"refreshToken\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/refresh",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["refresh"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"success\": true,\n  \"message\": \"Token refreshed successfully\",\n  \"data\": {\n    \"accessToken\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\",\n    \"refreshToken\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\"\n  },\n  \"timestamp\": \"2024-01-01T10:00:00\"\n}"
+            },
+            {
+              "name": "Error - Invalid Refresh Token",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"refreshToken\": \"invalid-token\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/refresh",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["refresh"]
+                }
+              },
+              "status": "Unauthorized",
+              "code": 401,
+              "body": "{\n  \"success\": false,\n  \"message\": \"Invalid refresh token\",\n  \"data\": null,\n  \"timestamp\": \"2024-01-01T10:00:00\"\n}"
+            }
+          ],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 or 401\", function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 401]);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "    pm.test(\"Response has success property\", function () {",
+                  "        pm.expect(pm.response.json().success).to.be.true;",
+                  "    });",
+                  "    ",
+                  "    // Update tokens in environment variables",
+                  "    if (pm.response.json().data.accessToken) {",
+                  "        pm.environment.set(\"accessToken\", pm.response.json().data.accessToken);",
+                  "    }",
+                  "    if (pm.response.json().data.refreshToken) {",
+                  "        pm.environment.set(\"refreshToken\", pm.response.json().data.refreshToken);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/logout",
+              "host": ["{{baseUrl}}"],
+              "path": ["logout"]
+            },
+            "description": "Logout current device session. Invalidates the access token."
+          },
+          "response": [
+            {
+              "name": "Success - Logout",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/logout",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["logout"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"success\": true,\n  \"message\": \"Logout successful\",\n  \"data\": {\n    \"loggedOutDevices\": 1,\n    \"remainingSessions\": 2\n  },\n  \"timestamp\": \"2024-01-01T10:00:00\"\n}"
+            },
+            {
+              "name": "Error - Invalid Token",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer invalid-token"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/logout",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["logout"]
+                }
+              },
+              "status": "Unauthorized",
+              "code": 401,
+              "body": "{\n  \"success\": false,\n  \"message\": \"Invalid or expired token\",\n  \"data\": null,\n  \"timestamp\": \"2024-01-01T10:00:00\"\n}"
+            }
+          ],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 or 401\", function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 401]);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "    pm.test(\"Response has success property\", function () {",
+                  "        pm.expect(pm.response.json().success).to.be.true;",
+                  "    });",
+                  "    ",
+                  "    // Clear tokens from environment",
+                  "    pm.environment.set(\"accessToken\", \"\");",
+                  "    pm.environment.set(\"refreshToken\", \"\");",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Social Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{testEmail}}\",\n  \"provider\": \"GOOGLE\",\n  \"providerId\": \"google-123456789\",\n  \"firstName\": \"John\",\n  \"lastName\": \"Doe\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/users/login/social",
+              "host": ["{{baseUrl}}"],
+              "path": ["users", "login", "social"]
+            },
+            "description": "Login or register using social provider (Google, Facebook, etc.)."
+          },
+          "response": [
+            {
+              "name": "Success - Social Login",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"user@gmail.com\",\n  \"provider\": \"GOOGLE\",\n  \"providerId\": \"google-123456789\",\n  \"firstName\": \"John\",\n  \"lastName\": \"Doe\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/users/login/social",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["users", "login", "social"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"success\": true,\n  \"message\": \"Social login successful\",\n  \"data\": {\n    \"user\": {\n      \"id\": \"123e4567-e89b-12d3-a456-426614174000\",\n      \"email\": \"user@gmail.com\",\n      \"firstName\": \"John\",\n      \"lastName\": \"Doe\",\n      \"provider\": \"GOOGLE\",\n      \"role\": \"USER\"\n    },\n    \"accessToken\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\",\n    \"refreshToken\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\"\n  },\n  \"timestamp\": \"2024-01-01T10:00:00\"\n}"
+            }
+          ],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.expect(pm.response.code).to.eql(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has success property\", function () {",
+                  "    pm.expect(pm.response.json().success).to.be.true;",
+                  "});",
+                  "",
+                  "// Store tokens in environment variables",
+                  "if (pm.response.json().data.accessToken) {",
+                  "    pm.environment.set(\"accessToken\", pm.response.json().data.accessToken);",
+                  "}",
+                  "if (pm.response.json().data.refreshToken) {",
+                  "    pm.environment.set(\"refreshToken\", pm.response.json().data.refreshToken);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Switch Role",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"switchRole\": \"INSTRUCTOR\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/switch-role",
+              "host": ["{{baseUrl}}"],
+              "path": ["switch-role"]
+            },
+            "description": "Switch user role (e.g., from USER to INSTRUCTOR if approved)."
+          },
+          "response": [
+            {
+              "name": "Success - Role Switched",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"switchRole\": \"INSTRUCTOR\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/switch-role",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["switch-role"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"success\": true,\n  \"message\": \"Role switched successfully\",\n  \"data\": {\n    \"previousRole\": \"USER\",\n    \"currentRole\": \"INSTRUCTOR\",\n    \"accessToken\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\"\n  },\n  \"timestamp\": \"2024-01-01T10:00:00\"\n}"
+            },
+            {
+              "name": "Error - Not Approved",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"switchRole\": \"INSTRUCTOR\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/switch-role",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["switch-role"]
+                }
+              },
+              "status": "Forbidden",
+              "code": 403,
+              "body": "{\n  \"success\": false,\n  \"message\": \"You are not approved as an instructor\",\n  \"data\": null,\n  \"timestamp\": \"2024-01-01T10:00:00\"\n}"
+            }
+          ],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 or 403\", function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 403]);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "    pm.test(\"Response has success property\", function () {",
+                  "        pm.expect(pm.response.json().success).to.be.true;",
+                  "    });",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Password Management",
+      "item": [
+        {
+          "name": "Forgot Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{testEmail}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/password/forgot",
+              "host": ["{{baseUrl}}"],
+              "path": ["password", "forgot"]
+            },
+            "description": "Request password reset OTP to be sent to user's email."
+          },
+          "response": [
+            {
+              "name": "Success - OTP Sent",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"user@example.com\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/password/forgot",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["password", "forgot"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"success\": true,\n  \"message\": \"Password reset OTP sent successfully\",\n  \"data\": {\n    \"expiresIn\": 300\n  },\n  \"timestamp\": \"2024-01-01T10:00:00\"\n}"
+            },
+            {
+              "name": "Error - User Not Found",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"nonexistent@example.com\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/password/forgot",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["password", "forgot"]
+                }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "body": "{\n  \"success\": false,\n  \"message\": \"User not found with this email\",\n  \"data\": null,\n  \"timestamp\": \"2024-01-01T10:00:00\"\n}"
+            }
+          ],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 or 400\", function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 400]);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "    pm.test(\"Response has success property\", function () {",
+                  "        pm.expect(pm.response.json().success).to.be.true;",
+                  "    });",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Verify Password Reset OTP",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{testEmail}}\",\n  \"otp\": \"123456\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/password/verify-otp",
+              "host": ["{{baseUrl}}"],
+              "path": ["password", "verify-otp"]
+            },
+            "description": "Verify password reset OTP and receive reset token."
+          },
+          "response": [
+            {
+              "name": "Success - OTP Verified",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"user@example.com\",\n  \"otp\": \"123456\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/password/verify-otp",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["password", "verify-otp"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"success\": true,\n  \"message\": \"OTP verified successfully\",\n  \"data\": {\n    \"resetToken\": \"abc123def456\",\n    \"expiresIn\": 900\n  },\n  \"timestamp\": \"2024-01-01T10:00:00\"\n}"
+            },
+            {
+              "name": "Error - Invalid OTP",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"user@example.com\",\n  \"otp\": \"000000\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/password/verify-otp",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["password", "verify-otp"]
+                }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "body": "{\n  \"success\": false,\n  \"message\": \"Invalid OTP\",\n  \"data\": null,\n  \"timestamp\": \"2024-01-01T10:00:00\"\n}"
+            }
+          ],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 or 400\", function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 400]);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "    pm.test(\"Response has success property\", function () {",
+                  "        pm.expect(pm.response.json().success).to.be.true;",
+                  "    });",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Reset Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"newPassword\": \"NewPassword@123\",\n  \"confirmPassword\": \"NewPassword@123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/password/reset",
+              "host": ["{{baseUrl}}"],
+              "path": ["password", "reset"]
+            },
+            "description": "Reset password using reset token or authenticated session."
+          },
+          "response": [
+            {
+              "name": "Success - Password Reset",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"newPassword\": \"NewPassword@123\",\n  \"confirmPassword\": \"NewPassword@123\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/password/reset",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["password", "reset"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"success\": true,\n  \"message\": \"Password reset successfully\",\n  \"data\": null,\n  \"timestamp\": \"2024-01-01T10:00:00\"\n}"
+            },
+            {
+              "name": "Error - Passwords Don't Match",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"newPassword\": \"NewPassword@123\",\n  \"confirmPassword\": \"DifferentPassword@123\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/password/reset",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["password", "reset"]
+                }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "body": "{\n  \"success\": false,\n  \"message\": \"Passwords do not match\",\n  \"data\": null,\n  \"timestamp\": \"2024-01-01T10:00:00\"\n}"
+            }
+          ],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 or 400\", function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 400]);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "    pm.test(\"Response has success property\", function () {",
+                  "        pm.expect(pm.response.json().success).to.be.true;",
+                  "    });",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "User Management",
+      "item": [
+        {
+          "name": "Get User Statistics",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/users/stats",
+              "host": ["{{baseUrl}}"],
+              "path": ["users", "stats"]
+            },
+            "description": "Get user statistics (total users, active users, etc.). Public endpoint."
+          },
+          "response": [
+            {
+              "name": "Success - Statistics Retrieved",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/users/stats",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["users", "stats"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"success\": true,\n  \"message\": \"Statistics retrieved successfully\",\n  \"data\": {\n    \"totalUsers\": 1500,\n    \"activeUsers\": 1200,\n    \"instructors\": 50,\n    \"newUsersThisMonth\": 150\n  },\n  \"timestamp\": \"2024-01-01T10:00:00\"\n}"
+            }
+          ],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.expect(pm.response.code).to.eql(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has success property\", function () {",
+                  "    pm.expect(pm.response.json().success).to.be.true;",
+                  "});",
+                  "",
+                  "pm.test(\"Response contains statistics\", function () {",
+                  "    pm.expect(pm.response.json().data).to.have.property('totalUsers');",
+                  "    pm.expect(pm.response.json().data).to.have.property('activeUsers');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Current User Profile",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["users", "me"]
+            },
+            "description": "Get current authenticated user's profile."
+          },
+          "response": [
+            {
+              "name": "Success - Profile Retrieved",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/users/me",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["users", "me"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"success\": true,\n  \"message\": \"Profile retrieved successfully\",\n  \"data\": {\n    \"id\": \"123e4567-e89b-12d3-a456-426614174000\",\n    \"email\": \"user@example.com\",\n    \"firstName\": \"John\",\n    \"lastName\": \"Doe\",\n    \"mobile\": \"1234567890\",\n    \"role\": \"USER\",\n    \"status\": \"ACTIVE\",\n    \"profilePhoto\": \"https://example.com/photo.jpg\",\n    \"createdAt\": \"2024-01-01T10:00:00\"\n  },\n  \"timestamp\": \"2024-01-01T10:00:00\"\n}"
+            },
+            {
+              "name": "Error - Unauthorized",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/users/me",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["users", "me"]
+                }
+              },
+              "status": "Unauthorized",
+              "code": 401,
+              "body": "{\n  \"success\": false,\n  \"message\": \"Unauthorized: Full authentication is required to access this resource\",\n  \"data\": null\n}"
+            }
+          ],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 or 401\", function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 401]);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "    pm.test(\"Response has success property\", function () {",
+                  "        pm.expect(pm.response.json().success).to.be.true;",
+                  "    });",
+                  "    ",
+                  "    pm.test(\"Response contains user data\", function () {",
+                  "        pm.expect(pm.response.json().data).to.have.property('id');",
+                  "        pm.expect(pm.response.json().data).to.have.property('email');",
+                  "    });",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update Current User Profile",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"Jane\",\n  \"lastName\": \"Smith\",\n  \"mobile\": \"9876543210\",\n  \"city\": \"New York\",\n  \"country\": \"USA\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/users/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["users", "me"]
+            },
+            "description": "Update current authenticated user's profile."
+          },
+          "response": [
+            {
+              "name": "Success - Profile Updated",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"firstName\": \"Jane\",\n  \"lastName\": \"Smith\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/users/me",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["users", "me"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"success\": true,\n  \"message\": \"Profile updated successfully\",\n  \"data\": {\n    \"id\": \"123e4567-e89b-12d3-a456-426614174000\",\n    \"email\": \"user@example.com\",\n    \"firstName\": \"Jane\",\n    \"lastName\": \"Smith\",\n    \"mobile\": \"9876543210\"\n  },\n  \"timestamp\": \"2024-01-01T10:00:00\"\n}"
+            }
+          ],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.expect(pm.response.code).to.eql(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has success property\", function () {",
+                  "    pm.expect(pm.response.json().success).to.be.true;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Upload Profile Photo",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "/path/to/profile-photo.jpg",
+                  "description": "Profile photo file (JPG, PNG, max 5MB)"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/users/photo",
+              "host": ["{{baseUrl}}"],
+              "path": ["users", "photo"]
+            },
+            "description": "Upload profile photo for current user."
+          },
+          "response": [
+            {
+              "name": "Success - Photo Uploaded",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                  }
+                ],
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [
+                    {
+                      "key": "file",
+                      "type": "file",
+                      "src": "/path/to/profile-photo.jpg"
+                    }
+                  ]
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/users/photo",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["users", "photo"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"success\": true,\n  \"message\": \"Profile photo uploaded successfully\",\n  \"data\": {\n    \"photoUrl\": \"https://cloudinary.com/xyz/profile.jpg\"\n  },\n  \"timestamp\": \"2024-01-01T10:00:00\"\n}"
+            },
+            {
+              "name": "Error - Invalid File",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                  }
+                ],
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [
+                    {
+                      "key": "file",
+                      "type": "file",
+                      "src": "/path/to/large-file.jpg"
+                    }
+                  ]
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/users/photo",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["users", "photo"]
+                }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "body": "{\n  \"success\": false,\n  \"message\": \"File size exceeds maximum limit of 5MB\",\n  \"data\": null,\n  \"timestamp\": \"2024-01-01T10:00:00\"\n}"
+            }
+          ],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 or 400\", function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 400]);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "    pm.test(\"Response has success property\", function () {",
+                  "        pm.expect(pm.response.json().success).to.be.true;",
+                  "    });",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Delete Current User Account",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["users", "me"]
+            },
+            "description": "Soft delete current user account."
+          },
+          "response": [
+            {
+              "name": "Success - Account Deleted",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/users/me",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["users", "me"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"success\": true,\n  \"message\": \"Account deleted successfully\",\n  \"data\": null,\n  \"timestamp\": \"2024-01-01T10:00:00\"\n}"
+            }
+          ],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.expect(pm.response.code).to.eql(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has success property\", function () {",
+                  "    pm.expect(pm.response.json().success).to.be.true;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get All Users (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users",
+              "host": ["{{baseUrl}}"],
+              "path": ["users"]
+            },
+            "description": "Get all users (Admin only). Supports pagination."
+          },
+          "response": [
+            {
+              "name": "Success - Users Retrieved",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/users",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["users"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"success\": true,\n  \"message\": \"Users retrieved successfully\",\n  \"data\": {\n    \"users\": [\n      {\n        \"id\": \"123e4567-e89b-12d3-a456-426614174000\",\n        \"email\": \"user1@example.com\",\n        \"firstName\": \"John\",\n        \"lastName\": \"Doe\",\n        \"role\": \"USER\",\n        \"status\": \"ACTIVE\"\n      },\n      {\n        \"id\": \"223e4567-e89b-12d3-a456-426614174001\",\n        \"email\": \"user2@example.com\",\n        \"firstName\": \"Jane\",\n        \"lastName\": \"Smith\",\n        \"role\": \"USER\",\n        \"status\": \"ACTIVE\"\n      }\n    ],\n    \"total\": 1500,\n    \"page\": 0,\n    \"size\": 10\n  },\n  \"timestamp\": \"2024-01-01T10:00:00\"\n}"
+            },
+            {
+              "name": "Error - Forbidden",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer user-token"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/users",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["users"]
+                }
+              },
+              "status": "Forbidden",
+              "code": 403,
+              "body": "{\n  \"success\": false,\n  \"message\": \"Access denied. Admin role required.\",\n  \"data\": null\n}"
+            }
+          ],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 or 403\", function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 403]);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "    pm.test(\"Response has success property\", function () {",
+                  "        pm.expect(pm.response.json().success).to.be.true;",
+                  "};",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get User by ID (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users/{{userId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["users", "{{userId}}"]
+            },
+            "description": "Get specific user by ID (Admin only)."
+          },
+          "response": [
+            {
+              "name": "Success - User Retrieved",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/users/123e4567-e89b-12d3-a456-426614174000",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["users", "123e4567-e89b-12d3-a456-426614174000"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"success\": true,\n  \"message\": \"User retrieved successfully\",\n  \"data\": {\n    \"id\": \"123e4567-e89b-12d3-a456-426614174000\",\n    \"email\": \"user@example.com\",\n    \"firstName\": \"John\",\n    \"lastName\": \"Doe\",\n    \"mobile\": \"1234567890\",\n    \"role\": \"USER\",\n    \"status\": \"ACTIVE\",\n    \"createdAt\": \"2024-01-01T10:00:00\"\n  },\n  \"timestamp\": \"2024-01-01T10:00:00\"\n}"
+            }
+          ],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.expect(pm.response.code).to.eql(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has success property\", function () {",
+                  "    pm.expect(pm.response.json().success).to.be.true;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update User Status (Admin)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"ACTIVE\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/users/{{userId}}/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["users", "{{userId}}", "status"]
+            },
+            "description": "Update user status (Admin only). Status values: ACTIVE, SUSPENDED, LOCKED."
+          },
+          "response": [
+            {
+              "name": "Success - Status Updated",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"status\": \"ACTIVE\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/users/123e4567-e89b-12d3-a456-426614174000/status",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["users", "123e4567-e89b-12d3-a456-426614174000", "status"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"success\": true,\n  \"message\": \"User status updated successfully\",\n  \"data\": {\n    \"id\": \"123e4567-e89b-12d3-a456-426614174000\",\n    \"status\": \"ACTIVE\"\n  },\n  \"timestamp\": \"2024-01-01T10:00:00\"\n}"
+            }
+          ],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.expect(pm.response.code).to.eql(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has success property\", function () {",
+                  "    pm.expect(pm.response.json().success).to.be.true;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Delete User by ID (Admin)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users/{{userId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["users", "{{userId}}"]
+            },
+            "description": "Delete user by ID (Admin only)."
+          },
+          "response": [
+            {
+              "name": "Success - User Deleted",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/users/123e4567-e89b-12d3-a456-426614174000",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["users", "123e4567-e89b-12d3-a456-426614174000"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"success\": true,\n  \"message\": \"User deleted successfully\",\n  \"data\": null,\n  \"timestamp\": \"2024-01-01T10:00:00\"\n}"
+            }
+          ],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.expect(pm.response.code).to.eql(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has success property\", function () {",
+                  "    pm.expect(pm.response.json().success).to.be.true;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Instructor Applications",
+      "item": [
+        {
+          "name": "Apply as Instructor",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "fieldOfStudy",
+                  "value": "Computer Science",
+                  "type": "text"
+                },
+                {
+                  "key": "highestQualification",
+                  "value": "PhD",
+                  "type": "text"
+                },
+                {
+                  "key": "experience",
+                  "value": "10",
+                  "type": "text"
+                },
+                {
+                  "key": "resume",
+                  "type": "file",
+                  "src": "/path/to/resume.pdf"
+                },
+                {
+                  "key": "coverLetter",
+                  "type": "file",
+                  "src": "/path/to/cover-letter.pdf"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/instructors/apply",
+              "host": ["{{baseUrl}}"],
+              "path": ["instructors", "apply"]
+            },
+            "description": "Submit instructor application with documents."
+          },
+          "response": [
+            {
+              "name": "Success - Application Submitted",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                  }
+                ],
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [
+                    {
+                      "key": "fieldOfStudy",
+                      "value": "Computer Science"
+                    },
+                    {
+                      "key": "highestQualification",
+                      "value": "PhD"
+                    }
+                  ]
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/instructors/apply",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["instructors", "apply"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"success\": true,\n  \"message\": \"Instructor application submitted successfully\",\n  \"data\": {\n    \"applicationId\": \"app-123\",\n    \"status\": \"PENDING\",\n    \"submittedAt\": \"2024-01-01T10:00:00\"\n  },\n  \"timestamp\": \"2024-01-01T10:00:00\"\n}"
+            }
+          ],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.expect(pm.response.code).to.eql(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has success property\", function () {",
+                  "    pm.expect(pm.response.json().success).to.be.true;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Check Application Status",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/instructors/application/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["instructors", "application", "status"]
+            },
+            "description": "Check current user's instructor application status."
+          },
+          "response": [
+            {
+              "name": "Success - Status Retrieved",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/instructors/application/status",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["instructors", "application", "status"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"success\": true,\n  \"message\": \"Application status retrieved successfully\",\n  \"data\": {\n    \"applicationId\": \"app-123\",\n    \"status\": \"PENDING\",\n    \"submittedAt\": \"2024-01-01T10:00:00\",\n    \"reviewedAt\": null\n  },\n  \"timestamp\": \"2024-01-01T10:00:00\"\n}"
+            },
+            {
+              "name": "Error - No Application",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/instructors/application/status",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["instructors", "application", "status"]
+                }
+              },
+              "status": "Not Found",
+              "code": 404,
+              "body": "{\n  \"success\": false,\n  \"message\": \"No instructor application found\",\n  \"data\": null,\n  \"timestamp\": \"2024-01-01T10:00:00\"\n}"
+            }
+          ],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 or 404\", function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 404]);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "    pm.test(\"Response has success property\", function () {",
+                  "        pm.expect(pm.response.json().success).to.be.true;",
+                  "    });",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get All Applications (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/instructors/applications/all",
+              "host": ["{{baseUrl}}"],
+              "path": ["instructors", "applications", "all"]
+            },
+            "description": "Get all instructor applications (Admin only)."
+          },
+          "response": [
+            {
+              "name": "Success - Applications Retrieved",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/instructors/applications/all",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["instructors", "applications", "all"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"success\": true,\n  \"message\": \"Applications retrieved successfully\",\n  \"data\": {\n    \"applications\": [\n      {\n        \"id\": \"app-123\",\n        \"userId\": \"123e4567-e89b-12d3-a456-426614174000\",\n        \"name\": \"John Doe\",\n        \"email\": \"john@example.com\",\n        \"fieldOfStudy\": \"Computer Science\",\n        \"status\": \"PENDING\",\n        \"submittedAt\": \"2024-01-01T10:00:00\"\n      }\n    ],\n    \"total\": 25\n  },\n  \"timestamp\": \"2024-01-01T10:00:00\"\n}"
+            }
+          ],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.expect(pm.response.code).to.eql(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has success property\", function () {",
+                  "    pm.expect(pm.response.json().success).to.be.true;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Approve Application (Admin)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/instructors/applications/{{userId}}/approve",
+              "host": ["{{baseUrl}}"],
+              "path": ["instructors", "applications", "{{userId}}", "approve"]
+            },
+            "description": "Approve instructor application (Admin only)."
+          },
+          "response": [
+            {
+              "name": "Success - Application Approved",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/instructors/applications/123e4567-e89b-12d3-a456-426614174000/approve",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["instructors", "applications", "123e4567-e89b-12d3-a456-426614174000", "approve"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"success\": true,\n  \"message\": \"Application approved successfully\",\n  \"data\": {\n    \"applicationId\": \"app-123\",\n    \"userId\": \"123e4567-e89b-12d3-a456-426614174000\",\n    \"status\": \"APPROVED\",\n    \"approvedAt\": \"2024-01-01T10:00:00\"\n  },\n  \"timestamp\": \"2024-01-01T10:00:00\"\n}"
+            }
+          ],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.expect(pm.response.code).to.eql(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has success property\", function () {",
+                  "    pm.expect(pm.response.json().success).to.be.true;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Reject Application (Admin)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/instructors/applications/{{userId}}/reject",
+              "host": ["{{baseUrl}}"],
+              "path": ["instructors", "applications", "{{userId}}", "reject"]
+            },
+            "description": "Reject instructor application (Admin only)."
+          },
+          "response": [
+            {
+              "name": "Success - Application Rejected",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/instructors/applications/123e4567-e89b-12d3-a456-426614174000/reject",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["instructors", "applications", "123e4567-e89b-12d3-a456-426614174000", "reject"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"success\": true,\n  \"message\": \"Application rejected successfully\",\n  \"data\": {\n    \"applicationId\": \"app-123\",\n    \"userId\": \"123e4567-e89b-12d3-a456-426614174000\",\n    \"status\": \"REJECTED\",\n    \"rejectedAt\": \"2024-01-01T10:00:00\"\n  },\n  \"timestamp\": \"2024-01-01T10:00:00\"\n}"
+            }
+          ],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.expect(pm.response.code).to.eql(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has success property\", function () {",
+                  "    pm.expect(pm.response.json().success).to.be.true;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Session Management",
+      "item": [
+        {
+          "name": "Get User Sessions",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/sessions/sessions",
+              "host": ["{{baseUrl}}"],
+              "path": ["sessions", "sessions"]
+            },
+            "description": "Get all active sessions for current user."
+          },
+          "response": [
+            {
+              "name": "Success - Sessions Retrieved",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/sessions/sessions",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["sessions", "sessions"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"success\": true,\n  \"message\": \"Sessions retrieved successfully\",\n  \"data\": {\n    \"sessions\": [\n      {\n        \"id\": \"session-1\",\n        \"device\": \"Web Browser\",\n        \"ipAddress\": \"192.168.1.1\",\n        \"userAgent\": \"Mozilla/5.0...\",\n        \"createdAt\": \"2024-01-01T10:00:00\",\n        \"lastActive\": \"2024-01-01T10:30:00\"\n      },\n      {\n        \"id\": \"session-2\",\n        \"device\": \"Mobile App\",\n        \"ipAddress\": \"192.168.1.2\",\n        \"userAgent\": \"MobileApp/1.0\",\n        \"createdAt\": \"2024-01-01T09:00:00\",\n        \"lastActive\": \"2024-01-01T09:30:00\"\n      }\n    ],\n    \"total\": 2\n  },\n  \"timestamp\": \"2024-01-01T10:00:00\"\n}"
+            }
+          ],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.expect(pm.response.code).to.eql(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has success property\", function () {",
+                  "    pm.expect(pm.response.json().success).to.be.true;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Logout Specific Session",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/sessions/sessions/{{sessionId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["sessions", "sessions", "{{sessionId}}"]
+            },
+            "description": "Logout a specific session by session ID."
+          },
+          "response": [
+            {
+              "name": "Success - Session Logged Out",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/sessions/sessions/session-1",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["sessions", "sessions", "session-1"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"success\": true,\n  \"message\": \"Session logged out successfully\",\n  \"data\": {\n    \"loggedOutSessionId\": \"session-1\",\n    \"remainingSessions\": 1\n  },\n  \"timestamp\": \"2024-01-01T10:00:00\"\n}"
+            }
+          ],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.expect(pm.response.code).to.eql(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has success property\", function () {",
+                  "    pm.expect(pm.response.json().success).to.be.true;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Logout All Sessions",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/sessions/sessions/all",
+              "host": ["{{baseUrl}}"],
+              "path": ["sessions", "sessions", "all"]
+            },
+            "description": "Logout all sessions for current user."
+          },
+          "response": [
+            {
+              "name": "Success - All Sessions Logged Out",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/sessions/sessions/all",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["sessions", "sessions", "all"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"success\": true,\n  \"message\": \"All sessions logged out successfully\",\n  \"data\": {\n    \"loggedOutSessions\": 3,\n    \"remainingSessions\": 0\n  },\n  \"timestamp\": \"2024-01-01T10:00:00\"\n}"
+            }
+          ],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.expect(pm.response.code).to.eql(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has success property\", function () {",
+                  "    pm.expect(pm.response.json().success).to.be.true;",
+                  "});",
+                  "",
+                  "// Clear tokens from environment after logging out all sessions",
+                  "pm.environment.set(\"accessToken\", \"\");",
+                  "pm.environment.set(\"refreshToken\", \"\");"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Profile Upload",
+      "item": [
+        {
+          "name": "Upload Profile Photo (API v1)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "/path/to/profile-photo.jpg",
+                  "description": "Profile photo file (JPG, PNG, max 5MB)"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/profile/upload",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "profile", "upload"]
+            },
+            "description": "Upload profile photo using API v1 endpoint."
+          },
+          "response": [
+            {
+              "name": "Success - Photo Uploaded",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                  }
+                ],
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [
+                    {
+                      "key": "file",
+                      "type": "file",
+                      "src": "/path/to/profile-photo.jpg"
+                    }
+                  ]
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/profile/upload",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "profile", "upload"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"success\": true,\n  \"message\": \"Profile photo uploaded successfully\",\n  \"data\": {\n    \"photoUrl\": \"https://cloudinary.com/xyz/profile.jpg\",\n    \"publicId\": \"cloudinary-public-id\"\n  },\n  \"timestamp\": \"2024-01-01T10:00:00\"\n}"
+            }
+          ],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.expect(pm.response.code).to.eql(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has success property\", function () {",
+                  "    pm.expect(pm.response.json().success).to.be.true;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

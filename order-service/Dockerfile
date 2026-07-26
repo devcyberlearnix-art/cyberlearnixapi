@@ -1,3 +1,10 @@
+# Stage 1: Build
+FROM eclipse-temurin:21-jdk-alpine AS build
+WORKDIR /app
+COPY . .
+RUN chmod +x gradlew && ./gradlew :order-service:clean :order-service:build -x test
+
+# Stage 2: Runtime
 FROM eclipse-temurin:21-jre-alpine
 
 # Set IST timezone
@@ -7,8 +14,8 @@ RUN apk add --no-cache tzdata && \
 
 WORKDIR /app
 
-# Copy the built jar file for order-service (update the jar name if needed)
-COPY build/libs/*.jar app.jar
+# Copy the built jar from the build stage
+COPY --from=build /app/order-service/build/libs/order-service-0.0.1-SNAPSHOT.jar app.jar
 
 EXPOSE 8084
 

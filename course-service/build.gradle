@@ -28,6 +28,9 @@ dependencies {
 
     implementation 'org.springframework.boot:spring-boot-starter-validation'
 
+    // Commonlibs for shared JWT validator
+    implementation project(':commonlibs')
+
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
 

@@ -1,0 +1,100 @@
+### Review Service API tests (IntelliJ HTTP Client)
+### Base URL and tokens — replace JWT values after logging in via user-service
+@baseUrl = http://localhost:8089
+@courseId = 101
+@reviewId = 1
+@studentToken = REPLACE_WITH_STUDENT_JWT
+@adminToken = REPLACE_WITH_ADMIN_JWT
+
+### ─── Public APIs (no auth) ───────────────────────────────────────────────
+
+### Get course reviews (paginated)
+GET {{baseUrl}}/api/reviews/course/{{courseId}}?page=0&size=10&sort=createdAt,desc
+Accept: application/json
+
+###
+
+### Get course rating summary
+GET {{baseUrl}}/api/reviews/course/{{courseId}}/summary
+Accept: application/json
+
+###
+
+### ─── Student APIs (JWT required) ───────────────────────────────────────────
+
+### Create review (requires enrollment in course)
+POST {{baseUrl}}/api/reviews
+Authorization: Bearer {{studentToken}}
+Content-Type: application/json
+
+{
+  "courseId": {{courseId}},
+  "rating": 5,
+  "comment": "Excellent course with practical examples."
+}
+
+###
+
+### Get my review for a course
+GET {{baseUrl}}/api/reviews/my/course/{{courseId}}
+Authorization: Bearer {{studentToken}}
+Accept: application/json
+
+###
+
+### Update own review
+PUT {{baseUrl}}/api/reviews/{{reviewId}}
+Authorization: Bearer {{studentToken}}
+Content-Type: application/json
+
+{
+  "rating": 4,
+  "comment": "Updated review after completing the course."
+}
+
+###
+
+### Delete own review
+DELETE {{baseUrl}}/api/reviews/{{reviewId}}
+Authorization: Bearer {{studentToken}}
+
+###
+
+### ─── Admin APIs (ADMIN role JWT) ───────────────────────────────────────────
+
+### List all reviews
+GET {{baseUrl}}/api/admin/reviews?page=0&size=20&sort=createdAt,desc
+Authorization: Bearer {{adminToken}}
+Accept: application/json
+
+###
+
+### Get review details
+GET {{baseUrl}}/api/admin/reviews/{{reviewId}}
+Authorization: Bearer {{adminToken}}
+Accept: application/json
+
+###
+
+### Hide review
+PATCH {{baseUrl}}/api/admin/reviews/{{reviewId}}/hide
+Authorization: Bearer {{adminToken}}
+
+###
+
+### Unhide review
+PATCH {{baseUrl}}/api/admin/reviews/{{reviewId}}/unhide
+Authorization: Bearer {{adminToken}}
+
+###
+
+### Admin delete review
+DELETE {{baseUrl}}/api/admin/reviews/{{reviewId}}
+Authorization: Bearer {{adminToken}}
+
+###
+
+### Swagger UI
+GET {{baseUrl}}/swagger-ui.html
+
+###

@@ -40,7 +40,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
             if (userId != null && SecurityContextHolder.getContext().getAuthentication() == null) {
                 List<SimpleGrantedAuthority> authorities = Collections.singletonList(
-                        new SimpleGrantedAuthority("ROLE_" + role)
+                        new SimpleGrantedAuthority("ROLE_" + toSpringSecurityRole(role))
                 );
 
                 UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
@@ -58,5 +58,19 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         filterChain.doFilter(request, response);
+    }
+
+    private static String toSpringSecurityRole(String role) {
+        if (role == null || role.isBlank()) {
+            return "STUDENT";
+        }
+        String upper = role.toUpperCase();
+        if ("USER".equals(upper) || "STUDENT".equals(upper)) {
+            return "STUDENT";
+        }
+        if (upper.contains("ADMIN")) {
+            return "ADMIN";
+        }
+        return upper;
     }
 }

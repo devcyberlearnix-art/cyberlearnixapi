@@ -7,6 +7,8 @@ import java.time.LocalDateTime;
 @Table(name = "orders")
 public class Order {
 
+    public Order() {}
+
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private String orderId;
@@ -22,6 +24,7 @@ public class Order {
     // ✅ ADD GETTERS & SETTERS
 
     public String getOrderId() { return orderId; }
+    public void setOrderId(String orderId) { this.orderId = orderId; }
 
     public String getUserId() { return userId; }
     public void setUserId(String userId) { this.userId = userId; }

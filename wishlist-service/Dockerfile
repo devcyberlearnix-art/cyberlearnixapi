@@ -1,23 +1,22 @@
-# Stage 1: Build stage (Optional if you prefer building outside Docker)
+# Stage 1: Build
 FROM eclipse-temurin:21-jdk-alpine AS build
 WORKDIR /app
 COPY . .
-RUN ./gradlew clean build -x test
+RUN chmod +x gradlew && ./gradlew :wishlist-service:clean :wishlist-service:build -x test
 
-# Stage 2: Runtime stage
+# Stage 2: Runtime
 FROM eclipse-temurin:21-jre-alpine
-WORKDIR /app
 
-# Install tzdata to set the correct timezone (Hyderabad/Kolkata)
+# Set IST timezone
 RUN apk add --no-cache tzdata && \
     cp /usr/share/zoneinfo/Asia/Kolkata /etc/localtime && \
     echo "Asia/Kolkata" > /etc/timezone
 
-# Copy the built JAR from the build stage or your local build folder
-# Note: Ensure the JAR name matches your actual build output
-COPY build/libs/*-SNAPSHOT.jar app.jar
+WORKDIR /app
 
-# Your service runs on 8085 as per your Gateway config
+# Copy the built jar from the build stage
+COPY --from=build /app/wishlist-service/build/libs/wishlist-service-0.0.1-SNAPSHOT.jar app.jar
+
 EXPOSE 8085
 
 # Performance tuning for Java 21 and Virtual Threads

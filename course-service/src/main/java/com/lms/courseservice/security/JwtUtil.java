@@ -1,71 +1,55 @@
 package com.lms.courseservice.security;
 
-import io.jsonwebtoken.*;
-import io.jsonwebtoken.security.Keys;
+import com.cyberlearnix.security.SharedJwtValidator;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
-import javax.crypto.SecretKey;
-import java.nio.charset.StandardCharsets;
-import java.util.Date;
 import java.util.UUID;
 
 @Component
+@Slf4j
 public class JwtUtil {
 
-    // 🔐 Must be at least 32 chars
-    private final String SECRET = "mysupersecretkeymysupersecretkey1234";
+    private final SharedJwtValidator sharedJwtValidator;
 
-    // ✅ Proper key (modern way)
-    private final SecretKey key = Keys.hmacShaKeyFor(
-            SECRET.getBytes(StandardCharsets.UTF_8)
-    );
-
-    // ✅ Generate Token
-    public String generateToken(UUID userId, String role) {
-
-        return Jwts.builder()
-                .setSubject(userId.toString())
-                .claim("role", role)
-                .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + 86400000))
-                .signWith(key) // 🔥 FIXED
-                .compact();
+    public JwtUtil(SharedJwtValidator sharedJwtValidator) {
+        this.sharedJwtValidator = sharedJwtValidator;
     }
 
-    // ✅ Extract Username (UUID as String)
     public String extractUsername(String token) {
-        return extractAllClaims(token).getSubject();
+        return sharedJwtValidator.extractUserId(cleanToken(token));
     }
 
-    // ✅ Extract Role
     public String extractRole(String token) {
-        return extractAllClaims(token).get("role", String.class);
+        return sharedJwtValidator.extractRole(cleanToken(token));
     }
 
-    // ✅ Extract All Claims
-    private Claims extractAllClaims(String token) {
-
-        return Jwts.parserBuilder()
-                .setSigningKey(key) // 🔥 FIXED (no getKey needed)
-                .build()
-                .parseClaimsJws(token)
-                .getBody();
-    }
-
-    // ✅ Validate Token
     public boolean validateToken(String token) {
-        try {
-            extractAllClaims(token);
-            return true;
-        } catch (JwtException | IllegalArgumentException e) {
-            return false;
-        }
+        return sharedJwtValidator.isTokenValid(cleanToken(token));
     }
 
-    // 🔥 FIXED: Return UUID instead of Long
     public UUID extractUserId(String token) {
-        return UUID.fromString(
-                extractAllClaims(token).getSubject()
-        );
+        return UUID.fromString(sharedJwtValidator.extractUserId(cleanToken(token)));
+    }
+
+    private String cleanToken(String token) {
+        if (token != null && token.startsWith("Bearer ")) {
+            return token.substring(7);
+        }
+        return token;
+    }
+
+    public static String toSpringSecurityRole(String role) {
+        if (role == null || role.isBlank()) {
+            return "STUDENT";
+        }
+        String upper = role.toUpperCase();
+        if ("USER".equals(upper) || "STUDENT".equals(upper)) {
+            return "STUDENT";
+        }
+        if (upper.contains("ADMIN")) {
+            return "ADMIN";
+        }
+        return upper;
     }
 }

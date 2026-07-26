@@ -12,7 +12,11 @@ public class AdminPermissionService {
     public void requireMainAdmin(AdminPrincipal principal) {
         if (principal == null) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED,
+<<<<<<< HEAD
                     "Main Admin Bearer token required. Login via POST /admin/login then send "
+=======
+                    "Main Admin Bearer token required. Login via POST /login/password then send "
+>>>>>>> 590c1b3 (WIP: LMS microservices integration backup)
                             + "Authorization: Bearer <accessToken>");
         }
         boolean isMainAdmin = "MAIN_ADMIN".equalsIgnoreCase(principal.role())
@@ -25,6 +29,12 @@ public class AdminPermissionService {
 
     public void requireServiceAccess(AdminPrincipal principal, String requestPath) {
         if (principal == null) {
+<<<<<<< HEAD
+=======
+            if (isInternalCourseApprovalPath(requestPath)) {
+                return;
+            }
+>>>>>>> 590c1b3 (WIP: LMS microservices integration backup)
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authentication required");
         }
         if ("MAIN_ADMIN".equalsIgnoreCase(principal.role())) {
@@ -43,6 +53,16 @@ public class AdminPermissionService {
         }
     }
 
+<<<<<<< HEAD
+=======
+    private boolean isInternalCourseApprovalPath(String path) {
+        if (path == null) {
+            return false;
+        }
+        return path.startsWith("/admin/courses") || path.startsWith("/admin/content");
+    }
+
+>>>>>>> 590c1b3 (WIP: LMS microservices integration backup)
     public AssignedService resolveServiceFromPath(String path) {
         if (path == null) return null;
         if (path.startsWith("/admin/orders")) return AssignedService.ORDER_SERVICE;

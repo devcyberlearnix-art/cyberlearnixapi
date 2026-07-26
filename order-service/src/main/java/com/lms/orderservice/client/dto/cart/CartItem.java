@@ -3,7 +3,7 @@ package com.lms.orderservice.client.dto.cart;
 public class CartItem {
     private Long cartId;
     private String instructorId;
-    private String courseId;
+    private Long courseId;
     private String courseName;
     private Double unitPrice;
     private Integer quantity;
@@ -25,11 +25,11 @@ public class CartItem {
         this.instructorId = instructorId;
     }
 
-    public String getCourseId() {
+    public Long getCourseId() {
         return courseId;
     }
 
-    public void setCourseId(String courseId) {
+    public void setCourseId(Long courseId) {
         this.courseId = courseId;
     }
 

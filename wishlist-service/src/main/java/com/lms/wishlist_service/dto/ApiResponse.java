@@ -11,6 +11,7 @@ import java.time.LocalDateTime;
 // REMOVED: @JsonInclude(JsonInclude.Include.NON_NULL)
 public class ApiResponse<T> {
     private String status;
+    private boolean success;
 
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime timestamp;

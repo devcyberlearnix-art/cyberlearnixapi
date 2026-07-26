@@ -29,18 +29,29 @@ public class LectureService {
     private void validateEnrollment(Long sectionId) {
 
         // 🔥 Get UUID from JWT
-        String userId = SecurityContextHolder
+        Object principal = SecurityContextHolder
                 .getContext()
                 .getAuthentication()
-                .getPrincipal()
-                .toString();
+                .getPrincipal();
 
+        // Skip enrollment validation for unauthenticated users or admin/instructor roles
+        if (principal == null || principal.toString().equals("anonymousUser")) {
+            return;
+        }
+
+        // Check if user has admin or instructor role
+        if (SecurityContextHolder.getContext().getAuthentication().getAuthorities().stream()
+                .anyMatch(auth -> auth.getAuthority().equals("ROLE_ADMIN") || auth.getAuthority().equals("ROLE_INSTRUCTOR"))) {
+            return;
+        }
+
+        String userId = principal.toString();
         UUID studentId = UUID.fromString(userId);
 
         Long courseId = sectionService.getCourseIdBySection(sectionId);
 
         boolean enrolled = enrollmentRepository
-                .existsByStudentIdAndCourseId(studentId, courseId);
+            .existsByStudentIdAndCourseId(studentId, courseId);
 
         if (!enrolled) {
             throw new AccessDeniedException("You are not enrolled in this course");

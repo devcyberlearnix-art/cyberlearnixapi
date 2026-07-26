@@ -12,9 +12,9 @@ import java.util.Map;
 @FeignClient(name = "coupon-service", url = "${coupon.service.url}")
 public interface CouponClient {
 
-    @PostMapping("/api/coupons/validate")
+    @PostMapping("/api/v1/coupons/validate")
     ValidationResponse validate(@RequestBody ValidateRequest request);
 
-    @PostMapping("/api/coupons/redeem")
+    @PostMapping("/api/v1/coupons/redeem")
     Map<String, Object> redeem(@RequestBody RedeemRequest request);
 }

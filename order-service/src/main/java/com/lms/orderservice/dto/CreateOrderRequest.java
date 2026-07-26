@@ -5,7 +5,7 @@ import java.util.List;
 public class CreateOrderRequest {
 
     private String userId;
-    private List<String> courseIds; // ✅ supports multiple courses
+    private List<Long> courseIds; // ✅ supports multiple courses
     private String couponCode; // optional: applied per course if valid
 
     public String getUserId() {
@@ -16,11 +16,11 @@ public class CreateOrderRequest {
         this.userId = userId;
     }
 
-    public List<String> getCourseIds() {
+    public List<Long> getCourseIds() {
         return courseIds;
     }
 
-    public void setCourseIds(List<String> courseIds) {
+    public void setCourseIds(List<Long> courseIds) {
         this.courseIds = courseIds;
     }
 
