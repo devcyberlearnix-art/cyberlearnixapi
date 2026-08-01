@@ -86,14 +86,14 @@ public class JwtUtils {
      */
     private static String[] getUserPermissions(String role) {
         switch (role.toUpperCase()) {
-            case "ADMIN":
-                return new String[]{"READ", "WRITE", "DELETE", "MANAGE_USERS", "MANAGE_PRODUCTS", "MANAGE_ORDERS", "VIEW_ANALYTICS"};
-            case "STORE_MANAGER":
-                return new String[]{"READ", "WRITE", "MANAGE_PRODUCTS", "MANAGE_ORDERS", "VIEW_STORE_ANALYTICS"};
-            case "DELIVERY_PARTNER":
-                return new String[]{"READ", "UPDATE_DELIVERY_STATUS", "VIEW_ASSIGNED_ORDERS"};
-            case "CONSUMER":
-                return new String[]{"READ", "WRITE", "PLACE_ORDERS", "VIEW_ORDER_HISTORY", "MANAGE_PROFILE"};
+            case "MAIN_ADMIN":
+                return new String[]{"READ", "WRITE", "DELETE", "MANAGE_USERS", "MANAGE_COURSES", "MANAGE_ORDERS", "MANAGE_INSTRUCTORS", "VIEW_ANALYTICS", "SYSTEM_CONFIG"};
+            case "SUB_ADMIN":
+                return new String[]{"READ", "WRITE", "MANAGE_USERS", "MANAGE_COURSES", "APPROVE_INSTRUCTORS", "VIEW_ANALYTICS"};
+            case "INSTRUCTOR":
+                return new String[]{"READ", "WRITE", "MANAGE_OWN_COURSES", "VIEW_OWN_ANALYTICS", "MANAGE_CONTENT"};
+            case "STUDENT":
+                return new String[]{"READ", "ENROLL_COURSES", "VIEW_ENROLLED_CONTENT", "SUBMIT_REVIEWS", "MANAGE_PROFILE"};
             default:
                 return new String[]{"READ"};
         }
@@ -104,14 +104,14 @@ public class JwtUtils {
      */
     private static String[] getUserFeatures(String role) {
         switch (role.toUpperCase()) {
-            case "ADMIN":
-                return new String[]{"ADMIN_DASHBOARD", "USER_MANAGEMENT", "PRODUCT_MANAGEMENT", "ORDER_MANAGEMENT", "ANALYTICS", "SETTINGS"};
-            case "STORE_MANAGER":
-                return new String[]{"STORE_DASHBOARD", "INVENTORY_MANAGEMENT", "ORDER_MANAGEMENT", "STORE_ANALYTICS"};
-            case "DELIVERY_PARTNER":
-                return new String[]{"DELIVERY_DASHBOARD", "ORDER_TRACKING", "DELIVERY_HISTORY", "EARNINGS"};
-            case "CONSUMER":
-                return new String[]{"SHOPPING", "ORDER_TRACKING", "FAVORITES", "REVIEWS", "WALLET", "PROFILE"};
+            case "MAIN_ADMIN":
+                return new String[]{"ADMIN_DASHBOARD", "USER_MANAGEMENT", "COURSE_MANAGEMENT", "ORDER_MANAGEMENT", "INSTRUCTOR_MANAGEMENT", "ANALYTICS", "SYSTEM_SETTINGS"};
+            case "SUB_ADMIN":
+                return new String[]{"ADMIN_DASHBOARD", "USER_MANAGEMENT", "COURSE_MANAGEMENT", "INSTRUCTOR_APPROVAL", "ASSIGNED_SERVICE_ANALYTICS"};
+            case "INSTRUCTOR":
+                return new String[]{"INSTRUCTOR_DASHBOARD", "COURSE_CREATION", "CONTENT_MANAGEMENT", "STUDENT_MANAGEMENT", "EARNINGS_VIEW"};
+            case "STUDENT":
+                return new String[]{"COURSE_BROWSING", "ENROLLMENT", "LEARNING", "REVIEWS", "WISHLIST", "PROFILE"};
             default:
                 return new String[]{"BASIC"};
         }

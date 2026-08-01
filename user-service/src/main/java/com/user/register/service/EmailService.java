@@ -8,7 +8,7 @@ import org.springframework.stereotype.Service;
 import java.util.Random;
 
 @Service
-class EmailService {
+public class EmailService {
 
     @Autowired
     private JavaMailSender mailSender;

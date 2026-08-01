@@ -121,7 +121,7 @@ public class User {
     }
 
     public enum Role {
-        STUDENT, INSTRUCTOR, ADMIN
+        STUDENT, INSTRUCTOR, MAIN_ADMIN, SUB_ADMIN
     }
 
     public enum ApplicationStatus {

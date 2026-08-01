@@ -15,6 +15,7 @@ import com.lms.orderservice.repository.OrderItemRepository;
 import com.lms.orderservice.repository.OrderRepository;
 import org.springframework.stereotype.Service;
 
+
 import com.lms.orderservice.dto.CreateOrderRequest;
 
 import java.time.LocalDateTime;
@@ -42,26 +43,49 @@ public class OrderService {
     }
 
     // ✅ Create Order
-    public Order createOrder(CreateOrderRequest request) {
+    public Order createOrder(String userId,
+                             CreateOrderRequest request) {
 
-        if (request == null || request.getUserId() == null || request.getUserId().isBlank()) {
+        if (request == null || userId == null || userId.isBlank()) {
             throw new RuntimeException("userId is required");
         }
 
-        // 1) Pull cart items for the user (primary integration path)
+        // 1) Pull cart items for the user
         List<CartItem> cartItems = new ArrayList<>();
         Double cartTotal = 0.0;
+
         try {
-            ApiResponse<CartResponse> cartApi = cartClient.getCart(request.getUserId());
+            ApiResponse<CartResponse> cartApi = cartClient.getCart(userId);
+
+            System.out.println("========== CART DEBUG ==========");
+            System.out.println("UserId = " + userId);
+            System.out.println("Cart API = " + cartApi);
+
+            if (cartApi != null) {
+                System.out.println("Success = " + cartApi.isSuccess());
+                System.out.println("Message = " + cartApi.getMessage());
+
+                if (cartApi.getData() != null) {
+                    System.out.println("Items = " + cartApi.getData().getItems());
+                    System.out.println("Total = " + cartApi.getData().getTotalCartPrice());
+                }
+            }
+
+            System.out.println("================================");
+
             if (cartApi != null && cartApi.isSuccess() && cartApi.getData() != null) {
                 CartResponse data = cartApi.getData();
-                if (data.getItems() != null)
+
+                if (data.getItems() != null) {
                     cartItems = data.getItems();
+                }
+
                 cartTotal = Objects.requireNonNullElse(data.getTotalCartPrice(), 0.0);
             }
-        } catch (Exception ignored) {
-            // If cart-service is unavailable, we still allow creating an order via explicit
-            // courseIds.
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw e;
         }
 
         // 2) Determine which courseIds to persist as order items
@@ -93,7 +117,6 @@ public class OrderService {
 
                 ValidateRequest validateRequest = new ValidateRequest();
                 validateRequest.setCouponCode(couponCode);
-                validateRequest.setUserId(request.getUserId());
                 validateRequest.setCourseId(String.valueOf(item.getCourseId()));
                 validateRequest.setPrice(itemPrice);
 
@@ -108,7 +131,7 @@ public class OrderService {
 
         // 4. Create Order
         Order order = new Order();
-        order.setUserId(request.getUserId());
+        order.setUserId(userId);
         order.setStatus("PENDING");
         order.setCreatedAt(LocalDateTime.now());
         order.setTotalAmount(finalTotal);
@@ -132,7 +155,6 @@ public class OrderService {
                 try {
                     RedeemRequest redeemRequest = new RedeemRequest();
                     redeemRequest.setCouponCode(couponCode);
-                    redeemRequest.setUserId(request.getUserId());
                     redeemRequest.setCourseId(courseId.toString());
                     couponClient.redeem(redeemRequest);
                 } catch (Exception ignored) {
@@ -144,7 +166,7 @@ public class OrderService {
 
         // 7) Clear the cart after successful order creation
         try {
-            cartClient.clearCart(request.getUserId());
+            cartClient.clearCart(userId);
         } catch (Exception ignored) {
             // cart clear can be retried; order is already persisted
         }

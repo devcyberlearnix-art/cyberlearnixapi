@@ -68,8 +68,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         if ("USER".equals(upper) || "STUDENT".equals(upper)) {
             return "STUDENT";
         }
-        if (upper.contains("ADMIN")) {
-            return "ADMIN";
+        if (upper.contains("MAIN_ADMIN")) {
+            return "MAIN_ADMIN";
+        }
+        if (upper.contains("SUB_ADMIN")) {
+            return "SUB_ADMIN";
         }
         return upper;
     }

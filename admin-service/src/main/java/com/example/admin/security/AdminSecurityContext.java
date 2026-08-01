@@ -19,6 +19,6 @@ public final class AdminSecurityContext {
 
     public static String getToken() {
         AdminPrincipal principal = getPrincipal();
-        return principal != null ? principal.token() : null;
+        return principal != null ? principal.getToken() : null;
     }
 }

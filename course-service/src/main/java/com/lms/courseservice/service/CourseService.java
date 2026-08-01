@@ -8,6 +8,8 @@ import com.lms.courseservice.repository.EnrollmentRepository;
 import com.lms.courseservice.exception.EnrollmentException;
 import com.lms.courseservice.repository.LectureRepository;
 import lombok.RequiredArgsConstructor;
+import java.math.BigDecimal;
+import java.util.UUID;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -91,7 +93,8 @@ public class CourseService {
     }
 
     // 🔥 FIXED → UUID
-    public List<java.util.UUID> getStudents(Long courseId) {
+    // 🔥 FIXED → UUID
+    public List<UUID> getStudents(Long courseId) {
 
         return enrollmentRepository.findByCourseId(courseId)
                 .stream()
@@ -100,11 +103,29 @@ public class CourseService {
     }
 
     // 🔥 FIXED → UUID
-    public void enrollUser(Long courseId, java.util.UUID userId) {
+    public void enrollFreeCourse(Long courseId, UUID userId) {
+        Course course = getCourseById(courseId);
 
-        // Prevent duplicate enrollment
+        BigDecimal price = course.getPrice() == null
+                ? BigDecimal.ZERO
+                : course.getPrice();
+
+        if (price.compareTo(BigDecimal.ZERO) > 0) {
+            throw new EnrollmentException(
+                    "This is a paid course. Please complete payment first.");
+        }
+
+        createEnrollment(courseId, userId);
+    }
+
+    public void enrollAfterPayment(Long courseId, UUID userId) {
+        createEnrollment(courseId, userId);
+    }
+
+    private void createEnrollment(Long courseId, UUID userId) {
+
         if (enrollmentRepository.existsByStudentIdAndCourseId(userId, courseId)) {
-            throw new EnrollmentException("Student is already enrolled in this course.");
+            throw new EnrollmentException("Student is already enrolled.");
         }
 
         Enrollment enrollment = new Enrollment();

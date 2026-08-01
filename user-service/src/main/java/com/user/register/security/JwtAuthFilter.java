@@ -143,7 +143,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
             // Skip session check for ADMIN roles because admin sessions are not stored in
             // user-service
-            boolean isAdmin = role != null && role.toUpperCase().contains("ADMIN");
+            boolean isAdmin = role != null && (role.toUpperCase().contains("MAIN_ADMIN") || role.toUpperCase().contains("SUB_ADMIN"));
 
             if (!isAdmin) {
                 java.util.Optional<com.user.register.entity.UserSession> sessionOpt = userSessionRepository
@@ -201,8 +201,10 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         if (role == null)
             return "STUDENT";
         String upper = role.toUpperCase();
-        if (upper.contains("ADMIN"))
-            return "ADMIN";
+        if (upper.contains("MAIN_ADMIN"))
+            return "MAIN_ADMIN";
+        if (upper.contains("SUB_ADMIN"))
+            return "SUB_ADMIN";
         return "USER".equalsIgnoreCase(role) ? "STUDENT" : upper;
     }
 }

@@ -62,7 +62,7 @@ public class JwtService {
     }
 
     public HttpHeaders createServiceAuthHeaders() {
-        return createServiceAuthHeaders("ADMIN");
+        return createServiceAuthHeaders("MAIN_ADMIN");
     }
 
     public HttpHeaders createServiceAuthHeaders(String role) {
@@ -88,6 +88,15 @@ public class JwtService {
         } catch (Exception e) {
             log.error("Failed to extract role from token", e);
             throw new JwtException("Invalid token");
+        }
+    }
+
+    public String extractEmail(String token) {
+        try {
+            return sharedJwtValidator.extractEmail(token);
+        } catch (Exception e) {
+            log.error("Failed to extract email from token", e);
+            return null;
         }
     }
 

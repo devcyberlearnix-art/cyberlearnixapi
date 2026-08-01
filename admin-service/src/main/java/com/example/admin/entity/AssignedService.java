@@ -7,5 +7,6 @@ public enum AssignedService {
     USER_SERVICE,
     COURSE_SERVICE,
     INSTRUCTOR_SERVICE,
+    COUPON_SERVICE,
     ALL
 }

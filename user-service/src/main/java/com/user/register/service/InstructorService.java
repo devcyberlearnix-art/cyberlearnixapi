@@ -70,7 +70,7 @@ public class InstructorService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
 
-        if (user.getRole() == User.Role.ADMIN) {
+        if (user.getRole() == User.Role.MAIN_ADMIN || user.getRole() == User.Role.SUB_ADMIN) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Admin accounts cannot apply for instructor role");
         }
 

@@ -38,24 +38,6 @@ public class AdminUserService {
 
         List<AdminUserServiceClient.UserDTO> users = userClient.getAllUsers();
 
-        
-
-        if (users.isEmpty()) {
-
-            return AdminUsersResponse.builder()
-
-                    .success(false)
-
-                    .message("Failed to fetch users from User Service")
-
-                    .timestamp(LocalDateTime.now().toString())
-
-                    .build();
-
-        }
-
-
-
         List<AdminUsersResponse.UserInfo> userList = users.stream()
 
                 .map(user -> AdminUsersResponse.UserInfo.builder()

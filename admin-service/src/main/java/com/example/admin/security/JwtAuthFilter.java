@@ -69,17 +69,8 @@ public class JwtAuthFilter implements Filter {
 
 
         if ("/admin/register".equals(requestURI) && "POST".equalsIgnoreCase(method)) {
-
-            if (!authenticateBearer(req)) {
-
-                writeJsonError(res, HttpServletResponse.SC_UNAUTHORIZED,
-
-                        "Authorization: Bearer <main_admin_access_token> is required to register Sub Admins");
-
-                return;
-
-            }
-
+            // Allow public registration for main admin bootstrap
+            // Authentication will be validated by AdminPermissionService
         } else if (!isPermitAll) {
 
             authenticateBearer(req);
@@ -266,6 +257,8 @@ public class JwtAuthFilter implements Filter {
 
             String adminType = jwtService.extractAdminType(token);
 
+            String email = jwtService.extractEmail(token);
+
             AssignedService assignedService = jwtService.extractAssignedService(token);
 
 
@@ -284,11 +277,11 @@ public class JwtAuthFilter implements Filter {
 
 
 
-            AdminPrincipal principal = new AdminPrincipal(adminId, role, adminType, assignedService, token);
+            AdminPrincipal principal = new AdminPrincipal(adminId, email, role, adminType, assignedService, token);
 
             UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(principal,
 
-                    token, List.of());
+                    token, principal.getAuthorities());
 
             SecurityContextHolder.getContext().setAuthentication(authentication);
 

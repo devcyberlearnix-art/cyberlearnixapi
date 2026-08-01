@@ -4,6 +4,7 @@ import com.lms.courseservice.repository.EnrollmentRepository;
 import com.lms.courseservice.security.JwtUtil;
 import com.lms.courseservice.service.CourseService;
 import lombok.RequiredArgsConstructor;
+import java.math.BigDecimal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -31,7 +32,7 @@ public class EnrollmentController {
      */
     @PostMapping("/internal/enroll")
     public void enrollStudentInternal(@RequestBody EnrollmentRequest request) {
-        courseService.enrollUser(request.courseId(), request.userId());
+        courseService.enrollAfterPayment(request.courseId(), request.userId());
     }
 
     /**

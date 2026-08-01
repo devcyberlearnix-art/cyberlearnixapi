@@ -81,4 +81,18 @@ public class CartController {
         CheckoutResponse data = cartService.checkoutCart(userId);
         return ResponseEntity.ok(ApiResponse.success("Checkout initiated successfully.", data));
     }
+    @GetMapping("/internal/{userId}")
+    public ResponseEntity<ApiResponse<CartResponse>> getCartInternal(
+            @PathVariable String userId) {
+
+        CartResponse data = cartService.getCartForOrderService(userId);
+        return ResponseEntity.ok(ApiResponse.success("Cart retrieved successfully.", data));
+    }
+    @DeleteMapping("/internal/{userId}")
+    public ResponseEntity<ApiResponse<Void>> clearCartInternal(
+            @PathVariable String userId) {
+
+        cartService.clearFullCart(userId);
+        return ResponseEntity.ok(ApiResponse.success("Cart cleared successfully."));
+    }
 }

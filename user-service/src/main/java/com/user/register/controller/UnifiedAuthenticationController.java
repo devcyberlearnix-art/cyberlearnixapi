@@ -33,11 +33,26 @@ public class UnifiedAuthenticationController {
     /**
      * Refresh Token Endpoint
      * POST /api/v1/auth/refresh
+     * Refresh token is extracted from Authorization header as Bearer token
      */
     @PostMapping("/refresh")
     public ResponseEntity<RefreshTokenResponse> refreshToken(
-            @Valid @RequestBody RefreshTokenRequest request) {
-        return unifiedAuthenticationService.refreshToken(request);
+            @RequestHeader(value = "Authorization", required = false) String authorizationHeader) {
+        
+        // Extract refresh token from Authorization header
+        if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(
+                    RefreshTokenResponse.builder()
+                            .success(false)
+                            .message("Authorization header with Bearer token is required")
+                            .timestamp(java.time.LocalDateTime.now())
+                            .build()
+            );
+        }
+
+        String refreshToken = authorizationHeader.substring(7);
+        
+        return unifiedAuthenticationService.refreshToken(refreshToken);
     }
 
     /**
@@ -166,5 +181,43 @@ public class UnifiedAuthenticationController {
 
         // Delegate to service
         return unifiedAuthenticationService.changePassword(request, email);
+    }
+
+    /**
+     * Switch Role
+     * POST /api/v1/auth/switch-role
+     */
+    @PostMapping("/switch-role")
+    public ResponseEntity<Map<String, Object>> switchRole(
+            @RequestBody com.user.register.dto.SwitchRoleRequest request,
+            @RequestHeader("Authorization") String authorizationHeader) {
+        
+        // Extract access token from Authorization header
+        if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
+            Map<String, Object> response = Map.of(
+                    "success", false,
+                    "message", "Authorization header is required",
+                    "timestamp", java.time.LocalDateTime.now()
+            );
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
+        }
+
+        String accessToken = authorizationHeader.substring(7);
+        
+        // Extract email from token
+        String email = null;
+        try {
+            email = unifiedAuthenticationService.extractEmailFromToken(accessToken);
+        } catch (Exception e) {
+            Map<String, Object> response = Map.of(
+                    "success", false,
+                    "message", "Invalid access token",
+                    "timestamp", java.time.LocalDateTime.now()
+            );
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
+        }
+
+        // Delegate to service
+        return unifiedAuthenticationService.switchRole(request, email);
     }
 }

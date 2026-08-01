@@ -1,8 +1,8 @@
 package com.lms.orderservice.client.dto.coupon;
 
 public class ValidateRequest {
+
     private String couponCode;
-    private String userId;
     private String courseId;
     private Double price;
 
@@ -12,14 +12,6 @@ public class ValidateRequest {
 
     public void setCouponCode(String couponCode) {
         this.couponCode = couponCode;
-    }
-
-    public String getUserId() {
-        return userId;
-    }
-
-    public void setUserId(String userId) {
-        this.userId = userId;
     }
 
     public String getCourseId() {

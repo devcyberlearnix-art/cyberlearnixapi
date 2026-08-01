@@ -28,7 +28,7 @@ public class CouponServiceImpl implements CouponService {
     private final RestTemplate restTemplate = new RestTemplate();
 
     @Override
-    public ValidationResponse validateCoupon(ValidateRequest request) {
+    public ValidationResponse validateCoupon(ValidateRequest request, String userId) {
         if (request == null || request.getCouponCode() == null || request.getCouponCode().isBlank()) {
             return buildValidationError("Coupon code is required.");
         }
@@ -55,7 +55,7 @@ public class CouponServiceImpl implements CouponService {
         }
 
         if (coupon.getPerUserLimit() != null) {
-            long userUsageCount = usageRepository.countByUserIdAndCouponCode(request.getUserId(), coupon.getCode());
+            long userUsageCount = usageRepository.countByUserIdAndCouponCode(userId, coupon.getCode());
             if (userUsageCount >= coupon.getPerUserLimit()) {
                 return buildValidationError("Personal limit reached.");
             }
@@ -79,7 +79,7 @@ public class CouponServiceImpl implements CouponService {
 
     @Override
     @Transactional
-    public ValidationResponse autoApply(AutoApplyRequest r) {
+    public ValidationResponse autoApply(AutoApplyRequest r, String userId) {
         LocalDateTime now = LocalDateTime.now();
         List<Coupon> eligible = repository.findAll().stream()
                 .filter(c -> c.isActive())
@@ -87,7 +87,7 @@ public class CouponServiceImpl implements CouponService {
                 .filter(c -> (c.getEndTime() == null || c.getEndTime().isAfter(now)))
                 .filter(c -> c.getCourses() == null || c.getCourses().isEmpty()
                         || c.getCourses().contains(r.getCourseId()))
-                .filter(c -> c.getAssignedUserId() == null || c.getAssignedUserId().equals(r.getUserId()))
+                .filter(c -> c.getAssignedUserId() == null || c.getAssignedUserId().equals(userId))
                 .collect(Collectors.toList());
 
         if (eligible.isEmpty())
@@ -143,7 +143,7 @@ public class CouponServiceImpl implements CouponService {
 
     @Override
     @Transactional
-    public Map<String, Object> redeemCoupon(RedeemRequest request) {
+    public Map<String, Object> redeemCoupon(RedeemRequest request, String userId) {
         if (request != null && request.getCourseId() != null) {
             validateCourseExists(request.getCourseId().toString());
         }
@@ -159,7 +159,7 @@ public class CouponServiceImpl implements CouponService {
         repository.save(coupon);
 
         usageRepository.save(CouponUsage.builder()
-                .userId(request.getUserId())
+                .userId(userId)
                 .couponCode(coupon.getCode())
                 .courseId(request.getCourseId())
                 .usedAt(LocalDateTime.now())

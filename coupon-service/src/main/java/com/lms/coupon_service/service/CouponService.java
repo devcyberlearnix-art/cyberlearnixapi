@@ -31,11 +31,11 @@ public interface CouponService {
 
     void deleteById(String id);
 
-    ValidationResponse validateCoupon(ValidateRequest request);
+    ValidationResponse validateCoupon(ValidateRequest request, String userId);
 
-    Map<String, Object> redeemCoupon(RedeemRequest request);
+    Map<String, Object> redeemCoupon(RedeemRequest request, String userId);
 
-    ValidationResponse autoApply(AutoApplyRequest request);
+    ValidationResponse autoApply(AutoApplyRequest request, String userId);
 
     BulkResponse bulkGenerate(BulkRequest request);
 

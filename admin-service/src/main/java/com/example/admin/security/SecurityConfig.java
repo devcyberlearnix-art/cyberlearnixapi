@@ -14,10 +14,6 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 
 import org.springframework.security.web.SecurityFilterChain;
 
-import org.springframework.security.config.Customizer;
-
-import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -50,45 +46,18 @@ public class SecurityConfig {
 
                 .authorizeHttpRequests(auth -> auth
 
+                        // Public endpoints (sub-admin registration only)
                         .requestMatchers(
-
                                 "/api/v1/admins/register",
+                                "/api/v1/admin/register"
+                        ).permitAll()
 
-                                "/api/v1/admin/register",
-
-                                "/api/v1/admin/verify-email",
-
-                                "/api/v1/admin/resend-otp",
-
-                                "/api/v1/admin/password/forgot",
-
-                                "/api/v1/admin/password/reset")
-
-                        .permitAll()
-
-                        .requestMatchers(HttpMethod.GET, "/api/v1/admin/users").permitAll()
-
-                        .requestMatchers(HttpMethod.GET, "/api/v1/admin/orders", "/api/v1/admin/payments", "/api/v1/admin/reviews").permitAll()
-
-                        .requestMatchers(HttpMethod.PUT, "/api/v1/admin/courses/*/approve", "/api/v1/admin/courses/*/reject").permitAll()
-
-                        .requestMatchers(HttpMethod.GET, "/api/v1/admin/courses", "/api/v1/admin/courses/*").permitAll()
-
-                        .requestMatchers(HttpMethod.GET, "/api/v1/admin/content/*").permitAll()
-
-                        .requestMatchers(HttpMethod.POST, "/api/v1/admin/courses/*/sections").permitAll()
-
-                        .requestMatchers(HttpMethod.POST, "/api/v1/admin/sections/*/lectures").permitAll()
-
-                        .requestMatchers(HttpMethod.DELETE, "/api/v1/admin/sections/*", "/api/v1/admin/sections/*/lectures/*").permitAll()
-
-                        .requestMatchers(HttpMethod.PUT, "/api/v1/admin/sections/*/lectures/*/approve", "/api/v1/admin/sections/*/lectures/*/reject").permitAll()
-
+                        // All other admin endpoints require authentication
                         .requestMatchers("/api/v1/admin/**").authenticated()
 
-                        .anyRequest().permitAll())
+                        .anyRequest().denyAll())
 
-                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(jwtAuthFilter, org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter.class)
 
                 .addFilterAfter(adminAuthorizationFilter, JwtAuthFilter.class)
 

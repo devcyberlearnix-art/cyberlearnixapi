@@ -5,6 +5,7 @@ import com.lms.courseservice.entity.Course;
 import com.lms.courseservice.security.JwtUtil;
 import com.lms.courseservice.service.CourseService;
 import lombok.RequiredArgsConstructor;
+import java.math.BigDecimal;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.Instant;
@@ -96,7 +97,7 @@ public class CourseController {
     @PostMapping("/{courseId}/enroll")
     public ApiResponse enroll(@PathVariable Long courseId) {
         UUID userId = extractUserIdFromContext();
-        courseService.enrollUser(courseId, userId);
+        courseService.enrollFreeCourse(courseId, userId);
         return new ApiResponse(true,
             "Student enrolled in the course successfully.",
             Instant.now());

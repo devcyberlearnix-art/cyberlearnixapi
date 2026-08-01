@@ -1,8 +1,5 @@
 package com.example.admin.client;
 
-<<<<<<< HEAD
-public class AdminUserServiceClient {
-=======
 import com.example.admin.security.JwtService;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.AllArgsConstructor;
@@ -367,5 +364,4 @@ public class AdminUserServiceClient {
         private String panNumber;
         private String additionalNotes;
     }
->>>>>>> 590c1b3 (WIP: LMS microservices integration backup)
 }

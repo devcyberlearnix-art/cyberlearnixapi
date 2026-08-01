@@ -22,7 +22,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/v1/auth/**").permitAll()
                         .requestMatchers("/api/v1/courses/**").permitAll()
-                        .requestMatchers("/api/v1/instructors/**").hasAnyRole("INSTRUCTOR", "ADMIN")
+                        .requestMatchers("/api/v1/instructors/**").hasAnyRole("INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN")
                         .anyRequest().authenticated())
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 

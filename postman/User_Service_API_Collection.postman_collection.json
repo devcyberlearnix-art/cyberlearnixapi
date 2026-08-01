@@ -22,6 +22,16 @@
 			"type": "string"
 		},
 		{
+			"key": "currentRole",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "currentUserId",
+			"value": "",
+			"type": "string"
+		},
+		{
 			"key": "email",
 			"value": "testuser@cyberlearnix.com",
 			"type": "string"

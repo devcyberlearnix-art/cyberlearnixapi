@@ -1,9 +1,11 @@
 package com.example.admin.controller;
 
 import com.example.admin.dto.ApiResponse;
+import com.example.admin.security.AdminPrincipal;
 import com.example.admin.service.AdminReportService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
@@ -25,13 +27,13 @@ public class AdminReportController {
     // ===== USERS REPORT =====
     @GetMapping("/reports/users")
     public ResponseEntity<ApiResponse<?>> getUsersReport(
-            @RequestHeader("Authorization") String token) {
+            @AuthenticationPrincipal AdminPrincipal adminPrincipal) {
 
         return ResponseEntity.ok(
                 new ApiResponse<>(
                         true,
                         "User statistics fetched successfully",
-                        adminReportService.getUserReport(token),
+                        adminReportService.getUserReport(null), // Service will use service-to-service auth
                         now()
                 )
         );
@@ -40,13 +42,13 @@ public class AdminReportController {
     // ===== COURSES REPORT =====
     @GetMapping("/reports/courses")
     public ResponseEntity<ApiResponse<?>> getCoursesReport(
-            @RequestHeader("Authorization") String token) {
+            @AuthenticationPrincipal AdminPrincipal adminPrincipal) {
 
         return ResponseEntity.ok(
                 new ApiResponse<>(
                         true,
                         "Course statistics fetched successfully",
-                        adminReportService.getCourseReport(token),
+                        adminReportService.getCourseReport(null), // Service will use service-to-service auth
                         now()
                 )
         );
@@ -55,13 +57,13 @@ public class AdminReportController {
     // ===== REVENUE REPORT =====
     @GetMapping("/reports/revenue")
     public ResponseEntity<ApiResponse<?>> getRevenueReport(
-            @RequestHeader("Authorization") String token) {
+            @AuthenticationPrincipal AdminPrincipal adminPrincipal) {
 
         return ResponseEntity.ok(
                 new ApiResponse<>(
                         true,
                         "Revenue report fetched successfully",
-                        adminReportService.getRevenueReport(token),
+                        adminReportService.getRevenueReport(null), // Service will use service-to-service auth
                         now()
                 )
         );
@@ -70,13 +72,13 @@ public class AdminReportController {
     // ===== ORDERS REPORT =====
     @GetMapping("/reports/orders")
     public ResponseEntity<ApiResponse<?>> getOrdersReport(
-            @RequestHeader("Authorization") String token) {
+            @AuthenticationPrincipal AdminPrincipal adminPrincipal) {
 
         return ResponseEntity.ok(
                 new ApiResponse<>(
                         true,
                         "Order analytics fetched successfully",
-                        adminReportService.getOrderReport(token),
+                        adminReportService.getOrderReport(null), // Service will use service-to-service auth
                         now()
                 )
         );

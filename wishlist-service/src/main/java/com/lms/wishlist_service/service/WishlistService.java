@@ -135,19 +135,15 @@ public class WishlistService {
     }
 
     private WishlistResponse mapToWishlistResponse(WishlistItem entity) {
-        CourseDetails mockDetails = CourseDetails.builder()
-                .courseId(String.valueOf(entity.getCourseId()))
-                .title("Introduction to Cybersecurity")
-                .price(BigDecimal.ZERO)
-                .currency("INR")
-                .category("Database Test")
-                .build();
+
+        CourseDetails course = courseClient.getCourseById(entity.getCourseId());
 
         return WishlistResponse.builder()
                 .wishlistId(entity.getId())
                 .userId(entity.getUserId())
                 .addedAt(entity.getAddedAt())
-                .course(mockDetails)
+                .course(course)
                 .build();
+
     }
 }

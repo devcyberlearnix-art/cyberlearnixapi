@@ -10,9 +10,9 @@ import org.springframework.web.bind.annotation.GetMapping;
 @FeignClient(name = "cart-service", url = "${cart.service.url}")
 public interface CartClient {
 
-    @GetMapping("/api/v1/cart/{userId}/view")
-    ApiResponse<CartResponse> getCart(@PathVariable("userId") String userId);
+    @GetMapping("/api/v1/cart/internal/{userId}")
+    ApiResponse<CartResponse> getCart(@PathVariable String userId);
 
-    @DeleteMapping("/api/v1/cart/{userId}/clear-all")
-    ApiResponse<CartResponse> clearCart(@PathVariable("userId") String userId);
+    @DeleteMapping("/api/v1/cart/internal/{userId}")
+    ApiResponse<Void> clearCart(@PathVariable String userId);
 }

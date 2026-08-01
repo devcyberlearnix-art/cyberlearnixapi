@@ -25,4 +25,6 @@ public interface CartService {
     void clearFullCart(String userId);
 
     CheckoutResponse checkoutCart(String userId);
+
+    CartResponse getCartForOrderService(String userId);
 }

@@ -50,6 +50,9 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
 
     private static final List<String> PUBLIC_PATHS = List.of(
 
+            // Admin service - public authentication
+            "/api/v1/admin/register",
+
             // User service - public authentication and social login
 
             "/api/v1/auth/login",
@@ -520,13 +523,13 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
 
                         String up = rs.toUpperCase();
 
-                        if (up.contains("SUPER_ADMIN"))
+                        if (up.contains("MAIN_ADMIN"))
 
-                            bestRole = "SUPER_ADMIN";
+                            bestRole = "MAIN_ADMIN";
 
-                        else if (up.contains("ADMIN"))
+                        else if (up.contains("SUB_ADMIN"))
 
-                            bestRole = "ADMIN";
+                            bestRole = "SUB_ADMIN";
 
                     } else if (rolesClaim instanceof java.util.Collection<?> col) {
 
@@ -538,17 +541,19 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
 
                             String up = String.valueOf(r).toUpperCase();
 
-                            if (up.contains("SUPER_ADMIN")) {
+                            if (up.contains("MAIN_ADMIN")) {
 
-                                bestRole = "SUPER_ADMIN";
+                                bestRole = "MAIN_ADMIN";
 
                                 break;
 
                             }
 
-                            if (up.equals("ADMIN") || up.contains("ADMIN"))
+                            if (up.contains("SUB_ADMIN")) {
 
-                                bestRole = bestRole == null ? "ADMIN" : bestRole;
+                                bestRole = bestRole == null ? "SUB_ADMIN" : bestRole;
+
+                            }
 
                         }
 
@@ -668,13 +673,13 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
 
             String normalized = s.toUpperCase();
 
-            if (normalized.contains("SUPER_ADMIN") || normalized.contains("ADMIN"))
+            if (normalized.contains("MAIN_ADMIN") || normalized.contains("SUB_ADMIN"))
 
                 return true;
 
             for (String part : normalized.split("[ ,]")) {
 
-                if ("ADMIN".equals(part) || "SUPER_ADMIN".equals(part))
+                if ("MAIN_ADMIN".equals(part) || "SUB_ADMIN".equals(part))
 
                     return true;
 
@@ -692,7 +697,7 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
 
                     String ru = String.valueOf(r).toUpperCase();
 
-                    if ("ADMIN".equals(ru) || "SUPER_ADMIN".equals(ru) || ru.contains("ADMIN"))
+                    if ("MAIN_ADMIN".equals(ru) || "SUB_ADMIN".equals(ru) || ru.contains("MAIN_ADMIN") || ru.contains("SUB_ADMIN"))
 
                         return true;
 
@@ -706,7 +711,7 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
 
                         String vu = String.valueOf(v).toUpperCase();
 
-                        if (vu.contains("SUPER_ADMIN") || vu.contains("ADMIN"))
+                        if (vu.contains("MAIN_ADMIN") || vu.contains("SUB_ADMIN"))
 
                             return true;
 

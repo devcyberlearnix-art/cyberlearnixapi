@@ -1,0 +1,779 @@
+{
+	"info": {
+		"name": "CyberLearnix Admin Service API - Updated",
+		"_postman_id": "admin-service-collection-updated",
+		"description": "Updated API collection for CyberLearnix Admin Service. Authentication now uses UnifiedAuthenticationController (User Service). All admin business endpoints remain in Admin Service.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:8080",
+			"type": "string",
+			"description": "API Gateway URL"
+		},
+		{
+			"key": "adminServiceUrl",
+			"value": "http://localhost:8087",
+			"type": "string",
+			"description": "Admin Service Direct URL"
+		},
+		{
+			"key": "userServiceUrl",
+			"value": "http://localhost:8091",
+			"type": "string",
+			"description": "User Service Direct URL"
+		},
+		{
+			"key": "accessToken",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "refreshToken",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "currentRole",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "currentUserId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "email",
+			"value": "",
+			"type": "string"
+		}
+	],
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "{{accessToken}}"
+			}
+		]
+	},
+	"item": [
+		{
+			"name": "Authentication (via User Service)",
+			"item": [
+				{
+					"name": "Main Admin Login",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Login successful\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('authentication');",
+									"    pm.expect(jsonData.authentication).to.have.property('accessToken');",
+									"});",
+									"",
+									"// Save tokens and user info to collection variables",
+									"var jsonData = pm.response.json();",
+									"if (jsonData.authentication) {",
+									"    pm.collectionVariables.set('accessToken', jsonData.authentication.accessToken);",
+									"    pm.collectionVariables.set('refreshToken', jsonData.authentication.refreshToken);",
+									"    console.log('Access token saved successfully');",
+									"}",
+									"if (jsonData.user) {",
+									"    pm.collectionVariables.set('currentRole', jsonData.user.role);",
+									"    pm.collectionVariables.set('currentUserId', jsonData.user.id);",
+									"    pm.collectionVariables.set('email', jsonData.user.email);",
+									"    console.log('User info saved: ' + jsonData.user.role);",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"mainadmin@cyberlearnix.com\",\n    \"password\": \"MainAdmin@123\"\n}"
+						},
+						"url": {
+							"raw": "{{userServiceUrl}}/api/v1/auth/login",
+							"host": ["{{userServiceUrl}}"],
+							"path": ["api", "v1", "auth", "login"]
+						},
+						"description": "Login as Main Admin via User Service. Routes to Admin Service for validation. Returns JWT token for authentication."
+					},
+					"response": []
+				},
+				{
+					"name": "Student Login",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"var jsonData = pm.response.json();",
+									"if (jsonData.authentication) {",
+									"    pm.collectionVariables.set('accessToken', jsonData.authentication.accessToken);",
+									"    pm.collectionVariables.set('refreshToken', jsonData.authentication.refreshToken);",
+									"}",
+									"if (jsonData.user) {",
+									"    pm.collectionVariables.set('currentRole', jsonData.user.role);",
+									"    pm.collectionVariables.set('currentUserId', jsonData.user.id);",
+									"    pm.collectionVariables.set('email', jsonData.user.email);",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"student@cyberlearnix.com\",\n    \"password\": \"Student123!\"\n}"
+						},
+						"url": {
+							"raw": "{{userServiceUrl}}/api/v1/auth/login",
+							"host": ["{{userServiceUrl}}"],
+							"path": ["api", "v1", "auth", "login"]
+						},
+						"description": "Login as Student via User Service."
+					},
+					"response": []
+				},
+				{
+					"name": "Instructor Login",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"var jsonData = pm.response.json();",
+									"if (jsonData.authentication) {",
+									"    pm.collectionVariables.set('accessToken', jsonData.authentication.accessToken);",
+									"    pm.collectionVariables.set('refreshToken', jsonData.authentication.refreshToken);",
+									"}",
+									"if (jsonData.user) {",
+									"    pm.collectionVariables.set('currentRole', jsonData.user.role);",
+									"    pm.collectionVariables.set('currentUserId', jsonData.user.id);",
+									"    pm.collectionVariables.set('email', jsonData.user.email);",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"instructor@cyberlearnix.com\",\n    \"password\": \"Instructor123!\"\n}"
+						},
+						"url": {
+							"raw": "{{userServiceUrl}}/api/v1/auth/login",
+							"host": ["{{userServiceUrl}}"],
+							"path": ["api", "v1", "auth", "login"]
+						},
+						"description": "Login as Instructor via User Service."
+					},
+					"response": []
+				},
+				{
+					"name": "Sub Admin Login",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"var jsonData = pm.response.json();",
+									"if (jsonData.authentication) {",
+									"    pm.collectionVariables.set('accessToken', jsonData.authentication.accessToken);",
+									"    pm.collectionVariables.set('refreshToken', jsonData.authentication.refreshToken);",
+									"}",
+									"if (jsonData.user) {",
+									"    pm.collectionVariables.set('currentRole', jsonData.user.role);",
+									"    pm.collectionVariables.set('currentUserId', jsonData.user.id);",
+									"    pm.collectionVariables.set('email', jsonData.user.email);",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"subadmin@cyberlearnix.com\",\n    \"password\": \"SubAdmin123!\"\n}"
+						},
+						"url": {
+							"raw": "{{userServiceUrl}}/api/v1/auth/login",
+							"host": ["{{userServiceUrl}}"],
+							"path": ["api", "v1", "auth", "login"]
+						},
+						"description": "Login as Sub Admin via User Service."
+					},
+					"response": []
+				},
+				{
+					"name": "Refresh Token",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"var jsonData = pm.response.json();",
+									"if (jsonData.authentication) {",
+									"    pm.collectionVariables.set('accessToken', jsonData.authentication.accessToken);",
+									"    pm.collectionVariables.set('refreshToken', jsonData.authentication.refreshToken);",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{refreshToken}}"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{userServiceUrl}}/api/v1/auth/refresh",
+							"host": ["{{userServiceUrl}}"],
+							"path": ["api", "v1", "auth", "refresh"]
+						},
+						"description": "Refresh access token using refresh token."
+					},
+					"response": []
+				},
+				{
+					"name": "Logout",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"// Clear tokens",
+									"pm.collectionVariables.set('accessToken', '');",
+									"pm.collectionVariables.set('refreshToken', '');"
+								]
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"refreshToken\": \"{{refreshToken}}\"\n}"
+						},
+						"url": {
+							"raw": "{{userServiceUrl}}/api/v1/auth/logout",
+							"host": ["{{userServiceUrl}}"],
+							"path": ["api", "v1", "auth", "logout"]
+						},
+						"description": "Logout and invalidate tokens."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Admin Business Operations",
+			"item": [
+				{
+					"name": "Register Sub Admin",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"subadmin@cyberlearnix.com\",\n    \"password\": \"StrongPass123!\",\n    \"confirmPassword\": \"StrongPass123!\",\n    \"firstName\": \"Sub\",\n    \"lastName\": \"Admin\",\n    \"mobileNumber\": \"+919876543210\",\n    \"assignedService\": \"COURSE_SERVICE\"\n}"
+						},
+						"url": {
+							"raw": "{{adminServiceUrl}}/api/v1/admin/register",
+							"host": ["{{adminServiceUrl}}"],
+							"path": ["api", "v1", "admin", "register"]
+						},
+						"description": "Register a sub-admin for a specific service. Requires MAIN_ADMIN role."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Admin Profile",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}"
+								}
+							]
+						},
+						"method": "GET",
+						"url": {
+							"raw": "{{adminServiceUrl}}/api/v1/admin/me",
+							"host": ["{{adminServiceUrl}}"],
+							"path": ["api", "v1", "admin", "me"]
+						},
+						"description": "Get current admin profile. Requires authentication."
+					},
+					"response": []
+				},
+				{
+					"name": "Update Admin Profile",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"firstName\": \"Admin\",\n    \"lastName\": \"Updated\"\n}"
+						},
+						"url": {
+							"raw": "{{adminServiceUrl}}/api/v1/admin/me",
+							"host": ["{{adminServiceUrl}}"],
+							"path": ["api", "v1", "admin", "me"]
+						},
+						"description": "Update current admin profile. Requires authentication."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "User Management",
+			"item": [
+				{
+					"name": "Get All Users",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}"
+								}
+							]
+						},
+						"method": "GET",
+						"url": {
+							"raw": "{{adminServiceUrl}}/api/v1/admin/users",
+							"host": ["{{adminServiceUrl}}"],
+							"path": ["api", "v1", "admin", "users"]
+						},
+						"description": "Get all users in the system. Requires authentication."
+					},
+					"response": []
+				},
+				{
+					"name": "Get User by ID",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}"
+								}
+							]
+						},
+						"method": "GET",
+						"url": {
+							"raw": "{{adminServiceUrl}}/api/v1/admin/users/:id",
+							"host": ["{{adminServiceUrl}}"],
+							"path": ["api", "v1", "admin", "users", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "user-uuid-here"
+								}
+							]
+						},
+						"description": "Get user by UUID. Requires authentication."
+					},
+					"response": []
+				},
+				{
+					"name": "Update User Status",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"status\": \"ACTIVE\"\n}"
+						},
+						"url": {
+							"raw": "{{adminServiceUrl}}/api/v1/admin/users/:id/status",
+							"host": ["{{adminServiceUrl}}"],
+							"path": ["api", "v1", "admin", "users", ":id", "status"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "user-uuid-here"
+								}
+							]
+						},
+						"description": "Activate or deactivate user account. Requires authentication."
+					},
+					"response": []
+				},
+				{
+					"name": "Delete User",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}"
+								}
+							]
+						},
+						"method": "DELETE",
+						"url": {
+							"raw": "{{adminServiceUrl}}/api/v1/admin/users/:id",
+							"host": ["{{adminServiceUrl}}"],
+							"path": ["api", "v1", "admin", "users", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "user-uuid-here"
+								}
+							]
+						},
+						"description": "Delete user by UUID. Requires authentication."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "RBAC Authorization Tests",
+			"item": [
+				{
+					"name": "Student Access Admin API - Expect 403",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}"
+								}
+							]
+						},
+						"method": "GET",
+						"url": {
+							"raw": "{{adminServiceUrl}}/api/v1/admin/users",
+							"host": ["{{adminServiceUrl}}"],
+							"path": ["api", "v1", "admin", "users"]
+						},
+						"description": "Test that STUDENT role cannot access admin APIs. Should return 403 Forbidden."
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Expect 403 Forbidden\", function () {",
+									"    pm.expect(pm.response.code).to.eql(403);",
+									"});"
+								]
+							}
+						}
+					],
+					"response": []
+				},
+				{
+					"name": "Instructor Access Admin API - Expect 403",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}"
+								}
+							]
+						},
+						"method": "GET",
+						"url": {
+							"raw": "{{adminServiceUrl}}/api/v1/admin/users",
+							"host": ["{{adminServiceUrl}}"],
+							"path": ["api", "v1", "admin", "users"]
+						},
+						"description": "Test that INSTRUCTOR role cannot access admin APIs. Should return 403 Forbidden."
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Expect 403 Forbidden\", function () {",
+									"    pm.expect(pm.response.code).to.eql(403);",
+									"});"
+								]
+							}
+						}
+					],
+					"response": []
+				},
+				{
+					"name": "Main Admin Access Admin API - Expect 200",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}"
+								}
+							]
+						},
+						"method": "GET",
+						"url": {
+							"raw": "{{adminServiceUrl}}/api/v1/admin/users",
+							"host": ["{{adminServiceUrl}}"],
+							"path": ["api", "v1", "admin", "users"]
+						},
+						"description": "Test that MAIN_ADMIN role can access admin APIs. Should return 200 OK."
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Expect 200 OK\", function () {",
+									"    pm.expect(pm.response.code).to.eql(200);",
+									"});"
+								]
+							}
+						}
+					],
+					"response": []
+				},
+				{
+					"name": "Sub Admin Access Admin API - Expect 200",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}"
+								}
+							]
+						},
+						"method": "GET",
+						"url": {
+							"raw": "{{adminServiceUrl}}/api/v1/admin/users",
+							"host": ["{{adminServiceUrl}}"],
+							"path": ["api", "v1", "admin", "users"]
+						},
+						"description": "Test that SUB_ADMIN role can access admin APIs. Should return 200 OK."
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Expect 200 OK\", function () {",
+									"    pm.expect(pm.response.code).to.eql(200);",
+									"});"
+								]
+							}
+						}
+					],
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Negative Test Cases",
+			"item": [
+				{
+					"name": "Missing Token",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{adminServiceUrl}}/api/v1/admin/me",
+							"host": ["{{adminServiceUrl}}"],
+							"path": ["api", "v1", "admin", "me"]
+						},
+						"description": "Test without any authentication token. Should return 401 Unauthorized."
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Expect 401 Unauthorized\", function () {",
+									"    pm.expect(pm.response.code).to.eql(401);",
+									"});"
+								]
+							}
+						}
+					],
+					"response": []
+				},
+				{
+					"name": "Invalid Token",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "invalid.token.here"
+								}
+							]
+						},
+						"method": "GET",
+						"url": {
+							"raw": "{{adminServiceUrl}}/api/v1/admin/me",
+							"host": ["{{adminServiceUrl}}"],
+							"path": ["api", "v1", "admin", "me"]
+						},
+						"description": "Test with invalid token. Should return 401 Unauthorized."
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Expect 401 Unauthorized\", function () {",
+									"    pm.expect(pm.response.code).to.eql(401);",
+									"});"
+								]
+							}
+						}
+					],
+					"response": []
+				}
+			]
+		}
+	]
+}

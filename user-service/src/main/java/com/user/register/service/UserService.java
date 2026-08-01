@@ -1153,10 +1153,10 @@ public class UserService {
         
 
         long totalStudents = userRepository.countByRole(User.Role.STUDENT);
-
         long totalInstructors = userRepository.countByRole(User.Role.INSTRUCTOR);
-
-        long totalAdmins = userRepository.countByRole(User.Role.ADMIN);
+        long totalMainAdmins = userRepository.countByRole(User.Role.MAIN_ADMIN);
+        long totalSubAdmins = userRepository.countByRole(User.Role.SUB_ADMIN);
+        long totalAdmins = totalMainAdmins + totalSubAdmins;
 
 
 

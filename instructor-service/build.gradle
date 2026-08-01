@@ -49,6 +49,9 @@ dependencies {
     // Cloudinary SDK
     implementation 'com.cloudinary:cloudinary-http5:2.3.2'
 
+    // SpringDoc OpenAPI
+    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.3.0'
+
     // ✅ DevTools (auto restart during development)
     developmentOnly 'org.springframework.boot:spring-boot-devtools'
 

@@ -4,17 +4,8 @@ import java.util.List;
 
 public class CreateOrderRequest {
 
-    private String userId;
-    private List<Long> courseIds; // ✅ supports multiple courses
-    private String couponCode; // optional: applied per course if valid
-
-    public String getUserId() {
-        return userId;
-    }
-
-    public void setUserId(String userId) {
-        this.userId = userId;
-    }
+    private List<Long> courseIds;
+    private String couponCode;
 
     public List<Long> getCourseIds() {
         return courseIds;

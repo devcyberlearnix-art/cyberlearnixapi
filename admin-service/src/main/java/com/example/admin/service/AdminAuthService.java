@@ -257,7 +257,7 @@ public class AdminAuthService {
                 .assignedService(assignedService)
                 .approvalStatus(AdminApprovalStatus.APPROVED)
                 .verified(true)
-                .approvedBy(principal.adminId())
+                .approvedBy(principal.getAdminId())
                 .firstName(encryptionService.encrypt(firstName))
                 .lastName(encryptionService.encrypt(lastName))
                 .mobileNumber(encryptionService.encrypt(mobile))
@@ -265,7 +265,7 @@ public class AdminAuthService {
                 .build();
 
         adminRepository.save(subAdmin);
-        auditService.logAction(principal.adminId(),
+        auditService.logAction(principal.getAdminId(),
                 "SUB_ADMIN_REGISTERED:" + subAdmin.getId() + ":" + assignedService.name());
 
         return AdminRegisterResponse.builder()

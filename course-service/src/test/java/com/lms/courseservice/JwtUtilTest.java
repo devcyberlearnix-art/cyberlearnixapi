@@ -18,11 +18,11 @@ class JwtUtilTest {
     @Test
     void generateTokenIncludesIssuerAndAudience() {
         UUID userId = UUID.randomUUID();
-        String token = jwtUtil.generateToken(userId, "ADMIN");
+        String token = jwtUtil.generateToken(userId, "MAIN_ADMIN");
 
         assertNotNull(token);
         assertTrue(jwtUtil.validateToken(token));
         assertEquals(userId, jwtUtil.extractUserId(token));
-        assertEquals("ADMIN", jwtUtil.extractRole(token));
+        assertEquals("MAIN_ADMIN", jwtUtil.extractRole(token));
     }
 }

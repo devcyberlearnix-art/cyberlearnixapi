@@ -173,4 +173,8 @@ public class CartServiceImpl implements CartService {
     public void clearFullCart(String userId) {
         cartRepository.deleteByUserId(userId);
     }
+    @Override
+    public CartResponse getCartForOrderService(String userId) {
+        return buildCartResponse(userId);
+    }
 }
