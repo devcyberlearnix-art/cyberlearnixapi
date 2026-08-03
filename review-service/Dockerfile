@@ -1,10 +1,8 @@
 # Stage 1: Build
-FROM maven:3.9-eclipse-temurin-21-alpine AS build
+FROM gradle:8.14.3-jdk21-alpine AS build
 WORKDIR /app
-COPY review-service/pom.xml review-service/pom.xml
-COPY review-service/src review-service/src
-WORKDIR /app/review-service
-RUN mvn -B package -DskipTests
+COPY . .
+RUN gradle :review-service:clean :review-service:build -x test --no-daemon
 
 # Stage 2: Runtime
 FROM eclipse-temurin:21-jre-alpine
@@ -15,7 +13,7 @@ RUN apk add --no-cache tzdata && \
 
 WORKDIR /app
 
-COPY --from=build /app/review-service/target/review-service-1.0.0.jar app.jar
+COPY --from=build /app/review-service/build/libs/review-service-1.0.0.jar app.jar
 
 EXPOSE 8089
 

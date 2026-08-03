@@ -1,8 +1,8 @@
 # Stage 1: Build
-FROM eclipse-temurin:21-jdk-alpine AS build
+FROM gradle:8.14.3-jdk21-alpine AS build
 WORKDIR /app
 COPY . .
-RUN chmod +x gradlew && ./gradlew :order-service:clean :order-service:build -x test
+RUN gradle :order-service:clean :order-service:build -x test --no-daemon
 
 # Stage 2: Runtime
 FROM eclipse-temurin:21-jre-alpine
@@ -20,3 +20,6 @@ COPY --from=build /app/order-service/build/libs/order-service-0.0.1-SNAPSHOT.jar
 EXPOSE 8084
 
 ENTRYPOINT ["java", "-Duser.timezone=Asia/Kolkata", "-jar", "app.jar"]
+
+
+

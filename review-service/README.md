@@ -7,15 +7,15 @@ Spring Boot microservice for managing course reviews in an LMS platform. Student
 - Java 21
 - Spring Boot 3.3.x
 - Spring Security + JWT
-- Spring Data JPA
-- PostgreSQL + Flyway
+- Spring Data JPA (Hibernate `ddl-auto: update`)
+- PostgreSQL
 - OpenFeign (enrollment & optional user service)
 - Lombok, Validation, SpringDoc OpenAPI
 
 ## Prerequisites
 
 - JDK 21+
-- Maven 3.9+
+- Gradle (wrapper included: `gradlew`)
 - PostgreSQL 14+
 
 ## Database Setup
@@ -24,7 +24,7 @@ Spring Boot microservice for managing course reviews in an LMS platform. Student
 CREATE DATABASE review_db;
 ```
 
-Flyway runs `V1__create_reviews_table.sql` on startup.
+Hibernate creates/updates the `reviews` table automatically on startup via `spring.jpa.hibernate.ddl-auto=update`.
 
 ## Environment Variables
 
@@ -133,7 +133,7 @@ mvn clean package
 
 ```
 review-service/
-├── pom.xml
+├── build.gradle
 ├── README.md
 └── src/main/
     ├── java/com/lms/review/
@@ -149,6 +149,5 @@ review-service/
     │   ├── service/         # Business logic
     │   └── client/          # OpenFeign clients
     └── resources/
-        ├── application.yml
-        └── db/migration/      # Flyway scripts
+        └── application.yml
 ```

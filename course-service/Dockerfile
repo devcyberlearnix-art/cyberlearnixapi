@@ -1,8 +1,8 @@
 # Stage 1: Build
-FROM eclipse-temurin:21-jdk-alpine AS build
+FROM gradle:8.14.3-jdk21-alpine AS build
 WORKDIR /app
 COPY . .
-RUN chmod +x gradlew && ./gradlew :course-service:clean :course-service:build -x test
+RUN gradle :course-service:clean :course-service:build -x test --no-daemon
 
 # Stage 2: Runtime
 FROM eclipse-temurin:21-jre-alpine
@@ -20,3 +20,6 @@ COPY --from=build /app/course-service/build/libs/course-service-0.0.1-SNAPSHOT.j
 EXPOSE 8083
 
 ENTRYPOINT ["java", "-Duser.timezone=Asia/Kolkata", "-jar", "app.jar"]
+
+
+

@@ -1,8 +1,8 @@
 # Stage 1: Build
-FROM eclipse-temurin:21-jdk-alpine AS build
+FROM gradle:8.14.3-jdk21-alpine AS build
 WORKDIR /app
 COPY . .
-RUN chmod +x gradlew && ./gradlew :admin-service:clean :admin-service:build -x test
+RUN gradle :admin-service:clean :admin-service:build -x test --no-daemon
 
 # Stage 2: Runtime
 FROM eclipse-temurin:21-jre-alpine
@@ -19,3 +19,6 @@ COPY --from=build /app/admin-service/build/libs/*-SNAPSHOT.jar app.jar
 
 EXPOSE 8087
 ENTRYPOINT ["java", "-Duser.timezone=Asia/Kolkata", "-jar", "app.jar"]
+
+
+

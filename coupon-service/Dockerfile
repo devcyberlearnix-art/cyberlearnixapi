@@ -1,8 +1,8 @@
 # Stage 1: Build
-FROM eclipse-temurin:21-jdk-alpine AS build
+FROM gradle:8.14.3-jdk21-alpine AS build
 WORKDIR /app
 COPY . .
-RUN chmod +x gradlew && ./gradlew :coupon-service:clean :coupon-service:build -x test
+RUN gradle :coupon-service:clean :coupon-service:build -x test --no-daemon
 
 # Stage 2: Runtime
 FROM eclipse-temurin:21-jre-alpine
@@ -21,3 +21,6 @@ COPY --from=build /app/coupon-service/build/libs/coupon-service-1.0.0-SNAPSHOT.j
 EXPOSE 8082
 
 ENTRYPOINT ["java", "-Duser.timezone=Asia/Kolkata", "-jar", "app.jar"]
+
+
+

@@ -9,6 +9,7 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
@@ -27,6 +28,11 @@ import java.util.UUID;
 @Entity
 @Table(name = "reviews", uniqueConstraints = {
         @UniqueConstraint(name = "uk_user_course", columnNames = { "user_id", "course_id" })
+}, indexes = {
+        @Index(name = "idx_reviews_course_id", columnList = "course_id"),
+        @Index(name = "idx_reviews_user_id", columnList = "user_id"),
+        @Index(name = "idx_reviews_status", columnList = "status"),
+        @Index(name = "idx_reviews_uuid", columnList = "review_uuid", unique = true)
 })
 @EntityListeners(AuditingEntityListener.class)
 @Getter

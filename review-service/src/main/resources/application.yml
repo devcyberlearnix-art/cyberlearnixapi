@@ -21,8 +21,6 @@ spring:
       hibernate:
         format_sql: true
         dialect: org.hibernate.dialect.PostgreSQLDialect
-  flyway:
-    enabled: false
 
 jwt:
   # Must match user-service JwtUtil.SECRET (login token signing key)

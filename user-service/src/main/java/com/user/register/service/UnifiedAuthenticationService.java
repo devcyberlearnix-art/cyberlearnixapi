@@ -230,7 +230,7 @@ public class UnifiedAuthenticationService {
 
 
 
-        if (!passwordEncoder.matches(password, user.getPassword())) {
+        if (password != null && !passwordEncoder.matches(password, user.getPassword())) {
 
 
 

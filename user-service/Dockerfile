@@ -1,12 +1,12 @@
 # Stage 1: Build
 
-FROM eclipse-temurin:21-jdk-alpine AS build
+FROM gradle:8.14.3-jdk21-alpine AS build
 
 WORKDIR /app
 
 COPY . .
 
-RUN chmod +x gradlew && ./gradlew :user-service:clean :user-service:build -x test
+RUN gradle :user-service:clean :user-service:build -x test --no-daemon
 
 
 
@@ -45,4 +45,7 @@ EXPOSE 8086
 # JVM memory settings and timezone
 
 ENTRYPOINT ["java", "-Duser.timezone=Asia/Kolkata", "-jar", "app.jar"]
+
+
+
 

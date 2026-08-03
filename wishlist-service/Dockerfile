@@ -1,8 +1,8 @@
 # Stage 1: Build
-FROM eclipse-temurin:21-jdk-alpine AS build
+FROM gradle:8.14.3-jdk21-alpine AS build
 WORKDIR /app
 COPY . .
-RUN chmod +x gradlew && ./gradlew :wishlist-service:clean :wishlist-service:build -x test
+RUN gradle :wishlist-service:clean :wishlist-service:build -x test --no-daemon
 
 # Stage 2: Runtime
 FROM eclipse-temurin:21-jre-alpine
@@ -26,3 +26,6 @@ ENTRYPOINT ["java", \
             "-Duser.timezone=Asia/Kolkata", \
             "-Dspring.threads.virtual.enabled=true", \
             "-jar", "app.jar"]
+
+
+

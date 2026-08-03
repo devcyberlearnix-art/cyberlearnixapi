@@ -1,0 +1,32 @@
+# Gradle
+.gradle/
+**/.gradle/
+build/
+**/build/
+!**/src/**/build/
+!gradle/wrapper/gradle-wrapper.jar
+.gradletasknamecache
+
+# Maven (review-service legacy)
+target/
+**/target/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.classpath
+.project
+.settings/
+bin/
+**/bin/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Local test helper scripts
+seed_test_user.sql
