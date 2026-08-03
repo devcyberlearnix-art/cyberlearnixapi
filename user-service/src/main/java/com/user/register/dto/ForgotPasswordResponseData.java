@@ -12,6 +12,9 @@ import java.time.LocalDateTime;
 public class ForgotPasswordResponseData {
     private String email;
     private int otpLength;
+    private String otpSessionId;
+    private LocalDateTime otpIssuedAt;
     private LocalDateTime otpExpiresAt;
+    private Integer cooldownSeconds;
     private String message;
 }

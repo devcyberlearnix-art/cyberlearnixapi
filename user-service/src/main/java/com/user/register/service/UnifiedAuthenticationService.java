@@ -14,7 +14,6 @@ import com.user.register.entity.User;
 
 
 
-import com.user.register.entity.OTPCode;
 
 
 
@@ -123,7 +122,7 @@ public class UnifiedAuthenticationService {
 
 
 
-    private final com.user.register.repository.OTPCodeRepository otpCodeRepository;
+    private final OtpService otpService;
 
 
 
@@ -1405,6 +1404,8 @@ public class UnifiedAuthenticationService {
 
 
         Optional<User> userOptional = userRepository.findByEmail(email);
+        String otpSessionId = null;
+        LocalDateTime otpSessionExpiresAt = null;
 
 
 
@@ -1413,6 +1414,16 @@ public class UnifiedAuthenticationService {
 
 
         if (userOptional.isPresent()) {
+
+            long cooldown = otpService.getCooldownSeconds(email, "password_reset");
+            if (cooldown > 0) {
+                Map<String, Object> response = new HashMap<>();
+                response.put("success", false);
+                response.put("message", "Please wait before requesting a new OTP");
+                response.put("cooldownSeconds", cooldown);
+                response.put("timestamp", LocalDateTime.now());
+                return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).body(response);
+            }
 
 
 
@@ -1424,51 +1435,10 @@ public class UnifiedAuthenticationService {
 
 
 
-            User user = userOptional.get();
-
-
-
-            // Store OTP in database with expiration (5 minutes)
-
-
-
-            OTPCode otpCode = OTPCode.builder()
-
-
-
-                    .user(user)
-
-
-
-                    .otp(passwordEncoder.encode(otp))
-
-
-
-                    .type("password_reset")
-
-
-
-                    .expiresAt(LocalDateTime.now().plusMinutes(5))
-
-
-
-                    .attempts(0)
-
-
-
-                    .remainingAttempts(5)
-
-
-
-                    .verified(false)
-
-
-
-                    .build();
-
-
-
-            otpCodeRepository.save(otpCode);
+                OtpService.OtpSession otpSession = otpService.createSession(email, "password_reset", otp, 5, 5);
+                otpService.markCooldown(email, "password_reset", 30);
+                otpSessionId = otpSession.sessionId();
+                otpSessionExpiresAt = otpSession.expiresAt();
 
 
 
@@ -1569,6 +1539,15 @@ public class UnifiedAuthenticationService {
 
         response.put("timestamp", LocalDateTime.now());
 
+        if (otpSessionId != null) {
+            response.put("otpSessionId", otpSessionId);
+            response.put("otpType", "password_reset");
+            response.put("expiresAt", otpSessionExpiresAt);
+            response.put("validForMinutes", 5);
+            response.put("cooldownSeconds", 30);
+            response.put("sessionStartedAt", LocalDateTime.now());
+        }
+
 
 
 
@@ -1596,18 +1575,24 @@ public class UnifiedAuthenticationService {
 
 
         String otp = request.getOtp();
+        String otpSessionId = request.getOtpSessionId();
+        if (otpSessionId == null || otpSessionId.isBlank()) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", "otpSessionId is required");
+            response.put("timestamp", LocalDateTime.now());
+            return ResponseEntity.badRequest().body(response);
+        }
 
+        OtpService.OtpVerifyResult result = otpService.verifySession(
+            otpSessionId,
+            email,
+            otp,
+            "password_reset",
+            false
+        );
 
-
-
-
-
-
-        // TODO: Verify OTP from database
-
-
-
-        boolean isValid = verifyOtp(email, otp, "password_reset");
+        boolean isValid = result.valid();
 
 
 
@@ -1627,7 +1612,8 @@ public class UnifiedAuthenticationService {
 
 
 
-            response.put("message", "Invalid or expired OTP");
+            response.put("message", result.reason());
+            response.put("remainingAttempts", result.remainingAttempts());
 
 
 
@@ -1656,6 +1642,8 @@ public class UnifiedAuthenticationService {
 
 
         response.put("message", "OTP verified successfully");
+        response.put("otpSessionId", otpSessionId);
+        response.put("sessionValidatedAt", LocalDateTime.now());
 
 
 
@@ -2072,6 +2060,10 @@ public class UnifiedAuthenticationService {
 
 
 
+        String otpSessionId = request.getOtpSessionId();
+
+
+
 
 
 
@@ -2192,11 +2184,71 @@ public class UnifiedAuthenticationService {
 
 
 
+            if (otpSessionId == null || otpSessionId.isBlank()) {
+
+
+
+                Map<String, Object> response = new HashMap<>();
+
+
+
+                response.put("success", false);
+
+
+
+                response.put("message", "otpSessionId is required");
+
+
+
+                response.put("timestamp", LocalDateTime.now());
+
+
+
+                return ResponseEntity.badRequest().body(response);
+
+
+
+            }
+
+
+
+            if (!otpService.isSessionVerified(otpSessionId, email, "password_reset")) {
+
+
+
+                Map<String, Object> response = new HashMap<>();
+
+
+
+                response.put("success", false);
+
+
+
+                response.put("message", "OTP session not verified or expired");
+
+
+
+                response.put("timestamp", LocalDateTime.now());
+
+
+
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
+
+
+
+            }
+
+
+
             user.setPassword(passwordEncoder.encode(newPassword));
 
 
 
             userRepository.save(user);
+
+
+
+            otpService.deleteSessionByTypeAndEmail(otpSessionId, email, "password_reset");
 
 
 
@@ -2361,6 +2413,8 @@ public class UnifiedAuthenticationService {
 
 
         String email = request.getEmail();
+        String otpSessionId = null;
+        LocalDateTime otpSessionExpiresAt = null;
 
 
 
@@ -2382,6 +2436,16 @@ public class UnifiedAuthenticationService {
 
         if (userOptional.isPresent()) {
 
+            long cooldown = otpService.getCooldownSeconds(email, "login");
+            if (cooldown > 0) {
+                Map<String, Object> cooldownResponse = new HashMap<>();
+                cooldownResponse.put("success", false);
+                cooldownResponse.put("message", "Please wait before requesting a new OTP");
+                cooldownResponse.put("cooldownSeconds", cooldown);
+                cooldownResponse.put("timestamp", LocalDateTime.now());
+                return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).body(cooldownResponse);
+            }
+
 
 
             // Generate OTP for login
@@ -2392,51 +2456,10 @@ public class UnifiedAuthenticationService {
 
 
 
-            User user = userOptional.get();
-
-
-
-            // Store OTP in database with expiration (5 minutes)
-
-
-
-            OTPCode otpCode = OTPCode.builder()
-
-
-
-                    .user(user)
-
-
-
-                    .otp(passwordEncoder.encode(otp))
-
-
-
-                    .type("login")
-
-
-
-                    .expiresAt(LocalDateTime.now().plusMinutes(5))
-
-
-
-                    .attempts(0)
-
-
-
-                    .remainingAttempts(5)
-
-
-
-                    .verified(false)
-
-
-
-                    .build();
-
-
-
-            otpCodeRepository.save(otpCode);
+                OtpService.OtpSession otpSession = otpService.createSession(email, "login", otp, 5, 5);
+                otpService.markCooldown(email, "login", 30);
+                otpSessionId = otpSession.sessionId();
+                otpSessionExpiresAt = otpSession.expiresAt();
 
 
 
@@ -2566,6 +2589,15 @@ public class UnifiedAuthenticationService {
 
         response.put("timestamp", LocalDateTime.now());
 
+        if (otpSessionId != null) {
+            response.put("otpSessionId", otpSessionId);
+            response.put("otpType", "login");
+            response.put("expiresAt", otpSessionExpiresAt);
+            response.put("validForMinutes", 5);
+            response.put("cooldownSeconds", 30);
+            response.put("sessionStartedAt", LocalDateTime.now());
+        }
+
 
 
 
@@ -2596,19 +2628,16 @@ public class UnifiedAuthenticationService {
 
 
 
+        String otpSessionId = request.getOtpSessionId();
 
 
 
 
-        // Admin accounts don't have a row in user-service's own users table, so the
 
 
 
-        // local OTP check (against otp_codes) must only run for known users — otherwise
-
-
-
-        // every admin OTP verify would fail here before ever reaching admin-service.
+        // Admin accounts don't have a row in user-service's own users table,
+        // so local Redis OTP validation only applies to known user accounts.
 
 
 
@@ -2624,7 +2653,25 @@ public class UnifiedAuthenticationService {
 
 
 
-            boolean isValid = verifyOtp(email, otp, "login");
+            if (otpSessionId == null || otpSessionId.isBlank()) {
+
+
+
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "otpSessionId is required");
+
+
+
+            }
+
+
+
+            OtpService.OtpVerifyResult result = otpService.verifySession(
+                    otpSessionId,
+                    email,
+                    otp,
+                    "login",
+                    true
+            );
 
 
 
@@ -2632,11 +2679,11 @@ public class UnifiedAuthenticationService {
 
 
 
-            if (!isValid) {
+            if (!result.valid()) {
 
 
 
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid or expired OTP");
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, result.reason());
 
 
 
@@ -2660,7 +2707,7 @@ public class UnifiedAuthenticationService {
 
 
 
-        // Not a user-service account — delegate OTP validation to admin-service
+        // Not a user-service account; delegate OTP validation to admin-service
 
 
 
@@ -2768,151 +2815,6 @@ public class UnifiedAuthenticationService {
 
 
 
-    private boolean verifyOtp(String email, String otp, String type) {
-
-
-
-        Optional<User> userOptional = userRepository.findByEmail(email);
-
-
-
-        if (userOptional.isEmpty()) {
-
-
-
-            return false;
-
-
-
-        }
-
-
-
-        User user = userOptional.get();
-
-
-
-        Optional<OTPCode> otpCodeOptional = otpCodeRepository.findTopByUserAndTypeOrderByCreatedAtDesc(user, type);
-
-
-
-        if (otpCodeOptional.isEmpty()) {
-
-
-
-            return false;
-
-
-
-        }
-
-
-
-        OTPCode otpCode = otpCodeOptional.get();
-
-
-
-        // Check if OTP is expired
-
-
-
-        if (otpCode.getExpiresAt().isBefore(LocalDateTime.now())) {
-
-
-
-            return false;
-
-
-
-        }
-
-
-
-        // Check if already verified
-
-
-
-        if (otpCode.getVerified()) {
-
-
-
-            return false;
-
-
-
-        }
-
-
-
-        // Check remaining attempts
-
-
-
-        if (otpCode.getRemainingAttempts() <= 0) {
-
-
-
-            return false;
-
-
-
-        }
-
-
-
-        // Verify OTP
-
-
-
-        boolean isValid = passwordEncoder.matches(otp, otpCode.getOtp());
-
-
-
-        if (!isValid) {
-
-
-
-            // Increment attempts
-
-
-
-            otpCode.setAttempts(otpCode.getAttempts() + 1);
-
-
-
-            otpCode.setRemainingAttempts(otpCode.getRemainingAttempts() - 1);
-
-
-
-            otpCodeRepository.save(otpCode);
-
-
-
-            return false;
-
-
-
-        }
-
-
-
-        // Mark as verified
-
-
-
-        otpCode.setVerified(true);
-
-
-
-        otpCodeRepository.save(otpCode);
-
-
-
-        return true;
-
-
-
-    }
 
 
 

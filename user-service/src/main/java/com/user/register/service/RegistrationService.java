@@ -64,15 +64,11 @@ import com.user.register.dto.LoginResponse;
 
 import com.user.register.entity.AuditLog;
 
-import com.user.register.entity.OTPCode;
-
 import com.user.register.entity.User;
 
 import com.user.register.exception.LoginFailedException;
 
 import com.user.register.repository.AuditLogRepository;
-
-import com.user.register.repository.OTPCodeRepository;
 
 import com.user.register.repository.UserRepository;
 
@@ -120,7 +116,7 @@ public class RegistrationService {
 
     private final UserRepository userRepository;
 
-    private final OTPCodeRepository otpRepository;
+    private final OtpService otpService;
 
     private final JavaMailSender mailSender;
 
@@ -299,23 +295,7 @@ public class RegistrationService {
 
                 String otp = generateOTP();
 
-                OTPCode otpCode = OTPCode.builder()
-
-                        .user(mobileUser)
-
-                        .otp(otp)
-
-                        .type("registration")
-
-                        .expiresAt(LocalDateTime.now().plusMinutes(5))
-
-                        .attempts(0)
-
-                        .createdAt(LocalDateTime.now())
-
-                        .build();
-
-                otpRepository.save(otpCode);
+                otpService.createSession(mobileUser.getEmail(), "registration", otp, 5, 5);
 
                 // Send OTP email - don't fail registration if email fails
                 try {
@@ -362,23 +342,7 @@ public class RegistrationService {
 
                 String otp = generateOTP();
 
-                OTPCode otpCode = OTPCode.builder()
-
-                        .user(existingUser)
-
-                        .otp(otp)
-
-                        .type("registration")
-
-                        .expiresAt(LocalDateTime.now().plusMinutes(5))
-
-                        .attempts(0)
-
-                        .createdAt(LocalDateTime.now())
-
-                        .build();
-
-                otpRepository.save(otpCode);
+                otpService.createSession(existingUser.getEmail(), "registration", otp, 5, 5);
 
                 // Send OTP email - don't fail registration if email fails
                 try {
@@ -483,25 +447,9 @@ public class RegistrationService {
 
         log.info("Registration OTP generated for user: {}", savedUser.getEmail());
 
-        OTPCode otpCode = OTPCode.builder()
+        OtpService.OtpSession otpSession = otpService.createSession(savedUser.getEmail(), "registration", otp, 5, 5);
 
-                .user(savedUser)
-
-                .otp(otp)
-
-                .type("registration")
-
-                .expiresAt(LocalDateTime.now().plusMinutes(5))
-
-                .attempts(0)
-
-                .createdAt(LocalDateTime.now())
-
-                .build();
-
-        otpRepository.save(otpCode);
-
-        log.debug("OTP code saved to database with id: {}", otpCode.getId());
+        log.debug("Registration OTP session created with id: {}", otpSession.sessionId());
 
 
 
@@ -1006,118 +954,44 @@ public class RegistrationService {
 
 
 
-        // 3️⃣ Fetch latest OTP
-
-
-
-        OTPCode code = otpRepository
-
-                .findTopByUserAndTypeOrderByCreatedAtDesc(user, "registration")
-
-                .orElse(null);
-
-
-
-        if (code == null) {
-
+        // 3️⃣ Verify OTP from Redis session
+        long secondsToExpire = otpService.getLatestSessionTtlSeconds(email, "registration");
+        if (secondsToExpire <= 0) {
             return buildOtpResponse(
-
-                    HttpStatus.GONE,
-
-                    false,
-
-                    "OTP expired",
-
-                    0,
-
-                    0
-
+                HttpStatus.GONE,
+                false,
+                "OTP expired",
+                0,
+                0
             );
-
         }
 
-        // 4️⃣ OTP expiry check
-
-        long secondsToExpire =
-
-                Duration.between(LocalDateTime.now(), code.getExpiresAt()).getSeconds();
-
-        if (secondsToExpire == 0) {
-
-            return buildOtpResponse(
-
-                    HttpStatus.GONE,
-
-                    false,
-
-                    "OTP expired",
-
-                    0,
-
-                    0
-
-            );
-
-        }
-
-
-
-        // 5️⃣ Increment attempts (Brute force protection)
-
-        int attempts = code.getAttempts() + 1;
-
-        code.setAttempts(attempts);
-
-        otpRepository.save(code);
-
-
-
-        // Lock account after 5 failed attempts
-
-        if (attempts > 5) {
-
-
-
+        OtpService.OtpVerifyResult verifyResult = otpService.verifyLatestSession(email, otp, "registration", true);
+        if (!verifyResult.valid()) {
+            int remainingAttempts = verifyResult.remainingAttempts();
+            if (remainingAttempts <= 0 && "Invalid OTP".equals(verifyResult.reason())) {
             user.setStatus(User.Status.LOCKED);
-
             userRepository.save(user);
 
-
-
             return buildOtpResponse(HttpStatus.FORBIDDEN,
+                false,
+                "Too many failed OTP attempts. Account locked.",
+                0,
+                0);
+            }
 
-                    false,
+            HttpStatus status = "OTP session expired or not found".equals(verifyResult.reason())
+                ? HttpStatus.GONE
+                : HttpStatus.UNAUTHORIZED;
+            String message = "OTP session expired or not found".equals(verifyResult.reason())
+                ? "OTP expired"
+                : verifyResult.reason();
 
-                    "Too many failed OTP attempts. Account locked.",
-
-                    0,
-
-                    0);
-
-        }
-
-
-
-        // 6️⃣ OTP mismatch
-
-        if (!code.getOtp().equals(otp)) {
-
-
-
-            int remainingAttempts = 5 - attempts;
-
-
-
-            return buildOtpResponse(HttpStatus.UNAUTHORIZED,
-
-                    false,
-
-                    "Invalid OTP",
-
-                    remainingAttempts,
-
-                    secondsToExpire);
-
+            return buildOtpResponse(status,
+                false,
+                message,
+                remainingAttempts,
+                secondsToExpire);
         }
 
 
@@ -1130,9 +1004,7 @@ public class RegistrationService {
 
 
 
-        // Prevent replay attack
-
-        otpRepository.delete(code);
+        // Prevent replay attack by consuming successful Redis OTP session.
 
 
 
@@ -1852,53 +1724,17 @@ public class RegistrationService {
 
 
 
-        Optional<OTPCode> recentOtpOptional =
-
-                otpRepository.findTopByUserAndTypeOrderByCreatedAtDesc(user, "login");
-
-
-
-        if (recentOtpOptional.isPresent()) {
-
-            OTPCode recentOtp = recentOtpOptional.get();
-
-
-
-            if (recentOtp.getCreatedAt().plusSeconds(30).isAfter(LocalDateTime.now())) {
-
-                throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS,
-
-                        "OTP requested too frequently. Please wait 30 seconds.");
-
-            }
-
+        long cooldown = otpService.getCooldownSeconds(email, "login");
+        if (cooldown > 0) {
+            throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS,
+                "OTP requested too frequently. Please wait 30 seconds.");
         }
 
 
 
         String otp = generateOTP();
-
-
-
-        OTPCode otpCode = OTPCode.builder()
-
-                .user(user)
-
-                .otp(otp)
-
-                .type("login")
-
-                .expiresAt(LocalDateTime.now().plusMinutes(5))
-
-                .attempts(0)
-
-                .createdAt(LocalDateTime.now())
-
-                .build();
-
-
-
-        otpRepository.save(otpCode);
+        OtpService.OtpSession otpSession = otpService.createSession(email, "login", otp, 5, 5);
+        otpService.markCooldown(email, "login", 30);
 
 
 
@@ -1912,7 +1748,9 @@ public class RegistrationService {
 
         data.put("otpType", "login");
 
-        data.put("expiresAt", otpCode.getExpiresAt());
+        data.put("otpSessionId", otpSession.sessionId());
+
+        data.put("expiresAt", otpSession.expiresAt());
 
         data.put("validForMinutes", 5);
 
@@ -1974,75 +1812,30 @@ public class RegistrationService {
 
 
 
-        OTPCode code = otpRepository.findTopByUserAndTypeOrderByCreatedAtDesc(user, "login").orElse(null);
-
-        if (code == null) {
-
-            return buildOtpErrorResponse("Invalid OTP", 0, 0);
-
-        }
-
-
-
-        // Calculate remaining OTP validity
-
-        long expiresInSeconds = Duration.between(LocalDateTime.now(), code.getExpiresAt()).getSeconds();
-
+        long expiresInSeconds = otpService.getLatestSessionTtlSeconds(email, "login");
         if (expiresInSeconds <= 0) {
-
-            otpRepository.delete(code);
-
             return buildOtpErrorResponse("OTP expired", 0, 0);
-
         }
 
+        OtpService.OtpVerifyResult verifyResult = otpService.verifyLatestSession(email, otp, "login", true);
+        if (!verifyResult.valid()) {
+            int remainingAttempts = verifyResult.remainingAttempts();
 
-
-        // Check OTP correctness
-
-        if (!code.getOtp().equals(otp)) {
-
-            code.setAttempts(code.getAttempts() + 1);
-
-            otpRepository.save(code);
-
-
-
-            int remainingAttempts = 5 - code.getAttempts();
-
-
-
-            if (remainingAttempts <= 0) {
-
+            if (remainingAttempts <= 0 && "Invalid OTP".equals(verifyResult.reason())) {
                 user.setLockedUntil(LocalDateTime.now().plusMinutes(15));
-
                 userRepository.save(user);
-
-                otpRepository.delete(code);
-
                 return buildOtpErrorResponse(
-
                         "Maximum OTP attempts reached. Account locked until " + user.getLockedUntil(),
-
                         0,
-
                         0
-
                 );
-
             }
 
-
-
-            return buildOtpErrorResponse("Invalid OTP", remainingAttempts, expiresInSeconds);
-
+            String message = "OTP session expired or not found".equals(verifyResult.reason())
+                    ? "OTP expired"
+                    : verifyResult.reason();
+            return buildOtpErrorResponse(message, remainingAttempts, expiresInSeconds);
         }
-
-
-
-        // OTP correct → delete OTP
-
-        otpRepository.delete(code);
 
 
 
@@ -2286,37 +2079,16 @@ public class RegistrationService {
 
 
 
-        // Remove old OTPs
-
-        otpRepository.deleteByUserAndType(user, "password_reset");
-
-
+        long cooldown = otpService.getCooldownSeconds(email, "password_reset");
+        if (cooldown > 0) {
+            throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS,
+                "OTP requested too frequently. Please wait " + cooldown + " seconds.");
+        }
 
         // Generate OTP
-
         String otp = generateOTP();
-
-
-
-        OTPCode otpCode = OTPCode.builder()
-
-                .user(user)
-
-                .otp(otp)
-
-                .type("password_reset")
-
-                .expiresAt(LocalDateTime.now().plusMinutes(10))
-
-                .attempts(0)
-
-                .createdAt(LocalDateTime.now())
-
-                .build();
-
-
-
-        otpRepository.save(otpCode);
+        OtpService.OtpSession otpSession = otpService.createSession(email, "password_reset", otp, 10, 5);
+        otpService.markCooldown(email, "password_reset", 30);
 
 
 
@@ -2328,13 +2100,19 @@ public class RegistrationService {
 
         return new ForgotPasswordResponseData(
 
-                user.getEmail(),
+            user.getEmail(),
 
-                6, // OTP length
+            6, // OTP length
 
-                otpCode.getExpiresAt(),
+            otpSession.sessionId(),
 
-                "OTP sent to email. Use it within 10 minutes."
+            LocalDateTime.now(),
+
+            otpSession.expiresAt(),
+
+            30,
+
+            "OTP sent to email. Use it within 10 minutes."
 
         );
 
@@ -2352,26 +2130,12 @@ public class RegistrationService {
 
 
 
-        OTPCode otpCode = otpRepository
-
-                .findTopByUserAndTypeOrderByCreatedAtDesc(user, "password_reset")
-
-                .orElseThrow(() -> new RuntimeException("OTP not found"));
-
-
-
-        if (otpCode.getExpiresAt().isBefore(LocalDateTime.now())) {
-
-            throw new RuntimeException("OTP expired");
-
-        }
-
-
-
-        if (!otpCode.getOtp().equals(otp)) {
-
-            throw new RuntimeException("Invalid OTP");
-
+        OtpService.OtpVerifyResult verifyResult = otpService.verifyLatestSession(email, otp, "password_reset", true);
+        if (!verifyResult.valid()) {
+            if ("OTP session expired or not found".equals(verifyResult.reason())) {
+                throw new RuntimeException("OTP expired");
+            }
+            throw new RuntimeException(verifyResult.reason());
         }
 
 
@@ -2392,9 +2156,7 @@ public class RegistrationService {
 
 
 
-        // ✅ Delete OTP
-
-        otpRepository.delete(otpCode);
+        // OTP is consumed by Redis verify call.
 
 
 

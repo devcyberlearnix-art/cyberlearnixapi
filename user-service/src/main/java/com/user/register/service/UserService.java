@@ -16,8 +16,6 @@ import com.user.register.repository.AuditLogRepository;
 
 import com.user.register.repository.InstructorApplicationRepository;
 
-import com.user.register.repository.OTPCodeRepository;
-
 import com.user.register.repository.UserRepository;
 
 import com.user.register.repository.UserSessionRepository;
@@ -94,8 +92,6 @@ public class UserService {
 
     private final String encryptionKey = "1234567890123456"; // your encryption key
 
-    private final OTPCodeRepository otpCodeRepository;
-
     private byte[] secretKey;
 
     private AuditLogRepository auditLogRepository;
@@ -120,8 +116,6 @@ public class UserService {
 
                        AuditLogRepository auditLogRepository,
 
-                       OTPCodeRepository otpCodeRepository,
-
                        Cloudinary cloudinary) {
 
         this.userRepository = userRepository;
@@ -133,8 +127,6 @@ public class UserService {
         this.unifiedJwtService = unifiedJwtService;
 
         this.auditLogRepository = auditLogRepository;
-
-        this.otpCodeRepository = otpCodeRepository;
 
         this.cloudinary = cloudinary;
 
@@ -1105,8 +1097,6 @@ public class UserService {
         sessionRepository.deleteByUser(user);   // ✅
 
         auditLogRepository.deleteByUser(user);  // ✅
-
-        otpCodeRepository.deleteByUser(user);   // 🔥 ADD THIS
 
 
 

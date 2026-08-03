@@ -10,6 +10,8 @@ public class ResetPasswordRequest {
 
     private String email;
 
+    private String otpSessionId;
+
     @NotBlank(message = "New password is required")
     @Size(min = 8, message = "Password must be at least 8 characters")
     private String newPassword;
