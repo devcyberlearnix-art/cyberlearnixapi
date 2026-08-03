@@ -57,6 +57,7 @@ import org.springframework.web.client.RestTemplate;
 
 
 import org.springframework.web.client.RestClientResponseException;
+import org.springframework.web.client.ResourceAccessException;
 
 import org.springframework.web.server.ResponseStatusException;
 
@@ -1359,7 +1360,7 @@ public class UnifiedAuthenticationService {
 
 
 
-        if (request == null || request.getEmail() == null || request.getEmail().isEmpty()) {
+        if (request == null || request.getEmail() == null || request.getEmail().isBlank()) {
 
 
 
@@ -2412,7 +2413,14 @@ public class UnifiedAuthenticationService {
 
 
 
-        String email = request.getEmail();
+        String email = request.getEmail().trim();
+        if (!email.contains("@") || email.startsWith("@") || email.endsWith("@")) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", "Please provide a valid email address");
+            response.put("timestamp", LocalDateTime.now());
+            return ResponseEntity.badRequest().body(response);
+        }
         String otpSessionId = null;
         LocalDateTime otpSessionExpiresAt = null;
 
@@ -2475,7 +2483,7 @@ public class UnifiedAuthenticationService {
 
                 throw new ResponseStatusException(
                         HttpStatus.SERVICE_UNAVAILABLE,
-                        "Unable to send OTP email right now. Please try again shortly."
+                    "Unable to send OTP email right now. Please try again later."
                 );
 
             }
@@ -2498,7 +2506,7 @@ public class UnifiedAuthenticationService {
 
 
 
-                if (adminServiceUrl != null && restTemplate != null) {
+                if (adminServiceUrl != null && !adminServiceUrl.isBlank() && restTemplate != null) {
 
 
 
@@ -2521,10 +2529,15 @@ public class UnifiedAuthenticationService {
                         boolean adminSuccess = Boolean.parseBoolean(String.valueOf(successValue));
                         if (!adminSuccess) {
                             Object adminMessage = adminResponse.getBody().get("message");
-                            String safeMessage = adminMessage != null
+                            log.warn("Admin OTP request returned unsuccessful response for email {}: {}",
+                                email,
+                                adminMessage != null ? adminMessage : "No message");
+                            throw new ResponseStatusException(
+                                HttpStatus.SERVICE_UNAVAILABLE,
+                                adminMessage != null
                                     ? adminMessage.toString()
-                                    : "Unable to send OTP email right now. Please try again shortly.";
-                            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, safeMessage);
+                                    : "Unable to process admin OTP request right now. Please try again later."
+                            );
                         }
                     }
 
@@ -2534,6 +2547,11 @@ public class UnifiedAuthenticationService {
 
 
 
+                } else {
+                    throw new ResponseStatusException(
+                        HttpStatus.SERVICE_UNAVAILABLE,
+                        "Admin OTP service is not configured"
+                    );
                 }
 
 
@@ -2546,8 +2564,17 @@ public class UnifiedAuthenticationService {
                     email, e.getStatusCode(), adminMessage);
 
                 throw new ResponseStatusException(
-                        HttpStatus.SERVICE_UNAVAILABLE,
-                        "Unable to send OTP email right now. Please try again shortly."
+                    HttpStatus.SERVICE_UNAVAILABLE,
+                    "Admin OTP service returned an error. Please try again later."
+                );
+
+            } catch (ResourceAccessException e) {
+
+                log.error("Admin OTP service unreachable for email: {}", email, e);
+
+                throw new ResponseStatusException(
+                    HttpStatus.SERVICE_UNAVAILABLE,
+                    "Admin service is unavailable right now. Please try again later."
                 );
 
             } catch (Exception e) {
@@ -2555,8 +2582,8 @@ public class UnifiedAuthenticationService {
                 log.error("Failed to send login OTP to admin: {}", email, e);
 
                 throw new ResponseStatusException(
-                        HttpStatus.SERVICE_UNAVAILABLE,
-                        "Unable to process OTP request right now. Please try again shortly."
+                    HttpStatus.SERVICE_UNAVAILABLE,
+                    "Unable to process OTP request right now. Please try again later."
                 );
 
             }
