@@ -285,6 +285,10 @@ public class RegistrationService {
 
             User mobileUser = existingMobileUser.get();
 
+            boolean sameEmailAsRequest = user.getEmail() != null
+                    && mobileUser.getEmail() != null
+                    && user.getEmail().equalsIgnoreCase(mobileUser.getEmail());
+
             if (mobileUser.getStatus() == User.Status.ACTIVE) {
 
                 throw new RuntimeException("Mobile number already registered");
@@ -292,6 +296,10 @@ public class RegistrationService {
             }
 
             if (mobileUser.getStatus() == User.Status.PENDING_VERIFICATION) {
+
+                if (!sameEmailAsRequest) {
+                    throw new RuntimeException("Mobile number already registered");
+                }
 
                 String otp = generateOTP();
 

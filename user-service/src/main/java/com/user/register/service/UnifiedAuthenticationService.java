@@ -2532,12 +2532,29 @@ public class UnifiedAuthenticationService {
                             log.warn("Admin OTP request returned unsuccessful response for email {}: {}",
                                 email,
                                 adminMessage != null ? adminMessage : "No message");
-                            throw new ResponseStatusException(
-                                HttpStatus.SERVICE_UNAVAILABLE,
-                                adminMessage != null
-                                    ? adminMessage.toString()
-                                    : "Unable to process admin OTP request right now. Please try again later."
-                            );
+
+                            String safeMessage = adminMessage != null
+                                ? adminMessage.toString().toLowerCase(Locale.ROOT)
+                                : "";
+
+                            Map<String, Object> notFoundResponse = new HashMap<>();
+                            notFoundResponse.put("success", false);
+                            notFoundResponse.put("message", "User not found or not registered");
+                            notFoundResponse.put("timestamp", LocalDateTime.now());
+
+                            if (safeMessage.contains("does not exist")
+                                || safeMessage.contains("not found")
+                                || safeMessage.contains("not registered")) {
+                                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(notFoundResponse);
+                            }
+
+                            Map<String, Object> downstreamErrorResponse = new HashMap<>();
+                            downstreamErrorResponse.put("success", false);
+                            downstreamErrorResponse.put("message", adminMessage != null
+                                ? adminMessage.toString()
+                                : "Admin OTP service returned an error. Please try again later.");
+                            downstreamErrorResponse.put("timestamp", LocalDateTime.now());
+                            return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body(downstreamErrorResponse);
                         }
                     }
 
@@ -2563,28 +2580,43 @@ public class UnifiedAuthenticationService {
                 log.error("Admin OTP request failed for email: {} with status {} and body {}",
                     email, e.getStatusCode(), adminMessage);
 
-                throw new ResponseStatusException(
-                    HttpStatus.SERVICE_UNAVAILABLE,
-                    "Admin OTP service returned an error. Please try again later."
-                );
+                if (e.getStatusCode() == HttpStatus.NOT_FOUND || e.getStatusCode() == HttpStatus.BAD_REQUEST) {
+                    Map<String, Object> response = new HashMap<>();
+                    response.put("success", false);
+                    response.put("message", "User not found or not registered");
+                    response.put("timestamp", LocalDateTime.now());
+                    return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+                }
+
+                Map<String, Object> response = new HashMap<>();
+                response.put("success", false);
+                response.put("message", "Admin OTP service returned an error. Please try again later.");
+                response.put("timestamp", LocalDateTime.now());
+                return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body(response);
 
             } catch (ResourceAccessException e) {
 
                 log.error("Admin OTP service unreachable for email: {}", email, e);
 
-                throw new ResponseStatusException(
-                    HttpStatus.SERVICE_UNAVAILABLE,
-                    "Admin service is unavailable right now. Please try again later."
-                );
+                Map<String, Object> response = new HashMap<>();
+                response.put("success", false);
+                response.put("message", "Admin service is unavailable right now. Please try again later.");
+                response.put("timestamp", LocalDateTime.now());
+                return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(response);
+
+            } catch (ResponseStatusException e) {
+
+                throw e;
 
             } catch (Exception e) {
 
                 log.error("Failed to send login OTP to admin: {}", email, e);
 
-                throw new ResponseStatusException(
-                    HttpStatus.SERVICE_UNAVAILABLE,
-                    "Unable to process OTP request right now. Please try again later."
-                );
+                Map<String, Object> response = new HashMap<>();
+                response.put("success", false);
+                response.put("message", "Unable to process OTP request right now. Please try again later.");
+                response.put("timestamp", LocalDateTime.now());
+                return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(response);
 
             }
 
@@ -2657,6 +2689,20 @@ public class UnifiedAuthenticationService {
 
         String otpSessionId = request.getOtpSessionId();
 
+        if (otpSessionId == null || otpSessionId.isBlank()) {
+
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "otpSessionId is required");
+
+        }
+
+        String resolvedEmail = (email != null && !email.isBlank())
+            ? email.trim()
+            : otpService.resolveSessionEmail(otpSessionId, "login")
+                .orElseThrow(() -> new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Valid otpSessionId is required when email is not provided"
+                ));
+
 
 
 
@@ -2668,7 +2714,7 @@ public class UnifiedAuthenticationService {
 
 
 
-        Optional<User> userOptional = userRepository.findByEmail(email);
+        Optional<User> userOptional = userRepository.findByEmail(resolvedEmail);
 
 
 
@@ -2680,21 +2726,9 @@ public class UnifiedAuthenticationService {
 
 
 
-            if (otpSessionId == null || otpSessionId.isBlank()) {
-
-
-
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "otpSessionId is required");
-
-
-
-            }
-
-
-
             OtpService.OtpVerifyResult result = otpService.verifySession(
                     otpSessionId,
-                    email,
+                    resolvedEmail,
                     otp,
                     "login",
                     true
@@ -2738,7 +2772,7 @@ public class UnifiedAuthenticationService {
 
 
 
-        return tryAdminOtpLogin(email, otp, httpRequest);
+        return tryAdminOtpLogin(resolvedEmail, otp, httpRequest);
 
 
 

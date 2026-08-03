@@ -2,14 +2,12 @@ package com.user.register.controller;
 
 import com.user.register.dto.ApiResponse;
 import com.user.register.dto.UserProfileResponse;
-import com.user.register.security.JwtUtil;
 import com.user.register.service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.ResponseEntity;
 
@@ -25,14 +23,11 @@ class UserControllerTest {
     private UserService userService;
 
     @Mock
-    private JwtUtil jwtUtil;
-
-    @Mock
     private HttpServletRequest request;
 
     @BeforeEach
     void setUp() {
-        userController = new UserController(userService, jwtUtil);
+        userController = new UserController(userService);
     }
 
     @Test

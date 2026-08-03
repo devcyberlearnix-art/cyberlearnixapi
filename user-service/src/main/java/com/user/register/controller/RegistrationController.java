@@ -122,7 +122,26 @@ public class RegistrationController {
 
     @PostMapping("/register")
 
-    public ResponseEntity<?> register(@RequestBody User user, HttpServletRequest request) {
+    public ResponseEntity<?> register(@RequestBody RegisterRequest registerRequest, HttpServletRequest request) {
+
+        User user = new User();
+        user.setEmail(registerRequest.getEmail());
+        user.setPassword(registerRequest.getPassword());
+        user.setConfirmPassword(registerRequest.getConfirmPassword());
+        user.setFirstName(registerRequest.getFirstName());
+        user.setLastName(registerRequest.getLastName());
+        user.setMobile(registerRequest.getMobileNumber());
+        user.setCountryCode(registerRequest.getCountryCode());
+        user.setDob(registerRequest.getDob());
+        user.setProfilePhoto(registerRequest.getProfilePhoto());
+        user.setCity(registerRequest.getCity());
+        user.setState(registerRequest.getState());
+        user.setCountry(registerRequest.getCountry());
+        user.setPreferredLanguage(registerRequest.getPreferredLanguage());
+        user.setOrganization(registerRequest.getOrganization());
+        user.setSkills(registerRequest.getSkillsAsString());
+        user.setFieldOfStudy(registerRequest.getFieldOfStudy());
+        user.setHighestQualification(registerRequest.getHighestQualification());
 
         System.out.println("=== REGISTER CONTROLLER CALLED ===");
 
@@ -160,13 +179,21 @@ public class RegistrationController {
 
 
 
-            ApiResponse<User> response = new ApiResponse<>(
+            Map<String, Object> responseData = new HashMap<>();
+            responseData.put("id", savedUser.getId());
+            responseData.put("email", savedUser.getEmail());
+            responseData.put("status", savedUser.getStatus());
+            responseData.put("role", savedUser.getRole());
+            responseData.put("countryCode", savedUser.getCountryCode());
+            responseData.put("effectiveRole", savedUser.getEffectiveRole());
+
+            ApiResponse<Map<String, Object>> response = new ApiResponse<>(
 
                     true,
 
                     "User registered successfully. OTP has been sent to email.",
 
-                    savedUser,
+                    responseData,
 
                     LocalDateTime.now()
 

@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import java.security.MessageDigest;
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.Optional;
 import java.util.Base64;
 import java.util.Random;
 import java.util.UUID;
@@ -124,6 +125,27 @@ public class OtpService {
         }
 
         return new OtpVerifyResult(true, "OTP verified", remainingAttempts);
+    }
+
+    public Optional<String> resolveSessionEmail(String sessionId, String otpType) {
+        String key = OTP_SESSION_PREFIX + sessionId;
+        Object storedEmail = redisTemplate.opsForHash().get(key, "email");
+        Object storedType = redisTemplate.opsForHash().get(key, "otpType");
+        Object storedVerified = redisTemplate.opsForHash().get(key, "verified");
+
+        if (storedEmail == null || storedType == null) {
+            return Optional.empty();
+        }
+
+        if (!otpType.equals(storedType.toString())) {
+            return Optional.empty();
+        }
+
+        if (Boolean.parseBoolean(String.valueOf(storedVerified))) {
+            return Optional.empty();
+        }
+
+        return Optional.of(storedEmail.toString());
     }
 
     public boolean isSessionVerified(String sessionId, String email, String otpType) {
