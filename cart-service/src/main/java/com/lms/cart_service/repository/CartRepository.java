@@ -13,8 +13,11 @@ public interface CartRepository extends JpaRepository<CartItem, Long> {
     // Requirement 3: Get all items for the logged-in user
     List<CartItem> findAllByUserId(String userId);
 
-    // Requirement 1 & 2: Find specific item to check if we should increment or decrement quantity
-    Optional<CartItem> findByUserIdAndCourseIdAndInstructorId(String userId, String courseId, String instructorId);
+    // Requirement 1 & 2: Find specific item to check if we should increment or
+    // decrement quantity
+    Optional<CartItem> findByUserIdAndCourseIdAndInstructorId(String userId, Long courseId, String instructorId);
+
+    Optional<CartItem> findByUserIdAndCourseId(String userId, Long courseId);
 
     // Requirement 4: Delete all items for a specific user
     void deleteByUserId(String userId);

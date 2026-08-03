@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<!--[if lt IE 7 ]> <html lang="en" class="no-js oldie ie6"> <![endif]-->
+<!--[if IE 7 ]>    <html lang="en" class="no-js oldie ie7"> <![endif]-->
+<!--[if IE 8 ]>    <html lang="en" class="no-js ie8"> <![endif]-->
+<!--[if (gte IE 9)|!(IE)]><!--> <html class="no-js" lang="en"> <!--<![endif]-->
+
+<link rel="icon" href="data:,">
+<!-- Custom Modernizr build (should always be on the top) -->
+<!-- <script src="js/modernizr-2.0.6.min.js"></script> -->
+<script language="javascript">
+    document.title = "Transaction Error";
+    if (window.opener) {
+        window.opener.postMessage({evt: "bolt-ohFish", errMsg: "Some problem occurred"}, "*");
+    } else {
+        window.parent.postMessage({evt: "bolt-ohFish", errMsg: "Some problem occurred"}, "*");
+    }
+</script>
+
+<style>
+    body {font-family: 'Arial'}
+    .container {width: 960px; margin: 0 auto; padding: 15px 0;}
+
+    #header {border-bottom: 1px solid #ccc;}
+    #content {padding: 100px;}
+    #content h1 {font-size: 70px; color: #00B140; margin-bottom: 0; margin-top: 0; text-align: center}
+    #content h2 {font-size: 16px; margin-top: 0; text-align: center}
+    #content p {font-size: 14px; margin-top: 30px; line-height: 24px; padding: 0 150px;}
+
+    #footer {border-top: 1px solid #ddd; font-size: 12px;}
+    #footer p {margin-top: 0;}
+
+    #footer a {text-decoration: underline}
+</style>
+
+<div id="header">
+    <div class="container">
+        <img src="https://test.payu.in/images/payu_new_logo.png" width="220" height="110">
+    </div>
+</div>
+<div id="content" style=padding:20px>
+    <div class="container">
+        <h1>SORRY!</h1>
+        <h2>We were unable to process your payment</h2>
+            <p style='text-align: justify;font-size:13px;'><span style='font-size:20px;color:#FF0000'>Error Reason</span><br>Invalid amount </p><p style='text-align: justify;font-size:13px;'><span style='font-size:20px;color:#64D81C'>Corrective Action</span><br>Please ensure that you send all mandatory parameters in the transaction request to PayU.<br><div style='font-size: 13px;padding: 0 150px; padding: 0 150px; line-height: 18px;'>Mandatory parameters which must be sent in the transaction are: <br><b>key, txnid, amount, productinfo, firstname, email, phone, surl, furl, hash</b></div>.<br><div style='font-size: 13px;padding: 0 150px; line-height: 18px;'>The parameters which you have actually sent in the transaction are: <br><b></b>.</div><br><div style='font-size: 13px;padding: 0 150px; line-height: 18px;'>Mandatory parameter missing from your transaction request are: <br><b> key, txnid, amount, productinfo, surl, hash, firstname, email, phone</b>.</div><br><div style='font-size: 13px;padding: 0 150px; line-height: 18px;'>Please re-initiate the transaction with all the mandatory parameters.</div></p> </p>    </div>
+
+    </div>
+
+<div id="footer">
+    <div class="container">
+        <!--<p style="float:left">&copy; 2015 PayU. All rights reserved.</p>
+        <p style="float:right"><a target="_blank" href=https://extest.payubiz.in/privacyPolicy >Privacy Policy</a></p>
+        <p style="clear:both"></p>-->
+        <p style="text-align: center">&copy; 2026 PayU. All rights reserved.</p>
+    </div>
+</div>
+
+<script src="js/libs/jquery-custom.min.js"></script>
+<!-- <script src="./_js/plugins.js"></script> -->
+<!-- <script src="js/script.js?version=v2.0.10"></script> -->
+

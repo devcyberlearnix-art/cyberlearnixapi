@@ -25,10 +25,12 @@ public class Coupon {
     @Column(unique = true, nullable = false)
     private String code;
 
-    // --- IMPORTANT: Ensure these are not null in the DB ---
-    private String discountType; // Should be "PERCENT" or "FIXED"
-    private Double discountValue; // Should be e.g., 20.0
-    // -----------------------------------------------------
+    private String title;
+    private String description;
+    private String discountType;
+    private Double discountValue;
+    private Double minimumOrderAmount;
+    private Double maximumDiscountAmount;
 
     private Double minPurchase;
 
@@ -37,6 +39,9 @@ public class Coupon {
 
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime endTime;
+
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
+    private LocalDateTime createdAt;
 
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime expiryDate;
@@ -51,10 +56,16 @@ public class Coupon {
     @JsonProperty("isActive")
     private boolean isActive = true;
 
+    private String status;
+    private Boolean stackable;
+    private String createdById;
+    private String createdByRole;
+    private String applicableTo;
+
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "coupon_courses", joinColumns = @JoinColumn(name = "coupon_id"))
     @Column(name = "course_id")
-    private List<String> courses;
+    private List<Long> courses;
 
     private String assignedUserId;
     private String campaignId;

@@ -17,9 +17,10 @@ public class Enrollment {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // ✅ Change to UUID
+    // Student is UUID
     private UUID studentId;
 
+    // Course id stored as numeric Long (matches courses.id)
     private Long courseId;
 
     private String studentName;

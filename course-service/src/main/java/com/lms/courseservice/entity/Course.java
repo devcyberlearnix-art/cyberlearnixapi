@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.math.BigDecimal;
+// Course id uses numeric DB primary key
 
 @Entity
 @Table(name = "courses")

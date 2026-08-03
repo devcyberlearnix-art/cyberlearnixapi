@@ -1,0 +1,17 @@
+rootProject.name = 'cyberlearnix'
+
+include 'commonlibs'
+include 'user-service'
+include 'course-service'
+include 'coupon-service'
+include 'cart-service'
+include 'api-gateway'
+include 'wishlist-service'
+include 'order-service'
+include 'payment-service'
+include 'admin-service'
+include 'instructor-service'
+include 'review-service'
+include 'notification-service'
+
+project(':payment-service').projectDir = file('payment-service')

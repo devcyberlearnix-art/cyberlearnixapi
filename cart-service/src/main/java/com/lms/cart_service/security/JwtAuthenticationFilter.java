@@ -25,6 +25,28 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
 
+        // First try to get user info from API Gateway headers
+        String userId = request.getHeader("X-User-Id");
+        String role = request.getHeader("X-User-Role");
+
+        if (userId != null && role != null) {
+            // Use gateway-provided headers
+            List<SimpleGrantedAuthority> authorities = Collections.singletonList(
+                    new SimpleGrantedAuthority("ROLE_" + toSpringSecurityRole(role))
+            );
+
+            UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
+                    userId,
+                    null,
+                    authorities
+            );
+
+            SecurityContextHolder.getContext().setAuthentication(authToken);
+            filterChain.doFilter(request, response);
+            return;
+        }
+
+        // Fallback to JWT validation if gateway headers not present
         String authHeader = request.getHeader("Authorization");
 
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
@@ -35,14 +57,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String jwt = authHeader.substring(7);
 
         try {
-            String userId = jwtService.extractUserId(jwt);
+            userId = jwtService.extractUserId(jwt);
             // Extract the role (studentrole, admin, or instructor)
-            String role = jwtService.extractRole(jwt);
+            role = jwtService.extractRole(jwt);
 
             if (userId != null && SecurityContextHolder.getContext().getAuthentication() == null) {
                 // Spring Security expects roles to start with "ROLE_" for hasRole() checks
                 List<SimpleGrantedAuthority> authorities = Collections.singletonList(
-                        new SimpleGrantedAuthority("ROLE_" + role)
+                        new SimpleGrantedAuthority("ROLE_" + toSpringSecurityRole(role))
                 );
 
                 UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
@@ -54,10 +76,30 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 SecurityContextHolder.getContext().setAuthentication(authToken);
             }
         } catch (Exception e) {
-            // If token is malformed or expired, we just let it fail at the security config level
             logger.error("Could not set user authentication in security context", e);
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            response.setContentType("application/json");
+            response.getWriter().write("{\"error\":\"Unauthorized\",\"message\":\"Invalid or expired token\"}");
+            return;
         }
 
         filterChain.doFilter(request, response);
+    }
+
+    private static String toSpringSecurityRole(String role) {
+        if (role == null || role.isBlank()) {
+            return "STUDENT";
+        }
+        String upper = role.toUpperCase();
+        if ("USER".equals(upper) || "STUDENT".equals(upper)) {
+            return "STUDENT";
+        }
+        if (upper.contains("MAIN_ADMIN")) {
+            return "MAIN_ADMIN";
+        }
+        if (upper.contains("SUB_ADMIN")) {
+            return "SUB_ADMIN";
+        }
+        return upper;
     }
 }

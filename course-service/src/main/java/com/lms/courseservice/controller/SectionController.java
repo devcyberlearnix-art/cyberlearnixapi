@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/courses")
+@RequestMapping("/api/v1/courses")
 @RequiredArgsConstructor
 public class SectionController {
 
@@ -25,7 +25,7 @@ public class SectionController {
     // Instructor/Admin only
     @PostMapping("/{courseId}/sections")
     public Section createSection(@PathVariable Long courseId,
-                                 @RequestBody Section section) {
+            @RequestBody Section section) {
         return sectionService.createSection(courseId, section);
     }
 
@@ -38,7 +38,7 @@ public class SectionController {
     // Instructor/Admin only
     @PatchMapping("/sections/{sectionId}")
     public Section updateSection(@PathVariable Long sectionId,
-                                 @RequestBody Section section) {
+            @RequestBody Section section) {
         return sectionService.updateSection(sectionId, section);
     }
 

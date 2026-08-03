@@ -1,0 +1,537 @@
+{
+	"info": {
+		"name": "CyberLearnix Payment Service API",
+		"_postman_id": "payment-service-collection",
+		"description": "Complete API collection for CyberLearnix Payment Service. All endpoints organized by functionality with authentication, variables, and test scripts.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:8085",
+			"type": "string"
+		},
+		{
+			"key": "accessToken",
+			"value": "",
+			"type": "string"
+		}
+	],
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "{{accessToken}}"
+			}
+		]
+	},
+	"item": [
+		{
+			"name": "Payment Management",
+			"item": [
+				{
+					"name": "Get All Payments",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}"
+								}
+							]
+						},
+						"method": "GET",
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/payments",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "payments"]
+						},
+						"description": "Get all payments (for admin service). Requires authentication."
+					},
+					"response": []
+				},
+				{
+					"name": "Create Payment",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"amount\": 999.99,\n    \"productInfo\": \"Course Purchase\",\n    \"firstName\": \"John\",\n    \"email\": \"john@example.com\",\n    \"phone\": \"9876543210\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/payments/create",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "payments", "create"]
+						},
+						"description": "Create a payment. Requires authentication."
+					},
+					"response": []
+				},
+				{
+					"name": "Create and Pay (Auto-redirect)",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"amount\": 999.99,\n    \"productInfo\": \"Course Purchase\",\n    \"firstName\": \"John\",\n    \"email\": \"john@example.com\",\n    \"phone\": \"9876543210\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/payments/create-and-pay",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "payments", "create-and-pay"]
+						},
+						"description": "Create payment and auto-redirect to PayU. Returns HTML. Requires authentication."
+					},
+					"response": []
+				},
+				{
+					"name": "Checkout by Transaction ID",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/payments/checkout/:txnId",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "payments", "checkout", ":txnId"],
+							"variable": [
+								{
+									"key": "txnId",
+									"value": "txn-id-here"
+								}
+							]
+						},
+						"description": "Checkout using transaction ID. Returns HTML redirect page."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Payment Callbacks",
+			"item": [
+				{
+					"name": "Success Callback Info",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/payments/callback/success",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "payments", "callback", "success"]
+						},
+						"description": "Informational endpoint for success callback."
+					},
+					"response": []
+				},
+				{
+					"name": "Success Callback (Form)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/x-www-form-urlencoded"
+							}
+						],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{
+									"key": "status",
+									"value": "success"
+								},
+								{
+									"key": "txnid",
+									"value": "txn-id-here"
+								},
+								{
+									"key": "amount",
+									"value": "999.99"
+								},
+								{
+									"key": "hash",
+									"value": "hash-here"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/payments/callback/success",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "payments", "callback", "success"]
+						},
+						"description": "PayU success callback endpoint (form-urlencoded)."
+					},
+					"response": []
+				},
+				{
+					"name": "Success Callback (JSON)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"status\": \"success\",\n    \"txnid\": \"txn-id-here\",\n    \"amount\": \"999.99\",\n    \"hash\": \"hash-here\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/payments/callback/success",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "payments", "callback", "success"]
+						},
+						"description": "PayU success callback endpoint (JSON for testing)."
+					},
+					"response": []
+				},
+				{
+					"name": "Failure Callback Info",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/payments/callback/failure",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "payments", "callback", "failure"]
+						},
+						"description": "Informational endpoint for failure callback."
+					},
+					"response": []
+				},
+				{
+					"name": "Failure Callback (Form)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/x-www-form-urlencoded"
+							}
+						],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{
+									"key": "status",
+									"value": "failure"
+								},
+								{
+									"key": "txnid",
+									"value": "txn-id-here"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/payments/callback/failure",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "payments", "callback", "failure"]
+						},
+						"description": "PayU failure callback endpoint (form-urlencoded)."
+					},
+					"response": []
+				},
+				{
+					"name": "Failure Callback (JSON)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"status\": \"failure\",\n    \"txnid\": \"txn-id-here\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/payments/callback/failure",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "payments", "callback", "failure"]
+						},
+						"description": "PayU failure callback endpoint (JSON for testing)."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Payment Verification",
+			"item": [
+				{
+					"name": "Verify Payment",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"txnId\": \"txn-id-here\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/payments/verify",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "payments", "verify"]
+						},
+						"description": "Verify payment status by transaction ID."
+					},
+					"response": []
+				},
+				{
+					"name": "Verify Payment via PayU",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/x-www-form-urlencoded"
+							}
+						],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{
+									"key": "var1",
+									"value": "txn-id-here"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/payments/payu/verify",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "payments", "payu", "verify"]
+						},
+						"description": "Verify payment via PayU command API."
+					},
+					"response": []
+				},
+				{
+					"name": "Check Payment via PayU",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/x-www-form-urlencoded"
+							}
+						],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{
+									"key": "var1",
+									"value": "mihpayid-here"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/payments/payu/check-payment",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "payments", "payu", "check-payment"]
+						},
+						"description": "Check payment via PayU command API (by mihpayid)."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Refunds",
+			"item": [
+				{
+					"name": "Initiate Refund",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"mihpayid\": \"mihpayid-here\",\n    \"amount\": 999.99\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/payments/refund",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "payments", "refund"]
+						},
+						"description": "Initiate refund using PayU mihpayid. Requires authentication."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Refund Status",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}"
+								}
+							]
+						},
+						"method": "GET",
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/payments/:txnId/refund-status",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "payments", ":txnId", "refund-status"],
+							"variable": [
+								{
+									"key": "txnId",
+									"value": "txn-id-here"
+								}
+							]
+						},
+						"description": "Get refund status by transaction ID. Requires authentication."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Instructor Payments",
+			"item": [
+				{
+					"name": "Get Course Payments for Instructor",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}"
+								}
+							]
+						},
+						"method": "GET",
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/payments/instructor/:instructorId/courses/:courseId/payments",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "payments", "instructor", ":instructorId", "courses", ":courseId", "payments"],
+							"variable": [
+								{
+									"key": "instructorId",
+									"value": "instructor-id-here"
+								},
+								{
+									"key": "courseId",
+									"value": "1"
+								}
+							]
+						},
+						"description": "Get payments for instructor's course. Requires authentication."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Invoices",
+			"item": [
+				{
+					"name": "Get Invoice (PDF)",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}"
+								}
+							]
+						},
+						"method": "GET",
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/payments/:txnId/invoice",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "payments", ":txnId", "invoice"],
+							"variable": [
+								{
+									"key": "txnId",
+									"value": "txn-id-here"
+								}
+							]
+						},
+						"description": "Get invoice as PDF. Requires authentication."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Invoice (JSON)",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}"
+								}
+							]
+						},
+						"method": "GET",
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/payments/:txnId/invoice-json",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "payments", ":txnId", "invoice-json"],
+							"variable": [
+								{
+									"key": "txnId",
+									"value": "txn-id-here"
+								}
+							]
+						},
+						"description": "Get invoice as JSON. Requires authentication."
+					},
+					"response": []
+				}
+			]
+		}
+	]
+}

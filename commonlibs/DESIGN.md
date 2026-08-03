@@ -1,7 +1,7 @@
-# Common Libraries - Design Document
+﻿# Common Libraries - Design Document
 
 ## Overview
-The `commonlibs` module serves as the foundational shared library for the SwachVega ecommerce platform. It contains all shared data transfer objects (DTOs), JPA entities, exception handling, repositories, and utility services that are used across multiple microservices.
+The `commonlibs` module serves as the foundational shared library for the CyberLearnix ecommerce platform. It contains all shared data transfer objects (DTOs), JPA entities, exception handling, repositories, and utility services that are used across multiple microservices.
 
 ## Purpose
 - **Code Reusability**: Centralize common data models and utilities to avoid duplication across services
@@ -13,7 +13,7 @@ The `commonlibs` module serves as the foundational shared library for the SwachV
 
 ### Package Structure
 ```
-com.swachvega.commonlibs/
+com.CyberLearnix.commonlibs/
 ├── dto/                    # Data Transfer Objects
 ├── entity/                 # JPA Entity Models
 ├── elasticsearch/          # Elasticsearch-specific models

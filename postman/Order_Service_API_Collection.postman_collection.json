@@ -1,0 +1,236 @@
+{
+	"info": {
+		"name": "CyberLearnix Order Service API",
+		"_postman_id": "order-service-collection",
+		"description": "Complete API collection for CyberLearnix Order Service. All endpoints organized by functionality with authentication, variables, and test scripts.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:8084",
+			"type": "string"
+		},
+		{
+			"key": "accessToken",
+			"value": "",
+			"type": "string"
+		}
+	],
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "{{accessToken}}"
+			}
+		]
+	},
+	"item": [
+		{
+			"name": "Order Management",
+			"item": [
+				{
+					"name": "Create Order",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"userId\": \"user-uuid-here\",\n    \"courseIds\": [1, 2],\n    \"totalAmount\": 1999.98\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/orders/create",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "orders", "create"]
+						},
+						"description": "Create a new order. Requires authentication."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Order by ID",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}"
+								}
+							]
+						},
+						"method": "GET",
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/orders/:orderId",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "orders", ":orderId"],
+							"variable": [
+								{
+									"key": "orderId",
+									"value": "order-id-here"
+								}
+							]
+						},
+						"description": "Get order by ID. Requires authentication."
+					},
+					"response": []
+				},
+				{
+					"name": "Get All Orders",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}"
+								}
+							]
+						},
+						"method": "GET",
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/orders",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "orders"]
+						},
+						"description": "Get all orders. Requires authentication."
+					},
+					"response": []
+				},
+				{
+					"name": "Get User Orders",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}"
+								}
+							]
+						},
+						"method": "GET",
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/orders/user/:userId",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "orders", "user", ":userId"],
+							"variable": [
+								{
+									"key": "userId",
+									"value": "user-uuid-here"
+								}
+							]
+						},
+						"description": "Get orders for a specific user. Requires authentication."
+					},
+					"response": []
+				},
+				{
+					"name": "Update Order Status",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}"
+								}
+							]
+						},
+						"method": "PUT",
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/orders/:orderId/status?status=COMPLETED",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "orders", ":orderId", "status"],
+							"query": [
+								{
+									"key": "status",
+									"value": "COMPLETED"
+								}
+							],
+							"variable": [
+								{
+									"key": "orderId",
+									"value": "order-id-here"
+								}
+							]
+						},
+						"description": "Update order status. Requires authentication."
+					},
+					"response": []
+				},
+				{
+					"name": "Cancel Order",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}"
+								}
+							]
+						},
+						"method": "DELETE",
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/orders/:orderId/cancel",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "orders", ":orderId", "cancel"],
+							"variable": [
+								{
+									"key": "orderId",
+									"value": "order-id-here"
+								}
+							]
+						},
+						"description": "Cancel an order. Requires authentication."
+					},
+					"response": []
+				},
+				{
+					"name": "Refund Order",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}"
+								}
+							]
+						},
+						"method": "POST",
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/orders/:orderId/refund",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "orders", ":orderId", "refund"],
+							"variable": [
+								{
+									"key": "orderId",
+									"value": "order-id-here"
+								}
+							]
+						},
+						"description": "Initiate refund for an order. Requires authentication."
+					},
+					"response": []
+				}
+			]
+		}
+	]
+}

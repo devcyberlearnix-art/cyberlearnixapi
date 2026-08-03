@@ -1,0 +1,1080 @@
+server:
+
+
+
+  port: 8080
+
+
+
+  netty:
+
+
+
+    connection-timeout: 20s
+
+
+
+    max-keep-alive-requests: 10000
+
+
+
+  compression:
+
+
+
+    enabled: true
+
+
+
+    mime-types: application/json,application/xml,text/html,text/plain
+
+
+
+
+
+
+
+spring:
+
+
+
+  profiles:
+
+
+
+    active: ${SPRING_PROFILES_ACTIVE:local}
+
+
+
+
+
+
+
+  web:
+
+
+
+    resources:
+
+
+
+      static-locations: classpath:/static/
+
+
+
+      add-mappings: false
+
+
+
+
+
+
+
+  codec:
+
+
+
+    max-in-memory-size: 30MB
+
+
+
+
+
+
+
+  cloud:
+
+
+
+    gateway:
+
+
+
+
+
+
+
+      # ✅ ✅ GLOBAL CORS CONFIG (MAIN FIX)
+
+
+
+      globalcors:
+
+
+
+        corsConfigurations:
+
+
+
+          '[/**]':
+
+
+
+            allowedOriginPatterns:
+
+
+
+              - "http://localhost:*"
+
+
+
+              - "http://127.0.0.1:*"
+
+
+
+              - "https://*.ngrok-free.dev"
+
+
+
+              - "https://*.ngrok.io"
+
+
+
+            allowedMethods:
+
+
+
+              - GET
+
+
+
+              - POST
+
+
+
+              - PUT
+
+
+
+              - DELETE
+
+
+
+              - OPTIONS
+
+
+
+              - PATCH
+
+
+
+            allowedHeaders:
+
+
+
+              - Authorization
+
+
+
+              - Content-Type
+
+
+
+              - X-Requested-With
+
+
+
+              - Accept
+
+
+
+              - Origin
+
+
+
+              - Access-Control-Request-Method
+
+
+
+              - Access-Control-Request-Headers
+
+
+
+            allowCredentials: true
+
+
+
+            exposedHeaders:
+
+
+
+              - Authorization
+
+
+
+              - X-Total-Count
+
+
+
+
+
+
+
+      httpclient:
+
+
+
+        max-header-size: 16KB
+
+
+
+        max-initial-line-length: 8KB
+
+
+
+        response-timeout: 120s
+
+
+
+        connect-timeout: 10000
+
+
+
+        pool:
+
+
+
+          type: elastic
+
+
+
+          max-connections: 1000
+
+
+
+          max-idle-time: 30s
+
+
+
+          max-life-time: 60s
+
+
+
+          eviction-interval: 10s
+
+
+
+
+
+
+
+      routes:
+
+
+
+
+
+
+
+        # ── Admin Service ─────────────────────────────────────────
+
+
+
+        - id: adminservice
+
+
+
+          uri: ${ADMIN_SERVICE_URL:http://localhost:8087}
+
+
+
+          predicates:
+
+
+
+            - Path=/api/v1/admin/**
+
+
+
+          filters:
+
+
+
+            - StripPrefix=0
+
+
+
+
+
+
+
+        # ── User Service ────────────────────────────────────────
+
+
+
+        - id: userservice-auth
+
+
+
+          uri: ${USER_SERVICE_URL:http://localhost:8091}
+
+
+
+          predicates:
+
+
+
+            - Path=/api/v1/auth/**
+
+
+
+          filters:
+
+
+
+            - StripPrefix=0
+
+
+
+
+
+
+
+        - id: userservice-sessions
+
+
+
+          uri: ${USER_SERVICE_URL:http://localhost:8091}
+
+
+
+          predicates:
+
+
+
+            - Path=/api/v1/users/me/sessions/**
+
+
+
+          filters:
+
+
+
+            - StripPrefix=0
+
+
+
+
+
+
+
+        - id: userservice-users
+
+
+
+          uri: ${USER_SERVICE_URL:http://localhost:8091}
+
+
+
+          predicates:
+
+
+
+            - Path=/api/v1/users/**
+
+
+
+          filters:
+
+
+
+            - StripPrefix=0
+
+
+
+
+
+
+
+        - id: userservice-instructors
+
+
+
+          uri: ${USER_SERVICE_URL:http://localhost:8091}
+
+
+
+          predicates:
+
+
+
+            - Path=/api/v1/instructors/applications/**
+
+
+
+          filters:
+
+
+
+            - StripPrefix=0
+
+
+
+
+
+
+
+        # ── Course Service ──────────────────────────────────────
+
+
+
+        - id: courseservice-courses
+
+
+
+          uri: ${COURSESERVICE_URL:http://localhost:8083}
+
+
+
+          predicates:
+
+
+
+            - Path=/api/v1/courses/**
+
+
+
+          filters:
+
+
+
+            - StripPrefix=0
+
+
+
+
+
+
+
+        - id: courseservice-enrollments
+
+
+
+          uri: ${COURSESERVICE_URL:http://localhost:8083}
+
+
+
+          predicates:
+
+
+
+            - Path=/api/v1/enrollments/**
+
+
+
+          filters:
+
+
+
+            - StripPrefix=0
+
+
+
+
+
+
+
+        - id: courseservice-sections
+
+
+
+          uri: ${COURSESERVICE_URL:http://localhost:8083}
+
+
+
+          predicates:
+
+
+
+            - Path=/api/v1/sections/**
+
+
+
+          filters:
+
+
+
+            - StripPrefix=0
+
+
+
+
+
+
+
+        # ── Cart Service ────────────────────────────────────────
+
+
+
+        - id: cartservice
+
+
+
+          uri: ${CARTSERVICE_URL:http://localhost:8081}
+
+
+
+          predicates:
+
+
+
+            - Path=/api/v1/cart/**
+
+
+
+          filters:
+
+
+
+            - StripPrefix=0
+
+
+
+
+
+
+
+        # ── Coupon Service ──────────────────────────────────────
+
+
+
+        - id: couponservice
+
+
+
+          uri: ${COUPONSERVICE_URL:http://localhost:8082}
+
+
+
+          predicates:
+
+
+
+            - Path=/api/v1/coupons/**
+
+
+
+          filters:
+
+
+
+            - StripPrefix=0
+
+
+
+
+
+
+
+        # ── Wishlist Service ──────────────────────────────────────
+
+
+
+        - id: wishlistservice
+
+
+
+          uri: ${WISHLISTSERVICE_URL:http://localhost:8090}
+
+
+
+          predicates:
+
+
+
+            - Path=/api/v1/wishlist/**
+
+
+
+          filters:
+
+
+
+            - StripPrefix=0
+
+
+
+
+
+
+
+        # ── Order Service ─────────────────────────────────────────
+
+
+
+        - id: orderservice
+
+
+
+          uri: ${ORDERSERVICE_URL:http://localhost:8084}
+
+
+
+          predicates:
+
+
+
+            - Path=/api/v1/orders/**
+
+
+
+          filters:
+
+
+
+            - StripPrefix=0
+
+
+
+
+
+
+
+        # ── Payment Service ───────────────────────────────────────
+
+
+
+        - id: paymentservice
+
+
+
+          uri: ${PAYMENTSERVICE_URL:http://localhost:8085}
+
+
+
+          predicates:
+
+
+
+            - Path=/api/v1/payments/**
+
+
+
+          filters:
+
+
+
+            - StripPrefix=0
+
+
+
+
+
+
+
+        # ── Instructor Service ────────────────────────────────────
+
+
+
+        - id: instructorservice
+
+
+
+          uri: ${INSTRUCTOR_SERVICE_URL:http://localhost:8088}
+
+
+
+          predicates:
+
+
+
+            - Path=/api/v1/instructors/**
+
+
+
+          filters:
+
+
+
+            - StripPrefix=0
+
+
+
+
+
+
+
+        # ── Review Service ──────────────────────────────────────────
+
+
+
+        - id: reviewservice
+
+
+
+          uri: ${REVIEWSERVICE_URL:http://localhost:8089}
+
+
+
+          predicates:
+
+
+
+            - Path=/api/v1/reviews/**
+
+
+
+          filters:
+
+
+
+            - StripPrefix=0
+
+
+
+
+
+
+
+        # ── Notification Service ────────────────────────────────────
+
+
+
+        - id: notificationservice
+
+
+
+          uri: ${NOTIFICATIONSERVICE_URL:http://localhost:8093}
+
+
+
+          predicates:
+
+
+
+            - Path=/api/v1/notifications/**
+
+
+
+          filters:
+
+
+
+            - StripPrefix=0
+
+
+
+        - id: notificationservice-direct
+
+
+
+          uri: ${NOTIFICATIONSERVICE_URL:http://localhost:8093}
+
+
+
+          predicates:
+
+
+
+            - Path=/notifications/**
+
+
+
+          filters:
+
+
+
+            - StripPrefix=0
+
+
+
+
+
+
+
+        # ── Swagger Routes ──────────────────────────
+
+
+
+        - id: userservice-swagger-ui
+
+
+
+          uri: ${USER_SERVICE_URL:http://localhost:8091}
+
+
+
+          predicates:
+
+
+
+            - Path=/userservice/swagger-ui/**
+
+
+
+          filters:
+
+
+
+            - RewritePath=/userservice/swagger-ui/(?<segment>.*), /swagger-ui/${segment}
+
+
+
+
+
+
+
+        - id: userservice-api-docs
+
+
+
+          uri: ${USER_SERVICE_URL:http://localhost:8091}
+
+
+
+          predicates:
+
+
+
+            - Path=/userservice/v3/api-docs/**
+
+
+
+          filters:
+
+
+
+            - RewritePath=/userservice/v3/api-docs/(?<segment>.*), /v3/api-docs/${segment}
+
+
+
+
+
+
+
+        - id: courseservice-swagger-ui
+
+
+
+          uri: ${COURSESERVICE_URL:http://localhost:8083}
+
+
+
+          predicates:
+
+
+
+            - Path=/courseservice/swagger-ui/**
+
+
+
+          filters:
+
+
+
+            - RewritePath=/courseservice/swagger-ui/(?<segment>.*), /swagger-ui/${segment}
+
+
+
+
+
+
+
+        - id: courseservice-api-docs
+
+
+
+          uri: ${COURSESERVICE_URL:http://localhost:8083}
+
+
+
+          predicates:
+
+
+
+            - Path=/courseservice/v3/api-docs/**
+
+
+
+          filters:
+
+
+
+            - RewritePath=/courseservice/v3/api-docs/(?<segment>.*), /v3/api-docs/${segment}
+
+
+
+
+
+
+
+        # Gateway Swagger
+
+
+
+        - id: apigateway-swagger-ui-html
+
+
+
+          uri: no://op
+
+
+
+          predicates:
+
+
+
+            - Path=/swagger-ui.html
+
+
+
+
+
+
+
+        - id: apigateway-swagger-ui
+
+
+
+          uri: no://op
+
+
+
+          predicates:
+
+
+
+            - Path=/swagger-ui/**
+
+
+
+
+
+
+
+        - id: apigateway-api-docs
+
+
+
+          uri: no://op
+
+
+
+          predicates:
+
+
+
+            - Path=/v3/api-docs/**
+
+
+
+
+
+
+
+  data:
+
+
+
+    redis:
+
+
+
+      host: ${SPRING_DATA_REDIS_HOST:${REDIS_HOST:localhost}}
+
+
+
+      port: ${SPRING_DATA_REDIS_PORT:${REDIS_PORT:6379}}
+
+
+
+      password: ${SPRING_DATA_REDIS_PASSWORD:${REDIS_PASSWORD:}}
+
+
+
+      timeout: 2000ms
+
+
+
+
+
+
+
+jwt:
+
+
+
+  issuer: cyberlearnix
+
+
+
+  audience: cyberlearnix-clients
+
+
+
+  access-token:
+
+
+
+    secret: ${JWT_ACCESS_TOKEN_SECRET:8c4e9d2f1a7b6c5d9e3f0a1b7c8d4e5f9a2b6c1d8e7f3a4b5c9d1e6f8a2b7c3}
+
+
+
+    expiration-minutes: 15
+
+
+
+  refresh-token:
+
+
+
+    secret: ${JWT_REFRESH_TOKEN_SECRET:8c4e9d2f1a7b6c5d9e3f0a1b7c8d4e5f9a2b6c1d8e7f3a4b5c9d1e6f8a2b7c3}
+
+
+
+    expiration-days: 30
+
+
+
+
+
+
+
+logging:
+
+
+
+  level:
+
+
+
+    org.springframework.cloud.gateway: INFO
+
+
+
+    org.springframework.security: INFO
+
+
+
+management:
+
+
+
+  endpoints:
+
+
+
+    web:
+
+
+
+      exposure:
+
+
+
+        include: gateway,health,info
+
+
+
+  endpoint:
+
+
+
+    gateway:
+
+
+
+      enabled: true
+
+
+

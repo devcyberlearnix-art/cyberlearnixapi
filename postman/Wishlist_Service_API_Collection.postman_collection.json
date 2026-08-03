@@ -1,0 +1,224 @@
+{
+	"info": {
+		"name": "CyberLearnix Wishlist Service API",
+		"_postman_id": "wishlist-service-collection",
+		"description": "Complete API collection for CyberLearnix Wishlist Service. All endpoints organized by functionality with authentication, variables, and test scripts.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:8090",
+			"type": "string"
+		},
+		{
+			"key": "accessToken",
+			"value": "",
+			"type": "string"
+		}
+	],
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "{{accessToken}}"
+			}
+		]
+	},
+	"item": [
+		{
+			"name": "Wishlist Management",
+			"item": [
+				{
+					"name": "Add to Wishlist",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"courseId\": 1\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/wishlist",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "wishlist"]
+						},
+						"description": "Add a course to wishlist. Requires authentication."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Wishlist",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}"
+								}
+							]
+						},
+						"method": "GET",
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/wishlist",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "wishlist"]
+						},
+						"description": "Get current user's wishlist. Requires authentication."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Wishlist Item by ID",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}"
+								}
+							]
+						},
+						"method": "GET",
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/wishlist/:wishlistId",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "wishlist", ":wishlistId"],
+							"variable": [
+								{
+									"key": "wishlistId",
+									"value": "wishlist-id-here"
+								}
+							]
+						},
+						"description": "Get specific wishlist item by ID. Requires authentication."
+					},
+					"response": []
+				},
+				{
+					"name": "Check if Course in Wishlist",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}"
+								}
+							]
+						},
+						"method": "GET",
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/wishlist/check/:courseId",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "wishlist", "check", ":courseId"],
+							"variable": [
+								{
+									"key": "courseId",
+									"value": "1"
+								}
+							]
+						},
+						"description": "Check if a course is in user's wishlist. Requires authentication."
+					},
+					"response": []
+				},
+				{
+					"name": "Move to Cart",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}"
+								}
+							]
+						},
+						"method": "POST",
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/wishlist/:courseId/move-to-cart",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "wishlist", ":courseId", "move-to-cart"],
+							"variable": [
+								{
+									"key": "courseId",
+									"value": "1"
+								}
+							]
+						},
+						"description": "Move course from wishlist to cart. Requires authentication."
+					},
+					"response": []
+				},
+				{
+					"name": "Remove from Wishlist",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}"
+								}
+							]
+						},
+						"method": "DELETE",
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/wishlist/:courseId",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "wishlist", ":courseId"],
+							"variable": [
+								{
+									"key": "courseId",
+									"value": "1"
+								}
+							]
+						},
+						"description": "Remove course from wishlist. Requires authentication."
+					},
+					"response": []
+				},
+				{
+					"name": "Clear Wishlist",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}"
+								}
+							]
+						},
+						"method": "DELETE",
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/wishlist",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "wishlist"]
+						},
+						"description": "Clear all items from wishlist. Requires authentication."
+					},
+					"response": []
+				}
+			]
+		}
+	]
+}

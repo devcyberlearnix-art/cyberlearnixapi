@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 public class CartItem {
     private Long cartId;        // Unique ID for this specific row in the DB
     private String instructorId;
-    private String courseId;
+    private Long courseId;
     private String courseName;
     private Double unitPrice;
     private Integer quantity;   // Managed by the "Minase" logic

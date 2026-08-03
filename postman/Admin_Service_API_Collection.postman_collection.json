@@ -1,0 +1,825 @@
+{
+	"info": {
+		"name": "CyberLearnix Admin Service API",
+		"_postman_id": "admin-service-collection",
+		"description": "Complete API collection for CyberLearnix Admin Service. All endpoints organized by functionality with authentication, variables, and test scripts.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:8087",
+			"type": "string"
+		},
+		{
+			"key": "accessToken",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "refreshToken",
+			"value": "",
+			"type": "string"
+		}
+	],
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "{{accessToken}}"
+			}
+		]
+	},
+	"item": [
+		{
+			"name": "Authentication",
+			"item": [
+				{
+					"name": "Admin Login",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Login successful\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('authentication');",
+									"    pm.expect(jsonData.authentication).to.have.property('accessToken');",
+									"});",
+									"",
+									"// Save token to collection variable",
+									"var jsonData = pm.response.json();",
+									"if (jsonData.authentication) {",
+									"    pm.collectionVariables.set('accessToken', jsonData.authentication.accessToken);",
+									"    console.log('Admin token saved successfully');",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"mainadmin@cyberlearnix.com\",\n    \"password\": \"MainAdmin@123\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/admins/login",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "admins", "login"]
+						},
+						"description": "Login as Main Admin. Returns JWT token for authentication."
+					},
+					"response": []
+				},
+				{
+					"name": "Register Sub Admin",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"admin@cyberlearnix.com\",\n    \"password\": \"StrongPass123!\",\n    \"confirmPassword\": \"StrongPass123!\",\n    \"assignedService\": \"COURSE_SERVICE\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/admins/register",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "admins", "register"]
+						},
+						"description": "Register a sub-admin for a specific service. Requires Main Admin Bearer token."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Profile",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}"
+								}
+							]
+						},
+						"method": "GET",
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/admins/me",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "admins", "me"]
+						},
+						"description": "Get current admin profile. Requires Bearer token."
+					},
+					"response": []
+				},
+				{
+					"name": "Update Profile",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"firstName\": \"Admin\",\n    \"lastName\": \"Updated\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/admins/me",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "admins", "me"]
+						},
+						"description": "Update current admin profile. Requires Bearer token."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "User Management",
+			"item": [
+				{
+					"name": "Get All Users",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}"
+								}
+							]
+						},
+						"method": "GET",
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/admin/users",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "admin", "users"]
+						},
+						"description": "Get all users in the system. Requires authentication."
+					},
+					"response": []
+				},
+				{
+					"name": "Get User by ID",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}"
+								}
+							]
+						},
+						"method": "GET",
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/admin/users/:id",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "admin", "users", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "user-uuid-here"
+								}
+							]
+						},
+						"description": "Get user by UUID. Requires authentication."
+					},
+					"response": []
+				},
+				{
+					"name": "Update User Status",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"status\": \"ACTIVE\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/admin/users/:id/status",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "admin", "users", ":id", "status"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "user-uuid-here"
+								}
+							]
+						},
+						"description": "Activate or deactivate user account. Requires authentication."
+					},
+					"response": []
+				},
+				{
+					"name": "Delete User",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}"
+								}
+							]
+						},
+						"method": "DELETE",
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/admin/users/:id",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "admin", "users", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "user-uuid-here"
+								}
+							]
+						},
+						"description": "Delete user by UUID. Requires authentication."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Instructor Management",
+			"item": [
+				{
+					"name": "Get All Instructors",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}"
+								}
+							]
+						},
+						"method": "GET",
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/admin/instructors",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "admin", "instructors"]
+						},
+						"description": "Get all instructors. Requires authentication."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Instructor Applications",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}"
+								}
+							]
+						},
+						"method": "GET",
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/admin/instructors/applications",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "admin", "instructors", "applications"]
+						},
+						"description": "Get all instructor applications with details. Requires authentication."
+					},
+					"response": []
+				},
+				{
+					"name": "Approve Instructor Application",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}"
+								}
+							]
+						},
+						"method": "PUT",
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/admin/instructors/applications/:userId/approve",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "admin", "instructors", "applications", ":userId", "approve"],
+							"variable": [
+								{
+									"key": "userId",
+									"value": "user-uuid-here"
+								}
+							]
+						},
+						"description": "Approve instructor application by user ID. Requires authentication."
+					},
+					"response": []
+				},
+				{
+					"name": "Reject Instructor Application",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}"
+								}
+							]
+						},
+						"method": "PUT",
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/admin/instructors/applications/:userId/reject",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "admin", "instructors", "applications", ":userId", "reject"],
+							"variable": [
+								{
+									"key": "userId",
+									"value": "user-uuid-here"
+								}
+							]
+						},
+						"description": "Reject instructor application by user ID. Requires authentication."
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Instructor",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}"
+								}
+							]
+						},
+						"method": "DELETE",
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/admin/instructors/:id",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "admin", "instructors", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "instructor-uuid-here"
+								}
+							]
+						},
+						"description": "Delete instructor by UUID. Requires authentication."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Course Management",
+			"item": [
+				{
+					"name": "Get All Courses",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}"
+								}
+							]
+						},
+						"method": "GET",
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/admin/courses",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "admin", "courses"]
+						},
+						"description": "Get all courses from Course Service. Requires authentication."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Course by ID",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}"
+								}
+							]
+						},
+						"method": "GET",
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/admin/courses/:courseId",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "admin", "courses", ":courseId"],
+							"variable": [
+								{
+									"key": "courseId",
+									"value": "1"
+								}
+							]
+						},
+						"description": "Get course by ID (Long). Requires authentication."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Course Content",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}"
+								}
+							]
+						},
+						"method": "GET",
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/admin/content/:courseId",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "admin", "content", ":courseId"],
+							"variable": [
+								{
+									"key": "courseId",
+									"value": "1"
+								}
+							]
+						},
+						"description": "Get course content including sections and lectures. Requires authentication."
+					},
+					"response": []
+				},
+				{
+					"name": "Approve Course",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}"
+								}
+							]
+						},
+						"method": "PUT",
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/admin/courses/:courseId/approve",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "admin", "courses", ":courseId", "approve"],
+							"variable": [
+								{
+									"key": "courseId",
+									"value": "1"
+								}
+							]
+						},
+						"description": "Approve course (update status to Published). Requires authentication."
+					},
+					"response": []
+				},
+				{
+					"name": "Reject Course",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}"
+								}
+							]
+						},
+						"method": "PUT",
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/admin/courses/:courseId/reject",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "admin", "courses", ":courseId", "reject"],
+							"variable": [
+								{
+									"key": "courseId",
+									"value": "1"
+								}
+							]
+						},
+						"description": "Reject course (update status to Archived). Requires authentication."
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Course",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}"
+								}
+							]
+						},
+						"method": "DELETE",
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/admin/courses/:courseId",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "admin", "courses", ":courseId"],
+							"variable": [
+								{
+									"key": "courseId",
+									"value": "1"
+								}
+							]
+						},
+						"description": "Delete course by ID. Requires authentication."
+					},
+					"response": []
+				},
+				{
+					"name": "Create Section",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"Introduction\",\n    \"description\": \"Course introduction section\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/admin/courses/:courseId/sections",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "admin", "courses", ":courseId", "sections"],
+							"variable": [
+								{
+									"key": "courseId",
+									"value": "1"
+								}
+							]
+						},
+						"description": "Create a section for a course. Requires authentication."
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Section",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}"
+								}
+							]
+						},
+						"method": "DELETE",
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/admin/sections/:sectionId",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "admin", "sections", ":sectionId"],
+							"variable": [
+								{
+									"key": "sectionId",
+									"value": "1"
+								}
+							]
+						},
+						"description": "Delete section by ID. Requires authentication."
+					},
+					"response": []
+				},
+				{
+					"name": "Create Lecture",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"Lesson 1\",\n    \"description\": \"First lesson\",\n    \"videoUrl\": \"https://example.com/video.mp4\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/admin/sections/:sectionId/lectures",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "admin", "sections", ":sectionId", "lectures"],
+							"variable": [
+								{
+									"key": "sectionId",
+									"value": "1"
+								}
+							]
+						},
+						"description": "Create a lecture for a section. Requires authentication."
+					},
+					"response": []
+				},
+				{
+					"name": "Approve Lecture",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}"
+								}
+							]
+						},
+						"method": "PUT",
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/admin/sections/:sectionId/lectures/:lectureId/approve",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "admin", "sections", ":sectionId", "lectures", ":lectureId", "approve"],
+							"variable": [
+								{
+									"key": "sectionId",
+									"value": "1"
+								},
+								{
+									"key": "lectureId",
+									"value": "1"
+								}
+							]
+						},
+						"description": "Approve lecture for preview. Requires authentication."
+					},
+					"response": []
+				},
+				{
+					"name": "Reject Lecture",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}"
+								}
+							]
+						},
+						"method": "PUT",
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/admin/sections/:sectionId/lectures/:lectureId/reject",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "admin", "sections", ":sectionId", "lectures", ":lectureId", "reject"],
+							"variable": [
+								{
+									"key": "sectionId",
+									"value": "1"
+								},
+								{
+									"key": "lectureId",
+									"value": "1"
+								}
+							]
+						},
+						"description": "Reject lecture for preview. Requires authentication."
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Lecture",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}"
+								}
+							]
+						},
+						"method": "DELETE",
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/admin/sections/:sectionId/lectures/:lectureId",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "admin", "sections", ":sectionId", "lectures", ":lectureId"],
+							"variable": [
+								{
+									"key": "sectionId",
+									"value": "1"
+								},
+								{
+									"key": "lectureId",
+									"value": "1"
+								}
+							]
+						},
+						"description": "Delete lecture by ID. Requires authentication."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Courses by Instructor",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}"
+								}
+							]
+						},
+						"method": "GET",
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/admin/instructors/:instructorId/courses",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "admin", "instructors", ":instructorId", "courses"],
+							"variable": [
+								{
+									"key": "instructorId",
+									"value": "1"
+								}
+							]
+						},
+						"description": "Get courses by instructor ID (Long). Requires authentication."
+					},
+					"response": []
+				}
+			]
+		}
+	]
+}
