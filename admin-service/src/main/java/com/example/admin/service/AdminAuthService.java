@@ -14,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import lombok.extern.slf4j.Slf4j;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -24,6 +25,7 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class AdminAuthService {
 
     private final AdminRepository adminRepository;
@@ -424,7 +426,16 @@ public class AdminAuthService {
         admin.setOtpBlocked(false);
         adminRepository.save(admin);
 
-        emailService.sendOtp(admin.getEmail(), otp);
+        try {
+            emailService.sendOtp(admin.getEmail(), otp);
+        } catch (RuntimeException ex) {
+            throw new ResponseStatusException(
+                    HttpStatus.SERVICE_UNAVAILABLE,
+                    "Unable to send OTP email right now. Please try again shortly."
+            );
+        }
+
+        log.info("Login OTP sent to admin: {}", admin.getEmail());
 
         return LoginOtpResponse.builder()
                 .success(true)
@@ -440,48 +451,26 @@ public class AdminAuthService {
                 .build();
     }
 
-    public LoginOtpVerifyResponse verifyLoginOtp(LoginOtpVerifyRequest request) {
-        Optional<Admin> adminOptional = adminRepository.findByEmail(request.getEmail());
+    public AdminLoginResponse verifyLoginOtp(LoginOtpVerifyRequest request, HttpServletRequest httpRequest) {
+        Admin admin = adminRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new BadCredentialsException("Admin with this email does not exist"));
 
-        if (adminOptional.isEmpty()) {
-            return LoginOtpVerifyResponse.builder()
-                    .success(false)
-                    .message("Admin with this email does not exist")
-                    .timestamp(LocalDateTime.now().toString())
-                    .build();
-        }
-
-        Admin admin = adminOptional.get();
-
-        // Email verification check
         if (!admin.isVerified()) {
-            return LoginOtpVerifyResponse.builder()
-                    .success(false)
-                    .message("Email is not verified. Complete registration first.")
-                    .timestamp(LocalDateTime.now().toString())
-                    .build();
+            throw new BadCredentialsException("Email is not verified. Complete registration first.");
         }
 
         // Check if OTP is blocked due to previous failed attempts
         if (admin.isOtpBlocked()) {
-            return LoginOtpVerifyResponse.builder()
-                    .success(false)
-                    .message("OTP is blocked due to multiple wrong attempts. Request a new OTP.")
-                    .timestamp(LocalDateTime.now().toString())
-                    .build();
+            throw new BadCredentialsException("OTP is blocked due to multiple wrong attempts. Request a new OTP.");
         }
 
         // Check OTP expiry
         if (admin.getOtpExpiry() == null || admin.getOtpExpiry().isBefore(LocalDateTime.now())) {
-            return LoginOtpVerifyResponse.builder()
-                    .success(false)
-                    .message("OTP has expired. Request a new one.")
-                    .timestamp(LocalDateTime.now().toString())
-                    .build();
+            throw new BadCredentialsException("OTP has expired. Request a new one.");
         }
 
         // Check OTP match
-        if (!admin.getOtp().equals(request.getOtp())) {
+        if (admin.getOtp() == null || !admin.getOtp().equals(request.getOtp())) {
             int remainingAttempts = admin.getOtpAttempts() - 1;
             admin.setOtpAttempts(remainingAttempts);
 
@@ -491,23 +480,44 @@ public class AdminAuthService {
 
             adminRepository.save(admin);
 
-            return LoginOtpVerifyResponse.builder()
-                    .success(false)
-                    .message("Invalid OTP. Remaining attempts: " + remainingAttempts)
-                    .timestamp(LocalDateTime.now().toString())
-                    .build();
+            throw new BadCredentialsException("Invalid OTP. Remaining attempts: " + remainingAttempts);
         }
 
-        // ✅ Correct OTP → reset attempts and unblock
-        admin.setOtp(request.getOtp());
-        admin.setOtpExpiry(LocalDateTime.now().plusMinutes(5));
-        admin.setOtpAttempts(3); // reset for next login
+        // ✅ Correct OTP → clear it so it can't be replayed, reset attempts
+        admin.setOtp(null);
+        admin.setOtpAttempts(3);
         admin.setOtpBlocked(false);
         adminRepository.save(admin);
 
-        // Admin login should now go through User Service
-        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, 
-                "Admin login should be performed through User Service at /api/v1/auth/login");
+        auditService.logAction(admin.getId(), "ADMIN_OTP_LOGIN");
+
+        String firstName = decryptSafely(admin.getFirstName(), "Admin");
+        String lastName = decryptSafely(admin.getLastName(), "");
+        String mobileNumber = decryptSafely(admin.getMobileNumber(), "");
+
+        return AdminLoginResponse.builder()
+                .admin(AdminLoginResponse.AdminInfo.builder()
+                        .id(admin.getId())
+                        .email(admin.getEmail())
+                        .role(admin.getRole())
+                        .assignedService(admin.getAssignedService() != null ? admin.getAssignedService().name() : "ALL")
+                        .adminType(admin.getAdminType() != null ? admin.getAdminType().name() : "MAIN_ADMIN")
+                        .firstName(firstName)
+                        .lastName(lastName)
+                        .mobileNumber(mobileNumber)
+                        .build())
+                .authentication(AdminLoginResponse.AuthenticationInfo.builder()
+                        .accessToken("")
+                        .accessTokenExpiresIn("")
+                        .refreshToken("")
+                        .refreshTokenExpiresIn("")
+                        .build())
+                .sessionInfo(AdminLoginResponse.SessionInfo.builder()
+                        .loginTime(LocalDateTime.now().toString())
+                        .ipAddress(httpRequest.getRemoteAddr())
+                        .device(httpRequest.getHeader("User-Agent"))
+                        .build())
+                .build();
     }
 
     public ResendOtpResponse resendOtp(String email) {
@@ -574,6 +584,8 @@ public class AdminAuthService {
 
         emailService.sendOtp(admin.getEmail(), otp);
 
+        log.info("OTP resent to admin: {}", admin.getEmail());
+
         return ResendOtpResponse.builder()
                 .success(true)
                 .message("OTP resent successfully")
@@ -628,6 +640,8 @@ public class AdminAuthService {
 
         // Send OTP via email
         emailService.sendOtp(admin.getEmail(), otp);
+
+        log.info("Password reset OTP sent to admin: {}", admin.getEmail());
 
         return ForgotPasswordResponse.builder()
                 .success(true)

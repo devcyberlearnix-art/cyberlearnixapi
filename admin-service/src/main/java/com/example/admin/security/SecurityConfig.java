@@ -46,10 +46,14 @@ public class SecurityConfig {
 
                 .authorizeHttpRequests(auth -> auth
 
-                        // Public endpoints (sub-admin registration only)
+                        // Public endpoints (sub-admin registration, and login flows called
+                        // internally by User Service's unified /api/v1/auth/** fallback)
                         .requestMatchers(
                                 "/api/v1/admins/register",
-                                "/api/v1/admin/register"
+                                "/api/v1/admin/register",
+                                "/api/v1/admin/login",
+                                "/api/v1/admin/login/otp/request",
+                                "/api/v1/admin/login/otp/verify"
                         ).permitAll()
 
                         // All other admin endpoints require authentication

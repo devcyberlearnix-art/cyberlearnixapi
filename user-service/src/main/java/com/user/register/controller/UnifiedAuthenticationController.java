@@ -86,7 +86,7 @@ public class UnifiedAuthenticationController {
      */
     @PostMapping("/login/otp/request")
     public ResponseEntity<Map<String, Object>> requestLoginOtp(
-            @RequestBody RequestOtpRequest request) {
+            @Valid @RequestBody RequestOtpRequest request) {
         return unifiedAuthenticationService.requestLoginOtp(request);
     }
 

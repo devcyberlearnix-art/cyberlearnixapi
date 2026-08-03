@@ -44,6 +44,35 @@ public class AdminController {
         }
     }
 
+    /**
+     * Admin password login. Called by User Service's unified /api/v1/auth/login
+     * fallback when the email isn't found in user-service's own users table.
+     */
+    @PostMapping("/login")
+    public ResponseEntity<AdminLoginResponse> login(
+                @RequestBody AdminLoginRequest request,
+                HttpServletRequest httpRequest) {
+        return ResponseEntity.ok(adminAuthService.login(request, httpRequest));
+    }
+
+    /**
+     * Admin login OTP request. Called by User Service's /api/v1/auth/login/otp/request fallback.
+     */
+    @PostMapping("/login/otp/request")
+    public ResponseEntity<LoginOtpResponse> requestLoginOtp(@RequestBody LoginOtpRequest request) {
+        return ResponseEntity.ok(adminAuthService.requestLoginOtp(request.getEmail()));
+    }
+
+    /**
+     * Admin login OTP verify. Called by User Service's /api/v1/auth/login/otp/verify fallback.
+     */
+    @PostMapping("/login/otp/verify")
+    public ResponseEntity<AdminLoginResponse> verifyLoginOtp(
+                @RequestBody LoginOtpVerifyRequest request,
+                HttpServletRequest httpRequest) {
+        return ResponseEntity.ok(adminAuthService.verifyLoginOtp(request, httpRequest));
+    }
+
     @PutMapping("/me")
     public ResponseEntity<?> updateProfile(
                 @RequestBody UpdateAdminProfileRequest request,

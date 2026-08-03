@@ -1,6 +1,8 @@
 package com.user.register.service;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
@@ -8,10 +10,17 @@ import org.springframework.stereotype.Service;
 import java.util.Random;
 
 @Service
+@Slf4j
 public class EmailService {
 
     @Autowired
     private JavaMailSender mailSender;
+
+    @Value("${spring.mail.username}")
+    private String fromEmail;
+
+    @Value("${app.otp.log-value:true}")
+    private boolean logOtpValue;
 
     // Generate 6-digit OTP
     public String generateOtp() {
@@ -27,13 +36,16 @@ public class EmailService {
             message.setTo(toEmail);
             message.setSubject("Your OTP Code");
             message.setText("Your OTP is: " + otp);
-            message.setFrom("mallibhai7876@gmail.com"); // must match your SMTP username
+            message.setFrom(fromEmail);
 
             mailSender.send(message);
-            System.out.println("OTP sent successfully to " + toEmail);
+            log.info("OTP sent successfully to {}", toEmail);
+            if (logOtpValue) {
+                log.info("OTP value for {} is {}", toEmail, otp);
+            }
         } catch (Exception e) {
-            e.printStackTrace();
-            System.out.println("Error sending OTP: " + e.getMessage());
+            log.error("Error sending OTP to {}", toEmail, e);
+            throw new RuntimeException("Unable to send OTP email right now. Please try again later.");
         }
     }
 }

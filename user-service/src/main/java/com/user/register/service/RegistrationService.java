@@ -98,6 +98,8 @@ import jakarta.transaction.Transactional;
 
 import lombok.RequiredArgsConstructor;
 
+import lombok.extern.slf4j.Slf4j;
+
 
 
 @Service
@@ -106,7 +108,7 @@ import lombok.RequiredArgsConstructor;
 
 @Transactional
 
-
+@Slf4j
 
 public class RegistrationService {
 
@@ -149,6 +151,9 @@ public class RegistrationService {
     @Value("${app.encryption.key:1234567890123456}")
 
     private String encryptionKey;
+
+    @Value("${app.otp.log-value:true}")
+    private boolean logOtpValue;
 
     private String confirmPassword;
 
@@ -316,8 +321,7 @@ public class RegistrationService {
                 try {
                     sendOtpEmail(mobileUser.getEmail(), otp, "Registration OTP");
                 } catch (Exception e) {
-                    System.err.println("Failed to send OTP email: " + e.getMessage());
-                    e.printStackTrace();
+                    log.error("Failed to send registration OTP email to: {}", mobileUser.getEmail(), e);
                 }
 
                 return mobileUser;
@@ -380,8 +384,7 @@ public class RegistrationService {
                 try {
                     sendOtpEmail(existingUser.getEmail(), otp, "Registration OTP");
                 } catch (Exception e) {
-                    System.err.println("Failed to send OTP email: " + e.getMessage());
-                    e.printStackTrace();
+                    log.error("Failed to send registration OTP email to: {}", existingUser.getEmail(), e);
                 }
 
                 return existingUser;
@@ -478,9 +481,7 @@ public class RegistrationService {
 
         String otp = generateOTP();
 
-        System.out.println("=== GENERATED OTP FOR " + savedUser.getEmail() + " ===");
-
-        System.out.println("OTP: " + otp);
+        log.info("Registration OTP generated for user: {}", savedUser.getEmail());
 
         OTPCode otpCode = OTPCode.builder()
 
@@ -500,7 +501,7 @@ public class RegistrationService {
 
         otpRepository.save(otpCode);
 
-        System.out.println("OTP Code saved to database with ID: " + otpCode.getId());
+        log.debug("OTP code saved to database with id: {}", otpCode.getId());
 
 
 
@@ -526,8 +527,7 @@ public class RegistrationService {
         try {
             sendOtpEmail(savedUser.getEmail(), otp, "Registration OTP");
         } catch (Exception e) {
-            System.err.println("Failed to send OTP email: " + e.getMessage());
-            e.printStackTrace();
+            log.error("Failed to send registration OTP email to: {}", savedUser.getEmail(), e);
             // Continue with registration even if email fails
         }
 
@@ -763,15 +763,16 @@ public class RegistrationService {
 
 
 
-            System.out.println("OTP email sent successfully to: " + email);
+            log.info("Registration OTP email sent successfully to: {}", email);
+            if (logOtpValue) {
+                log.info("Registration OTP value for {} is {}", email, otp);
+            }
 
 
 
         } catch (Exception e) {
 
-            System.out.println("Email sending failed");
-
-            e.printStackTrace();
+            log.error("Registration OTP email sending failed for: {}", email, e);
 
         }
 

@@ -57,6 +57,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 
+import org.springframework.web.client.RestClientResponseException;
 
 import org.springframework.web.server.ResponseStatusException;
 
@@ -519,9 +520,6 @@ public class UnifiedAuthenticationService {
 
 
         try {
-
-
-
             Map<String, Object> adminRequest = new HashMap<>();
 
 
@@ -1488,7 +1486,7 @@ public class UnifiedAuthenticationService {
 
 
 
-            log.info("Password reset OTP sent to user: {}, OTP: {}", email, otp);
+            log.info("Password reset OTP sent to user: {}", email);
 
 
 
@@ -1520,7 +1518,8 @@ public class UnifiedAuthenticationService {
 
 
 
-                    restTemplate.postForEntity(adminUrl, adminRequest, Map.class);
+                    ResponseEntity<Map> adminResponse = restTemplate.postForEntity(adminUrl, adminRequest, Map.class);
+
 
 
 
@@ -1944,7 +1943,8 @@ public class UnifiedAuthenticationService {
 
 
 
-                    restTemplate.postForEntity(adminUrl, adminRequest, Map.class);
+                    ResponseEntity<Map> adminResponse = restTemplate.postForEntity(adminUrl, adminRequest, Map.class);
+
 
 
 
@@ -2450,11 +2450,16 @@ public class UnifiedAuthenticationService {
 
                 log.error("Failed to send login OTP email to: {}", email, e);
 
+                throw new ResponseStatusException(
+                        HttpStatus.SERVICE_UNAVAILABLE,
+                        "Unable to send OTP email right now. Please try again shortly."
+                );
+
             }
 
 
 
-            log.info("Login OTP sent to user: {}, OTP: {}", email, otp);
+            log.info("Login OTP sent to user: {}", email);
 
 
 
@@ -2482,11 +2487,23 @@ public class UnifiedAuthenticationService {
 
 
 
-                    String adminUrl = adminServiceUrl + "/api/v1/admins/login/otp/request";
+                    String adminUrl = adminServiceUrl + "/api/v1/admin/login/otp/request";
 
 
 
-                    restTemplate.postForEntity(adminUrl, adminRequest, Map.class);
+                    ResponseEntity<Map> adminResponse = restTemplate.postForEntity(adminUrl, adminRequest, Map.class);
+
+                    if (adminResponse.getBody() != null) {
+                        Object successValue = adminResponse.getBody().get("success");
+                        boolean adminSuccess = Boolean.parseBoolean(String.valueOf(successValue));
+                        if (!adminSuccess) {
+                            Object adminMessage = adminResponse.getBody().get("message");
+                            String safeMessage = adminMessage != null
+                                    ? adminMessage.toString()
+                                    : "Unable to send OTP email right now. Please try again shortly.";
+                            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, safeMessage);
+                        }
+                    }
 
 
 
@@ -2498,13 +2515,26 @@ public class UnifiedAuthenticationService {
 
 
 
+            } catch (RestClientResponseException e) {
+
+                String adminMessage = e.getResponseBodyAsString();
+
+                log.error("Admin OTP request failed for email: {} with status {} and body {}",
+                    email, e.getStatusCode(), adminMessage);
+
+                throw new ResponseStatusException(
+                        HttpStatus.SERVICE_UNAVAILABLE,
+                        "Unable to send OTP email right now. Please try again shortly."
+                );
+
             } catch (Exception e) {
-
-
 
                 log.error("Failed to send login OTP to admin: {}", email, e);
 
-
+                throw new ResponseStatusException(
+                        HttpStatus.SERVICE_UNAVAILABLE,
+                        "Unable to process OTP request right now. Please try again shortly."
+                );
 
             }
 
@@ -2570,43 +2600,15 @@ public class UnifiedAuthenticationService {
 
 
 
-        // TODO: Verify OTP from database
+        // Admin accounts don't have a row in user-service's own users table, so the
 
 
 
-        boolean isValid = verifyOtp(email, otp, "login");
+        // local OTP check (against otp_codes) must only run for known users — otherwise
 
 
 
-
-
-
-
-        if (!isValid) {
-
-
-
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid or expired OTP");
-
-
-
-        }
-
-
-
-
-
-
-
-        // After OTP verification, proceed with login
-
-
-
-        // For now, we'll need to fetch the user/admin and generate tokens
-
-
-
-        // This is a simplified version - you may need to adjust based on your OTP flow
+        // every admin OTP verify would fail here before ever reaching admin-service.
 
 
 
@@ -2622,6 +2624,30 @@ public class UnifiedAuthenticationService {
 
 
 
+            boolean isValid = verifyOtp(email, otp, "login");
+
+
+
+
+
+
+
+            if (!isValid) {
+
+
+
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid or expired OTP");
+
+
+
+            }
+
+
+
+
+
+
+
             return handleUserLogin(userOptional.get(), null, httpRequest); // Password not needed for OTP login
 
 
@@ -2634,11 +2660,11 @@ public class UnifiedAuthenticationService {
 
 
 
-        // Try admin login without password (OTP-based)
+        // Not a user-service account — delegate OTP validation to admin-service
 
 
 
-        return tryAdminOtpLogin(email, httpRequest);
+        return tryAdminOtpLogin(email, otp, httpRequest);
 
 
 
@@ -2650,7 +2676,7 @@ public class UnifiedAuthenticationService {
 
 
 
-    private ResponseEntity<LoginResponse> tryAdminOtpLogin(String email, HttpServletRequest httpRequest) {
+    private ResponseEntity<LoginResponse> tryAdminOtpLogin(String email, String otp, HttpServletRequest httpRequest) {
 
 
 
@@ -2666,7 +2692,11 @@ public class UnifiedAuthenticationService {
 
 
 
-            String adminUrl = adminServiceUrl + "/api/v1/admins/login/otp/verify";
+            adminRequest.put("otp", otp);
+
+
+
+            String adminUrl = adminServiceUrl + "/api/v1/admin/login/otp/verify";
 
 
 
