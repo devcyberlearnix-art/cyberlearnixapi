@@ -10,13 +10,11 @@ server:
 
 
 
-    connection-timeout: 20s
+      default-filters:
 
+        - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_FIRST
 
-
-    max-keep-alive-requests: 10000
-
-
+      # ✅ ✅ GLOBAL CORS CONFIG (MAIN FIX)
 
   compression:
 
@@ -95,6 +93,8 @@ spring:
 
 
       # ✅ ✅ GLOBAL CORS CONFIG (MAIN FIX)
+      default-filters:
+        - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_FIRST
 
 
 
