@@ -8,6 +8,7 @@ public class SwitchRoleRequest {
     private String switchRole;
 
     /** @deprecated use switchRole */
+    @Deprecated
     private String role;
 
     public String getSwitchRole() {

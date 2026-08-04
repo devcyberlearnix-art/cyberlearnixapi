@@ -46,19 +46,23 @@ public class User {
     private String highestQualification;
 
     @Enumerated(EnumType.STRING)
+    @Builder.Default
     private Status status = Status.PENDING_VERIFICATION;
 
     @Enumerated(EnumType.STRING)
     private Role appliedRole;
 
+    @Builder.Default
     private Integer failedLoginAttempts = 0;
 
     @Enumerated(EnumType.STRING)
     private ApplicationStatus applicationStatus;
 
     @Enumerated(EnumType.STRING)
+    @Builder.Default
     private Role role = Role.STUDENT;
 
+    @Builder.Default
     private Boolean isInstructorApproved = false;
 
     private LocalDateTime lastLogin;
@@ -75,6 +79,7 @@ public class User {
     private String mobile;
 
     @Column
+    @Builder.Default
     private String mobileHash = "";
 
     private String userAgent;
@@ -85,6 +90,7 @@ public class User {
     private String providerId;
 
     @Column(updatable = false)
+    @Builder.Default
     private LocalDateTime createdAt = LocalDateTime.now();
     @Column
     private LocalDateTime lockedUntil; // null means not locked

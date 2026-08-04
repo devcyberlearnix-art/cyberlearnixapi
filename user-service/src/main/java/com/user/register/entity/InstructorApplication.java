@@ -25,6 +25,7 @@ public class InstructorApplication {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
+    @Builder.Default
     private ApplicationStatus status = ApplicationStatus.PENDING;
 
     private String resumePath;
@@ -51,6 +52,7 @@ public class InstructorApplication {
     private String additionalNotes;
 
     @Column(updatable = false)
+    @Builder.Default
     private LocalDateTime submittedAt = LocalDateTime.now();
 
     private LocalDateTime reviewedAt;
