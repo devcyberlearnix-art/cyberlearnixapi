@@ -533,6 +533,16 @@ public class RegistrationService {
             return normalized;
         }
 
+        // If this is likely a web page (not a direct image), keep the URL as-is.
+        String lower = normalized.toLowerCase();
+        if (!(lower.endsWith(".jpg")
+                || lower.endsWith(".jpeg")
+                || lower.endsWith(".png")
+                || lower.endsWith(".webp")
+                || lower.matches(".*\\.(jpg|jpeg|png|webp)(\\?.*)?$"))) {
+            return normalized;
+        }
+
         try {
             Map<?, ?> options = ObjectUtils.asMap(
                     "folder", folder,
@@ -545,7 +555,8 @@ public class RegistrationService {
             }
             return secureUrl.toString();
         } catch (Exception e) {
-            throw new RuntimeException("Profile photo upload failed");
+            log.warn("Profile photo upload failed for URL [{}], keeping original URL", normalized, e);
+            return normalized;
         }
     }
 
