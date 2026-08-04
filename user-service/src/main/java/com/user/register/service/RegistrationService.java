@@ -227,6 +227,14 @@ public class RegistrationService {
 
             throw new RuntimeException("Password is too weak");
 
+        if (user.getSkills() == null || user.getSkills().isBlank()) {
+
+            throw new RuntimeException("At least one skill is required");
+
+        }
+
+        String normalizedProfilePhoto = ensureCloudinaryProfilePhotoUrl(user.getProfilePhoto());
+
 
 
         // ================= COUNTRY CODE VALIDATION =================
@@ -340,9 +348,9 @@ public class RegistrationService {
 
             if (existingUser.getStatus() == User.Status.PENDING_VERIFICATION) {
 
-                if (user.getProfilePhoto() != null && !user.getProfilePhoto().isBlank()) {
+                if (normalizedProfilePhoto != null && !normalizedProfilePhoto.isBlank()) {
 
-                    existingUser.setProfilePhoto(user.getProfilePhoto());
+                    existingUser.setProfilePhoto(normalizedProfilePhoto);
 
                 }
 
@@ -397,9 +405,9 @@ public class RegistrationService {
 
             user.setOrganization(SecurityUtils.encrypt(user.getOrganization(), encryptionKey));
 
-        if (user.getProfilePhoto() != null)
+        if (normalizedProfilePhoto != null)
 
-            user.setProfilePhoto(SecurityUtils.encrypt(user.getProfilePhoto(), encryptionKey));
+            user.setProfilePhoto(normalizedProfilePhoto);
 
         if (user.getPreferredLanguage() != null)
 
@@ -489,6 +497,56 @@ public class RegistrationService {
 
         return savedUser;
 
+    }
+
+
+
+    public Map<String, Object> getRegistrationOtpMetadata(String email) {
+
+        String otpSessionId = otpService.getLatestSessionId(email, "registration");
+        long expiresInSeconds = otpService.getLatestSessionTtlSeconds(email, "registration");
+
+        if (otpSessionId == null || otpSessionId.isBlank() || expiresInSeconds <= 0) {
+            return Map.of();
+        }
+
+        Map<String, Object> metadata = new LinkedHashMap<>();
+        metadata.put("otpSessionId", otpSessionId);
+        metadata.put("otpType", "registration");
+        metadata.put("validForMinutes", 5);
+        metadata.put("expiresInSeconds", expiresInSeconds);
+        metadata.put("sessionStartedAt", LocalDateTime.now());
+        metadata.put("expiresAt", LocalDateTime.now().plusSeconds(expiresInSeconds));
+        return metadata;
+    }
+
+
+
+    public String ensureCloudinaryProfilePhotoUrl(String profilePhoto) {
+
+        if (profilePhoto == null || profilePhoto.isBlank()) {
+            return null;
+        }
+
+        String normalized = profilePhoto.trim();
+        if (normalized.contains("res.cloudinary.com")) {
+            return normalized;
+        }
+
+        try {
+            Map<?, ?> options = ObjectUtils.asMap(
+                    "folder", folder,
+                    "resource_type", "image"
+            );
+            Map<?, ?> uploadResult = cloudinary.uploader().upload(normalized, options);
+            Object secureUrl = uploadResult.get("secure_url");
+            if (secureUrl == null || secureUrl.toString().isBlank()) {
+                throw new RuntimeException("Profile photo upload failed");
+            }
+            return secureUrl.toString();
+        } catch (Exception e) {
+            throw new RuntimeException("Profile photo upload failed");
+        }
     }
 
 
@@ -914,13 +972,40 @@ public class RegistrationService {
 
             String otp,
 
+            String otpSessionId,
+
             HttpServletRequest request,
 
             HttpServletResponse response) {
 
+        if (otpSessionId == null || otpSessionId.isBlank()) {
+            return buildOtpResponse(
+                    HttpStatus.BAD_REQUEST,
+                    false,
+                    "otpSessionId is required",
+                    0,
+                    0
+            );
+        }
+
+        String resolvedEmail = (email != null && !email.isBlank())
+                ? email.trim()
+                : otpService.resolveSessionEmail(otpSessionId, "registration")
+                .orElse(null);
+
+        if (resolvedEmail == null || resolvedEmail.isBlank()) {
+            return buildOtpResponse(
+                    HttpStatus.BAD_REQUEST,
+                    false,
+                    "Valid otpSessionId is required when email is not provided",
+                    0,
+                    0
+            );
+        }
+
         // 1️⃣ Find user
 
-        User user = userRepository.findByEmail(email)
+        User user = userRepository.findByEmail(resolvedEmail)
 
                 .orElseThrow(() ->
 
@@ -963,7 +1048,7 @@ public class RegistrationService {
 
 
         // 3️⃣ Verify OTP from Redis session
-        long secondsToExpire = otpService.getLatestSessionTtlSeconds(email, "registration");
+        long secondsToExpire = otpService.getSessionTtlSeconds(otpSessionId);
         if (secondsToExpire <= 0) {
             return buildOtpResponse(
                 HttpStatus.GONE,
@@ -974,7 +1059,13 @@ public class RegistrationService {
             );
         }
 
-        OtpService.OtpVerifyResult verifyResult = otpService.verifyLatestSession(email, otp, "registration", true);
+        OtpService.OtpVerifyResult verifyResult = otpService.verifySession(
+            otpSessionId,
+            resolvedEmail,
+            otp,
+            "registration",
+            true
+        );
         if (!verifyResult.valid()) {
             int remainingAttempts = verifyResult.remainingAttempts();
             if (remainingAttempts <= 0 && "Invalid OTP".equals(verifyResult.reason())) {
@@ -1152,39 +1243,46 @@ public class RegistrationService {
 
         data.put("id", user.getId());
 
-        data.put("firstName", user.getFirstName());
+        data.put("firstName", decryptOrNull(user.getFirstName()));
 
-        data.put("lastName", user.getLastName());
+        data.put("lastName", decryptOrNull(user.getLastName()));
 
         data.put("email", user.getEmail());
 
-        data.put("mobile", user.getMobile());
+        data.put("mobile", decryptOrNull(user.getMobile()));
 
-        data.put("dob", user.getDob());
+        data.put("dob", decryptOrNull(user.getDob()));
 
-        data.put("profilePhoto", user.getProfilePhoto());
+        data.put("profilePhoto", decryptOrNull(user.getProfilePhoto()));
+        data.put("profilePhotoUrl", decryptOrNull(user.getProfilePhoto()));
 
-        data.put("city", user.getCity());
+        data.put("city", decryptOrNull(user.getCity()));
 
-        data.put("state", user.getState());
+        data.put("state", decryptOrNull(user.getState()));
 
-        data.put("country", user.getCountry());
+        data.put("country", decryptOrNull(user.getCountry()));
 
-        data.put("preferredLanguage", user.getPreferredLanguage());
+        data.put("preferredLanguage", decryptOrNull(user.getPreferredLanguage()));
 
-        data.put("organization", user.getOrganization());
+        data.put("organization", decryptOrNull(user.getOrganization()));
 
-        data.put("skills", user.getSkills());
+        String skillsCsv = decryptOrNull(user.getSkills());
+        data.put("skills", skillsCsv == null || skillsCsv.isBlank()
+            ? List.of()
+            : List.of(skillsCsv.split(","))
+            .stream().map(String::trim).filter(s -> !s.isEmpty()).toList());
 
-        data.put("fieldOfStudy", user.getFieldOfStudy());
+        data.put("fieldOfStudy", decryptOrNull(user.getFieldOfStudy()));
 
-        data.put("highestQualification", user.getHighestQualification());
+        data.put("highestQualification", decryptOrNull(user.getHighestQualification()));
 
         data.put("status", user.getStatus());
 
         data.put("role", user.getRole());
 
         data.put("isInstructorApproved", user.getIsInstructorApproved());
+        data.put("otpSessionId", otpSessionId);
+        data.put("otpType", "registration");
 
 
 
@@ -1192,7 +1290,7 @@ public class RegistrationService {
 
         responseBody.put("success", true);
 
-        responseBody.put("message", "OTP verified successfully");
+        responseBody.put("message", "Registration successful. Email verified.");
 
         responseBody.put("data", data);
 
@@ -1202,6 +1300,19 @@ public class RegistrationService {
 
         return new ResponseEntity<>(responseBody, HttpStatus.OK);
 
+    }
+
+
+
+    private String decryptOrNull(String encryptedValue) {
+        if (encryptedValue == null || encryptedValue.isBlank()) {
+            return encryptedValue;
+        }
+        try {
+            return SecurityUtils.decrypt(encryptedValue, encryptionKey);
+        } catch (Exception ignored) {
+            return encryptedValue;
+        }
     }
 
 

@@ -57,11 +57,26 @@ public class OtpService {
         if (sessionId == null || sessionId.isBlank()) {
             return 0;
         }
+        return getSessionTtlSeconds(sessionId);
+    }
+
+    public long getSessionTtlSeconds(String sessionId) {
+        if (sessionId == null || sessionId.isBlank()) {
+            return 0;
+        }
         Long ttl = redisTemplate.getExpire(OTP_SESSION_PREFIX + sessionId);
         if (ttl == null || ttl < 0) {
             return 0;
         }
         return ttl;
+    }
+
+    public Optional<LocalDateTime> getSessionExpiresAt(String sessionId) {
+        long ttl = getSessionTtlSeconds(sessionId);
+        if (ttl <= 0) {
+            return Optional.empty();
+        }
+        return Optional.of(LocalDateTime.now().plusSeconds(ttl));
     }
 
     public OtpVerifyResult verifyLatestSession(String email, String otp, String otpType, boolean consumeOnSuccess) {

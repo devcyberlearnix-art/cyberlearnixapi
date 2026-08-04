@@ -33,6 +33,7 @@ import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.validation.Valid;
 
 import lombok.RequiredArgsConstructor;
 
@@ -122,7 +123,9 @@ public class RegistrationController {
 
     @PostMapping("/register")
 
-    public ResponseEntity<?> register(@RequestBody RegisterRequest registerRequest, HttpServletRequest request) {
+    public ResponseEntity<?> register(@Valid @RequestBody RegisterRequest registerRequest, HttpServletRequest request) {
+
+        String normalizedProfilePhoto = registrationService.ensureCloudinaryProfilePhotoUrl(registerRequest.getProfilePhoto());
 
         User user = new User();
         user.setEmail(registerRequest.getEmail());
@@ -133,12 +136,15 @@ public class RegistrationController {
         user.setMobile(registerRequest.getMobileNumber());
         user.setCountryCode(registerRequest.getCountryCode());
         user.setDob(registerRequest.getDob());
-        user.setProfilePhoto(registerRequest.getProfilePhoto());
+        user.setProfilePhoto(normalizedProfilePhoto);
         user.setCity(registerRequest.getCity());
         user.setState(registerRequest.getState());
         user.setCountry(registerRequest.getCountry());
         user.setPreferredLanguage(registerRequest.getPreferredLanguage());
         user.setOrganization(registerRequest.getOrganization());
+        if (registerRequest.getSkillsAsList().isEmpty()) {
+            throw new IllegalArgumentException("At least one skill is required");
+        }
         user.setSkills(registerRequest.getSkillsAsString());
         user.setFieldOfStudy(registerRequest.getFieldOfStudy());
         user.setHighestQualification(registerRequest.getHighestQualification());
@@ -177,6 +183,8 @@ public class RegistrationController {
 
             User savedUser = registrationService.register(user, request);
 
+            Map<String, Object> otpMeta = registrationService.getRegistrationOtpMetadata(savedUser.getEmail());
+
 
 
             Map<String, Object> responseData = new HashMap<>();
@@ -186,6 +194,9 @@ public class RegistrationController {
             responseData.put("role", savedUser.getRole());
             responseData.put("countryCode", savedUser.getCountryCode());
             responseData.put("effectiveRole", savedUser.getEffectiveRole());
+            responseData.put("skills", registerRequest.getSkillsAsList());
+            responseData.put("profilePhoto", normalizedProfilePhoto);
+            responseData.putAll(otpMeta);
 
             ApiResponse<Map<String, Object>> response = new ApiResponse<>(
 
@@ -293,7 +304,7 @@ public class RegistrationController {
 
     public ResponseEntity<?> verifyEmail(
 
-            @RequestBody Map<String, String> body,
+            @Valid @RequestBody com.user.register.dto.unified.VerifyOtpRequest body,
 
             HttpServletRequest request,
 
@@ -301,9 +312,11 @@ public class RegistrationController {
 
 
 
-        String email = body.get("email");
+        String email = body.getEmail();
 
-        String otp = body.get("otp");
+        String otp = body.getOtp();
+
+        String otpSessionId = body.getOtpSessionId();
 
 
 
@@ -313,7 +326,7 @@ public class RegistrationController {
 
             ResponseEntity<Map<String, Object>> serviceResponse =
 
-                    registrationService.verifyOTP(email, otp, request, response);
+                    registrationService.verifyOTP(email, otp, otpSessionId, request, response);
 
             return serviceResponse;
 
