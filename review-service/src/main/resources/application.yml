@@ -1,0 +1,56 @@
+server:
+  port: ${SERVER_PORT:8089}
+
+spring:
+  application:
+    name: review-service
+  cloud:
+    openfeign:
+      circuitbreaker:
+        enabled: true
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:15432}/${DB_NAME:lms_review_db}}
+    username: ${SPRING_DATASOURCE_USERNAME:cyberlearnix}
+    password: ${SPRING_DATASOURCE_PASSWORD:cyberlearnix123}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+jwt:
+  # Must match user-service JwtUtil.SECRET (login token signing key)
+  secret: ${JWT_ACCESS_TOKEN_SECRET:${JWT_SECRET:8c4e9d2f1a7b6c5d9e3f0a1b7c8d4e5f9a2b6c1d8e7f3a4b5c9d1e6f8a2b7c3}}
+  issuer: ${JWT_ISSUER:cyberlearnix}
+  audience: ${JWT_AUDIENCE:cyberlearnix-clients}
+  expiration-ms: ${JWT_EXPIRATION_MS:86400000}
+
+enrollment:
+  service:
+    url: ${ENROLLMENT_SERVICE_URL:http://localhost:8083}
+
+course:
+  service:
+    url: ${COURSE_SERVICE_URL:http://localhost:8083}
+
+user:
+  service:
+    url: ${USER_SERVICE_URL:http://localhost:8091}
+    enabled: ${USER_SERVICE_ENABLED:false}
+
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+
+logging:
+  level:
+    com.lms.review: DEBUG
+    org.springframework.security: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE

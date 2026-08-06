@@ -1,0 +1,243 @@
+{
+	"info": {
+		"name": "CyberLearnix Cart Service API",
+		"_postman_id": "cart-service-collection",
+		"description": "Complete API collection for CyberLearnix Cart Service. All endpoints organized by functionality with authentication, variables, and test scripts.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:8081",
+			"type": "string"
+		},
+		{
+			"key": "accessToken",
+			"value": "",
+			"type": "string"
+		}
+	],
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "{{accessToken}}"
+			}
+		]
+	},
+	"item": [
+		{
+			"name": "Cart Management",
+			"item": [
+				{
+					"name": "Add to Cart",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"courseId\": 1,\n    \"instructorId\": \"1\",\n    \"courseName\": \"Java Fundamentals\",\n    \"price\": 4999.00,\n    \"quantity\": 1\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/cart",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "cart"]
+						},
+						"description": "Add a course to cart. Requires authentication."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Cart",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}"
+								}
+							]
+						},
+						"method": "GET",
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/cart",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "cart"]
+						},
+						"description": "Get current user's cart. Requires authentication."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Cart Summary",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}"
+								}
+							]
+						},
+						"method": "GET",
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/cart/summary",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "cart", "summary"]
+						},
+						"description": "Get cart summary with totals. Requires authentication."
+					},
+					"response": []
+				},
+				{
+					"name": "Remove Course from Cart",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}"
+								}
+							]
+						},
+						"method": "DELETE",
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/cart/:courseId",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "cart", ":courseId"],
+							"variable": [
+								{
+									"key": "courseId",
+									"value": "1"
+								}
+							]
+						},
+						"description": "Remove a course from cart. Requires authentication."
+					},
+					"response": []
+				},
+				{
+					"name": "Clear Cart",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}"
+								}
+							]
+						},
+						"method": "DELETE",
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/cart",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "cart"]
+						},
+						"description": "Clear all items from cart. Requires authentication."
+					},
+					"response": []
+				},
+				{
+					"name": "Checkout",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}"
+								}
+							]
+						},
+						"method": "POST",
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/cart/checkout",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "cart", "checkout"]
+						},
+						"description": "Initiate checkout process. Requires authentication."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Coupon Management",
+			"item": [
+				{
+					"name": "Apply Coupon",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"couponCode\": \"SAVE10\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/cart/coupon",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "cart", "coupon"]
+						},
+						"description": "Apply coupon to cart. Requires authentication."
+					},
+					"response": []
+				},
+				{
+					"name": "Remove Coupon",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}"
+								}
+							]
+						},
+						"method": "DELETE",
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/cart/coupon",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "cart", "coupon"]
+						},
+						"description": "Remove applied coupon from cart. Requires authentication."
+					},
+					"response": []
+				}
+			]
+		}
+	]
+}

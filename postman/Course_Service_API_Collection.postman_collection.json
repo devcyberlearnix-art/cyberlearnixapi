@@ -1,0 +1,356 @@
+{
+	"info": {
+		"name": "CyberLearnix Course Service API",
+		"_postman_id": "course-service-collection",
+		"description": "Complete API collection for CyberLearnix Course Service. All endpoints organized by functionality with authentication, variables, and test scripts.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:8083",
+			"type": "string"
+		},
+		{
+			"key": "accessToken",
+			"value": "",
+			"type": "string"
+		}
+	],
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "{{accessToken}}"
+			}
+		]
+	},
+	"item": [
+		{
+			"name": "Course Management",
+			"item": [
+				{
+					"name": "Create Course",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"Java Programming\",\n    \"description\": \"Learn Java from scratch\",\n    \"price\": 999.99,\n    \"category\": \"Programming\",\n    \"status\": \"DRAFT\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/courses",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "courses"]
+						},
+						"description": "Create a new course. Requires Instructor or Admin role."
+					},
+					"response": []
+				},
+				{
+					"name": "Get All Courses",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/courses",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "courses"]
+						},
+						"description": "Get all courses. Public endpoint."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Course by ID",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/courses/:id",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "courses", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "1"
+								}
+							]
+						},
+						"description": "Get course by ID. Public endpoint."
+					},
+					"response": []
+				},
+				{
+					"name": "Update Course (Full)",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"Java Programming Updated\",\n    \"description\": \"Learn Java from scratch - Updated\",\n    \"price\": 899.99,\n    \"category\": \"Programming\",\n    \"status\": \"PUBLISHED\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/courses/:id",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "courses", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "1"
+								}
+							]
+						},
+						"description": "Full update of course. Requires Instructor or Admin role."
+					},
+					"response": []
+				},
+				{
+					"name": "Update Course (Partial)",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}"
+								}
+							]
+						},
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"price\": 799.99\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/courses/:id",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "courses", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "1"
+								}
+							]
+						},
+						"description": "Partial update of course. Requires Instructor or Admin role."
+					},
+					"response": []
+				},
+				{
+					"name": "Update Course Status",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}"
+								}
+							]
+						},
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"status\": \"PUBLISHED\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/courses/:id/status",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "courses", ":id", "status"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "1"
+								}
+							]
+						},
+						"description": "Update course status (Admin service only for approval/rejection)."
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Course",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}"
+								}
+							]
+						},
+						"method": "DELETE",
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/courses/:id",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "courses", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "1"
+								}
+							]
+						},
+						"description": "Delete course. Requires Instructor or Admin role."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Enrollment",
+			"item": [
+				{
+					"name": "Get Enrolled Students",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/courses/:courseId/students",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "courses", ":courseId", "students"],
+							"variable": [
+								{
+									"key": "courseId",
+									"value": "1"
+								}
+							]
+						},
+						"description": "Get list of students enrolled in a course. Public endpoint."
+					},
+					"response": []
+				},
+				{
+					"name": "Enroll in Course",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}"
+								}
+							]
+						},
+						"method": "POST",
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/courses/:courseId/enroll",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "courses", ":courseId", "enroll"],
+							"variable": [
+								{
+									"key": "courseId",
+									"value": "1"
+								}
+							]
+						},
+						"description": "Enroll current user in a course. Requires Student role."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Course Preview",
+			"item": [
+				{
+					"name": "Create Course Preview",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"Course Preview\",\n    \"description\": \"Preview content\",\n    \"videoUrl\": \"https://example.com/preview.mp4\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/courses/:courseId/preview",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "courses", ":courseId", "preview"],
+							"variable": [
+								{
+									"key": "courseId",
+									"value": "1"
+								}
+							]
+						},
+						"description": "Create course preview content."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Course Preview",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/courses/:courseId/preview",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "courses", ":courseId", "preview"],
+							"variable": [
+								{
+									"key": "courseId",
+									"value": "1"
+								}
+							]
+						},
+						"description": "Get course preview content. Public endpoint."
+					},
+					"response": []
+				}
+			]
+		}
+	]
+}

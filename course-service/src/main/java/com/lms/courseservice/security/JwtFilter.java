@@ -39,7 +39,7 @@ public class JwtFilter extends OncePerRequestFilter {
 
                 // 🔥 Extract userId instead of username
                 UUID userId = UUID.fromString(jwtUtil.extractUsername(token));
-                String role = jwtUtil.extractRole(token);
+                String role = JwtUtil.toSpringSecurityRole(jwtUtil.extractRole(token));
 
                 SimpleGrantedAuthority authority =
                         new SimpleGrantedAuthority("ROLE_" + role);

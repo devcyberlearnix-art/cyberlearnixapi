@@ -1,7 +1,7 @@
 plugins {
     id 'java'
     id 'org.springframework.boot' version '3.5.1'
-    id 'io.spring.dependency-management' version '1.1.5'
+    id 'io.spring.dependency-management' version '1.1.7'
 }
 
 group = 'com.lms'
@@ -28,12 +28,18 @@ dependencies {
 
     implementation 'org.springframework.boot:spring-boot-starter-validation'
 
+    // Commonlibs for shared JWT validator
+    implementation project(':commonlibs')
+
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
 
     runtimeOnly 'org.postgresql:postgresql'
 
     developmentOnly 'org.springframework.boot:spring-boot-devtools'
+
+    // SpringDoc OpenAPI
+    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.3.0'
 
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
 }

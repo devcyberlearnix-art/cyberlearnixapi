@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Admin Login Test</title>
+</head>
+<body>
+    <h1>Admin Login Test</h1>
+    <button onclick="testAdminLogin()">Test Main Admin Login</button>
+    <div id="result"></div>
+
+    <script>
+        async function testAdminLogin() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = 'Testing...';
+
+            try {
+                const response = await fetch('http://localhost:8087/api/v1/admins/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        email: 'mainadmin@cyberlearnix.com',
+                        password: 'MainAdmin@123'
+                    })
+                });
+
+                const data = await response.json();
+                resultDiv.innerHTML = `
+                    <h3>Status: ${response.status}</h3>
+                    <pre>${JSON.stringify(data, null, 2)}</pre>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `<h3>Error:</h3><pre>${error.message}</pre>`;
+            }
+        }
+    </script>
+</body>
+</html>

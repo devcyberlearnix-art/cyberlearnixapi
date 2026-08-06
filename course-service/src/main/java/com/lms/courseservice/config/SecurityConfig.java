@@ -22,49 +22,81 @@ public class SecurityConfig {
 
         http
                 .csrf(csrf -> csrf.disable())
-
                 .authorizeHttpRequests(auth -> auth
+                        // ============== PUBLIC ENDPOINTS (No Auth Required) ==============
+                        // GET all courses
+                        .requestMatchers(HttpMethod.GET, "/api/v1/courses").permitAll()
+                        // GET specific course
+                        .requestMatchers(HttpMethod.GET, "/api/v1/courses/*").permitAll()
+                        // GET course sections
+                        .requestMatchers(HttpMethod.GET, "/api/v1/courses/*/sections").permitAll()
+                        // GET lectures in section
+                        .requestMatchers(HttpMethod.GET, "/api/v1/sections/*/lectures").permitAll()
+                        // GET course preview
+                        .requestMatchers(HttpMethod.GET, "/api/v1/courses/*/preview").permitAll()
+                        // GET course students (for admin dashboard)
+                        .requestMatchers(HttpMethod.GET, "/api/v1/courses/*/students").permitAll()
 
-                        // Auth API
-                        .requestMatchers("/auth/**").permitAll()
+                        // ============== INTERNAL ENDPOINTS (Service-to-Service) ==============
+                        // Internal enrollment (from payment service)
+                        .requestMatchers(HttpMethod.POST, "/api/v1/enrollments/internal/enroll").permitAll()
+                        // Admin service operations (with service token)
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/courses/*").permitAll()
+                        .requestMatchers(HttpMethod.PATCH, "/api/v1/courses/*").permitAll()
+                        .requestMatchers(HttpMethod.PATCH, "/api/v1/courses/*/status").permitAll()
 
-                        // Public access
-                        .requestMatchers(HttpMethod.GET, "/sections/*/lectures")
-                        .hasAnyRole("STUDENT","INSTRUCTOR","ADMIN")
-                        .requestMatchers(HttpMethod.GET, "/courses/*/sections").permitAll()
+                        // ============== AUTHENTICATED ENDPOINTS ==============
+                        // Enrollment check (requires auth)
+                        .requestMatchers(HttpMethod.GET, "/api/v1/enrollments/check/*").authenticated()
 
-                        // ✅ STUDENT enroll (put BEFORE /courses/**)
-                        .requestMatchers(HttpMethod.POST, "/courses/*/enroll")
+                        // ============== STUDENT-ONLY ENDPOINTS ==============
+                        // Enroll in course (Student)
+                        .requestMatchers(HttpMethod.POST, "/api/v1/courses/*/enroll")
                         .hasRole("STUDENT")
 
-                        // Instructor/Admin manage courses
-                        .requestMatchers(HttpMethod.POST, "/courses/**").hasAnyRole("INSTRUCTOR","ADMIN")
-                        .requestMatchers(HttpMethod.PUT, "/courses/**").hasAnyRole("INSTRUCTOR","ADMIN")
-                        .requestMatchers(HttpMethod.PATCH, "/courses/**").hasAnyRole("INSTRUCTOR","ADMIN")
-                        .requestMatchers(HttpMethod.DELETE, "/courses/**").hasAnyRole("INSTRUCTOR","ADMIN")
+                        // ============== INSTRUCTOR/ADMIN ENDPOINTS ==============
+                        // Create course
+                        .requestMatchers(HttpMethod.POST, "/api/v1/courses")
+                        .hasAnyRole("INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN")
+                        // Update course (full)
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/courses/*")
+                        .hasAnyRole("INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN")
+                        // Update course (partial)
+                        .requestMatchers(HttpMethod.PATCH, "/api/v1/courses/*")
+                        .hasAnyRole("INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN")
+                        // Delete course
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/courses/*")
+                        .hasAnyRole("INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN")
 
-                        // Sections modify
-                        .requestMatchers(HttpMethod.POST, "/courses/*/sections").hasAnyRole("INSTRUCTOR","ADMIN")
-                        .requestMatchers(HttpMethod.PATCH, "/courses/sections/*").hasAnyRole("INSTRUCTOR","ADMIN")
-                        .requestMatchers(HttpMethod.DELETE, "/courses/sections/*").hasAnyRole("INSTRUCTOR","ADMIN")
+                        // ============== SECTION MANAGEMENT ==============
+                        // Create section
+                        .requestMatchers(HttpMethod.POST, "/api/v1/courses/*/sections")
+                        .hasAnyRole("INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN")
+                        // Update section
+                        .requestMatchers(HttpMethod.PATCH, "/api/v1/courses/sections/*")
+                        .hasAnyRole("INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN")
+                        // Delete section
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/courses/sections/*")
+                        .hasAnyRole("INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN")
 
-                        // Lectures
-                        .requestMatchers(HttpMethod.GET, "/sections/*/lectures").permitAll()
+                        // ============== LECTURE MANAGEMENT ==============
+                        // Create lecture
+                        .requestMatchers(HttpMethod.POST, "/api/v1/sections/*/lectures")
+                        .hasAnyRole("INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN")
+                        // Update lecture
+                        .requestMatchers(HttpMethod.PATCH, "/api/v1/sections/*/lectures/*")
+                        .hasAnyRole("INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN")
+                        // Delete lecture
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/sections/*/lectures/*")
+                        .hasAnyRole("INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN")
 
-                        .requestMatchers(HttpMethod.POST, "/sections/*/lectures")
-                        .hasAnyRole("INSTRUCTOR","ADMIN")
+                        // ============== COURSE PREVIEW ==============
+                        // Create preview
+                        .requestMatchers(HttpMethod.POST, "/api/v1/courses/*/preview")
+                        .hasAnyRole("INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN")
 
-                        .requestMatchers(HttpMethod.PATCH, "/sections/*/lectures/*")
-                        .hasAnyRole("INSTRUCTOR","ADMIN")
-
-                        .requestMatchers(HttpMethod.DELETE, "/sections/*/lectures/*")
-                        .hasAnyRole("INSTRUCTOR","ADMIN")
-
-                        .requestMatchers(HttpMethod.POST, "/courses/*/preview/*")
-                        .hasAnyRole("INSTRUCTOR","ADMIN")
-
-                        .anyRequest().authenticated()
-                )
+                        // Default: deny all other requests
+                        .anyRequest().denyAll())
 
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 

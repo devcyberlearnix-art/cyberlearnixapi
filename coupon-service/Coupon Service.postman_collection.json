@@ -1,0 +1,244 @@
+{
+  "info": {
+    "name": "Coupon Service API",
+    "description": "Postman collection for the coupon service endpoints",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Create Coupon",
+      "request": {
+        "method": "POST",
+        "header": [
+          {"key": "Content-Type", "value": "application/json"},
+          {"key": "Authorization", "value": "Bearer {{token}}"}
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"code\": \"SAVE10\",\n  \"title\": \"Save 10%\",\n  \"description\": \"10% off for new learners\",\n  \"discountType\": \"PERCENTAGE\",\n  \"discountValue\": 10,\n  \"minimumOrderAmount\": 100,\n  \"maximumDiscountAmount\": 50,\n  \"usageLimit\": 100,\n  \"usageLimitPerUser\": 1,\n  \"validFrom\": \"2026-07-01T00:00:00Z\",\n  \"validUntil\": \"2026-07-31T23:59:59Z\",\n  \"applicableTo\": \"COURSES\",\n  \"applicableCourseIds\": [\"course-123\"],\n  \"stackable\": false,\n  \"status\": \"ACTIVE\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:8082/api/coupons",
+          "host": ["http://localhost:8082"],
+          "path": ["api", "coupons"]
+        }
+      }
+    },
+    {
+      "name": "Bulk Generate Coupons",
+      "request": {
+        "method": "POST",
+        "header": [
+          {"key": "Content-Type", "value": "application/json"},
+          {"key": "Authorization", "value": "Bearer {{token}}"}
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"campaignName\": \"SUMMER\",\n  \"totalCoupons\": 5,\n  \"discountType\": \"PERCENTAGE\",\n  \"discountValue\": 15,\n  \"creatorRole\": \"ADMIN\",\n  \"courseId\": \"course-123\",\n  \"startTime\": \"2026-07-01T00:00:00\",\n  \"expiryDate\": \"2026-07-31T23:59:59\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:8082/api/coupons/bulk",
+          "host": ["http://localhost:8082"],
+          "path": ["api", "coupons", "bulk"]
+        }
+      }
+    },
+    {
+      "name": "Get All Coupons",
+      "request": {
+        "method": "GET",
+        "header": [
+          {"key": "Authorization", "value": "Bearer {{token}}"}
+        ],
+        "url": {
+          "raw": "http://localhost:8082/api/coupons",
+          "host": ["http://localhost:8082"],
+          "path": ["api", "coupons"]
+        }
+      }
+    },
+    {
+      "name": "Get Coupon By Id",
+      "request": {
+        "method": "GET",
+        "header": [
+          {"key": "Authorization", "value": "Bearer {{token}}"}
+        ],
+        "url": {
+          "raw": "http://localhost:8082/api/coupons/{{couponId}}",
+          "host": ["http://localhost:8082"],
+          "path": ["api", "coupons", "{{couponId}}"]
+        }
+      }
+    },
+    {
+      "name": "Update Coupon",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {"key": "Content-Type", "value": "application/json"},
+          {"key": "Authorization", "value": "Bearer {{token}}"}
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"code\": \"SAVE10\",\n  \"title\": \"Updated Save 10%\",\n  \"description\": \"Updated description\",\n  \"discountType\": \"PERCENTAGE\",\n  \"discountValue\": 12,\n  \"validFrom\": \"2026-07-01T00:00:00Z\",\n  \"validUntil\": \"2026-08-01T23:59:59Z\",\n  \"status\": \"ACTIVE\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:8082/api/coupons/{{couponId}}",
+          "host": ["http://localhost:8082"],
+          "path": ["api", "coupons", "{{couponId}}"]
+        }
+      }
+    },
+    {
+      "name": "Delete Coupon",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {"key": "Authorization", "value": "Bearer {{token}}"}
+        ],
+        "url": {
+          "raw": "http://localhost:8082/api/coupons/{{couponId}}",
+          "host": ["http://localhost:8082"],
+          "path": ["api", "coupons", "{{couponId}}"]
+        }
+      }
+    },
+    {
+      "name": "Activate Coupon",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {"key": "Authorization", "value": "Bearer {{token}}"}
+        ],
+        "url": {
+          "raw": "http://localhost:8082/api/coupons/{{couponId}}/activate",
+          "host": ["http://localhost:8082"],
+          "path": ["api", "coupons", "{{couponId}}", "activate"]
+        }
+      }
+    },
+    {
+      "name": "Deactivate Coupon",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {"key": "Authorization", "value": "Bearer {{token}}"}
+        ],
+        "url": {
+          "raw": "http://localhost:8082/api/coupons/{{couponId}}/deactivate",
+          "host": ["http://localhost:8082"],
+          "path": ["api", "coupons", "{{couponId}}", "deactivate"]
+        }
+      }
+    },
+    {
+      "name": "My Coupons",
+      "request": {
+        "method": "GET",
+        "header": [
+          {"key": "Authorization", "value": "Bearer {{token}}"}
+        ],
+        "url": {
+          "raw": "http://localhost:8082/api/coupons/my",
+          "host": ["http://localhost:8082"],
+          "path": ["api", "coupons", "my"]
+        }
+      }
+    },
+    {
+      "name": "Campaigns",
+      "request": {
+        "method": "GET",
+        "header": [
+          {"key": "Authorization", "value": "Bearer {{token}}"}
+        ],
+        "url": {
+          "raw": "http://localhost:8082/api/coupons/campaigns",
+          "host": ["http://localhost:8082"],
+          "path": ["api", "coupons", "campaigns"]
+        }
+      }
+    },
+    {
+      "name": "Validate Coupon",
+      "request": {
+        "method": "POST",
+        "header": [
+          {"key": "Content-Type", "value": "application/json"},
+          {"key": "Authorization", "value": "Bearer {{token}}"}
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"couponCode\": \"SAVE10\",\n  \"userId\": \"user-1\",\n  \"courseId\": \"course-123\",\n  \"price\": 200\n}"
+        },
+        "url": {
+          "raw": "http://localhost:8082/api/coupons/validate",
+          "host": ["http://localhost:8082"],
+          "path": ["api", "coupons", "validate"]
+        }
+      }
+    },
+    {
+      "name": "Best Discount",
+      "request": {
+        "method": "POST",
+        "header": [
+          {"key": "Content-Type", "value": "application/json"},
+          {"key": "Authorization", "value": "Bearer {{token}}"}
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"userId\": \"user-1\",\n  \"courseId\": \"course-123\",\n  \"price\": 200\n}"
+        },
+        "url": {
+          "raw": "http://localhost:8082/api/coupons/best-discount",
+          "host": ["http://localhost:8082"],
+          "path": ["api", "coupons", "best-discount"]
+        }
+      }
+    },
+    {
+      "name": "Redeem Coupon",
+      "request": {
+        "method": "POST",
+        "header": [
+          {"key": "Content-Type", "value": "application/json"},
+          {"key": "Authorization", "value": "Bearer {{token}}"}
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"couponCode\": \"SAVE10\",\n  \"userId\": \"user-1\",\n  \"courseId\": \"course-123\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:8082/api/coupons/redeem",
+          "host": ["http://localhost:8082"],
+          "path": ["api", "coupons", "redeem"]
+        }
+      }
+    },
+    {
+      "name": "Assign Coupon to User",
+      "request": {
+        "method": "POST",
+        "header": [
+          {"key": "Content-Type", "value": "application/json"},
+          {"key": "Authorization", "value": "Bearer {{token}}"}
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"couponCode\": \"SAVE10\",\n  \"userId\": \"user-1\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:8082/api/coupons/assign-user",
+          "host": ["http://localhost:8082"],
+          "path": ["api", "coupons", "assign-user"]
+        }
+      }
+    }
+  ],
+  "variable": [
+    {"key": "token", "value": "your-jwt-token-here"},
+    {"key": "couponId", "value": "replace-with-created-coupon-id"}
+  ]
+}

@@ -1,7 +1,7 @@
 plugins {
     id 'java'
     id 'org.springframework.boot' version '3.2.4'
-    id 'io.spring.dependency-management' version '1.1.5' // Updated version
+    id 'io.spring.dependency-management' version '1.1.7'
 }
 
 group = 'com.lms'
@@ -32,6 +32,9 @@ dependencies {
     implementation 'io.jsonwebtoken:jjwt-api:0.11.5'
     runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.11.5'
     runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.11.5'
+
+    // Commonlibs for shared JWT validator
+    implementation project(':commonlibs')
 
     implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
     implementation 'com.fasterxml.jackson.core:jackson-databind'

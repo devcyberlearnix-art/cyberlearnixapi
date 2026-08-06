@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/courses")
+@RequestMapping("/api/v1/courses")
 @RequiredArgsConstructor
 public class CoursePreviewController {
 
@@ -16,12 +16,12 @@ public class CoursePreviewController {
 
     @PostMapping("/{courseId}/preview")
     public CoursePreview createPreview(@PathVariable Long courseId,
-                                       @RequestBody CoursePreview preview){
+            @RequestBody CoursePreview preview) {
         return previewService.createPreview(courseId, preview);
     }
 
     @GetMapping("/{courseId}/preview")
-    public List<CoursePreview> getPreview(@PathVariable Long courseId){
+    public List<CoursePreview> getPreview(@PathVariable Long courseId) {
         return previewService.getCoursePreview(courseId);
     }
 }

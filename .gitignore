@@ -1,28 +1,32 @@
-# Gradle build outputs and caches
+# Gradle
 .gradle/
+**/.gradle/
+build/
 **/build/
-**/bin/
+!**/src/**/build/
+!gradle/wrapper/gradle-wrapper.jar
+.gradletasknamecache
+
+# Maven (review-service legacy)
+target/
+**/target/
 
 # IDE
 .idea/
 *.iml
-*.iws
-*.ipr
+.vscode/
+.classpath
+.project
+.settings/
+bin/
+**/bin/
 
 # OS
 .DS_Store
 Thumbs.db
 
 # Logs
-logs/
 *.log
 
-# Uploads
-uploads/
-
-# Environment-specific secrets (never commit)
-.env
-*.env.local
-
-# Spring Boot generated
-HELP.md
+# Local test helper scripts
+seed_test_user.sql

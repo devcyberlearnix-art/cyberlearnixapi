@@ -1,0 +1,406 @@
+{
+	"info": {
+		"name": "CyberLearnix Coupon Service API",
+		"_postman_id": "coupon-service-collection",
+		"description": "Complete API collection for CyberLearnix Coupon Service. All endpoints organized by functionality with authentication, variables, and test scripts.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:8082",
+			"type": "string"
+		},
+		{
+			"key": "accessToken",
+			"value": "",
+			"type": "string"
+		}
+	],
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "{{accessToken}}"
+			}
+		]
+	},
+	"item": [
+		{
+			"name": "Coupon Management",
+			"item": [
+				{
+					"name": "Create Coupon",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"code\": \"SAVE20\",\n    \"discountType\": \"PERCENTAGE\",\n    \"discountValue\": 20,\n    \"maxUses\": 100,\n    \"expiryDate\": \"2025-12-31\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/coupons",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "coupons"]
+						},
+						"description": "Create a new coupon. Requires ADMIN or INSTRUCTOR role."
+					},
+					"response": []
+				},
+				{
+					"name": "Bulk Generate Coupons",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"count\": 10,\n    \"prefix\": \"PROMO\",\n    \"discountValue\": 15,\n    \"creatorRole\": \"ADMIN\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/coupons/bulk",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "coupons", "bulk"]
+						},
+						"description": "Bulk generate coupons. No auth required."
+					},
+					"response": []
+				},
+				{
+					"name": "Get All Coupons",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/coupons",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "coupons"]
+						},
+						"description": "Get all coupons. Public endpoint."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Coupon Details",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/coupons/:couponId",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "coupons", ":couponId"],
+							"variable": [
+								{
+									"key": "couponId",
+									"value": "coupon-id-here"
+								}
+							]
+						},
+						"description": "Get coupon details by ID. Public endpoint."
+					},
+					"response": []
+				},
+				{
+					"name": "Update Coupon",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"discountValue\": 25\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/coupons/:couponId",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "coupons", ":couponId"],
+							"variable": [
+								{
+									"key": "couponId",
+									"value": "coupon-id-here"
+								}
+							]
+						},
+						"description": "Update coupon details. Requires ADMIN or INSTRUCTOR role."
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Coupon",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}"
+								}
+							]
+						},
+						"method": "DELETE",
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/coupons/:couponId",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "coupons", ":couponId"],
+							"variable": [
+								{
+									"key": "couponId",
+									"value": "coupon-id-here"
+								}
+							]
+						},
+						"description": "Delete coupon. Requires ADMIN or INSTRUCTOR role."
+					},
+					"response": []
+				},
+				{
+					"name": "Activate Coupon",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}"
+								}
+							]
+						},
+						"method": "PATCH",
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/coupons/:couponId/activate",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "coupons", ":couponId", "activate"],
+							"variable": [
+								{
+									"key": "couponId",
+									"value": "coupon-id-here"
+								}
+							]
+						},
+						"description": "Activate coupon. Requires ADMIN or INSTRUCTOR role."
+					},
+					"response": []
+				},
+				{
+					"name": "Deactivate Coupon",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}"
+								}
+							]
+						},
+						"method": "PATCH",
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/coupons/:couponId/deactivate",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "coupons", ":couponId", "deactivate"],
+							"variable": [
+								{
+									"key": "couponId",
+									"value": "coupon-id-here"
+								}
+							]
+						},
+						"description": "Deactivate coupon. Requires ADMIN or INSTRUCTOR role."
+					},
+					"response": []
+				},
+				{
+					"name": "Get My Coupons",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}"
+								}
+							]
+						},
+						"method": "GET",
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/coupons/my",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "coupons", "my"]
+						},
+						"description": "Get coupons created by current user. Requires authentication."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Validation",
+			"item": [
+				{
+					"name": "Validate by Code",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/coupons/validate/:code",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "coupons", "validate", ":code"],
+							"variable": [
+								{
+									"key": "code",
+									"value": "SAVE20"
+								}
+							]
+						},
+						"description": "Validate coupon code and return discount value. Public endpoint."
+					},
+					"response": []
+				},
+				{
+					"name": "Validate Coupon",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"code\": \"SAVE20\",\n    \"amount\": 999.99\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/coupons/validate",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "coupons", "validate"]
+						},
+						"description": "Validate coupon with amount. Public endpoint."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Best Discount",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"codes\": [\"SAVE10\", \"SAVE20\"],\n    \"amount\": 999.99\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/coupons/best-discount",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "coupons", "best-discount"]
+						},
+						"description": "Get best discount from multiple coupons. Public endpoint."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Redemption",
+			"item": [
+				{
+					"name": "Redeem Coupon",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"code\": \"SAVE20\",\n    \"userId\": \"user-uuid-here\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/coupons/redeem",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "coupons", "redeem"]
+						},
+						"description": "Redeem coupon for user. Public endpoint."
+					},
+					"response": []
+				},
+				{
+					"name": "Assign Coupon to User",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"couponCode\": \"SAVE20\",\n    \"userId\": \"user-uuid-here\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/coupons/assign-user",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "coupons", "assign-user"]
+						},
+						"description": "Assign coupon to specific user. Public endpoint."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Campaigns",
+			"item": [
+				{
+					"name": "Get Campaigns",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/coupons/campaigns",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "coupons", "campaigns"]
+						},
+						"description": "Get all campaign names. Public endpoint."
+					},
+					"response": []
+				}
+			]
+		}
+	]
+}

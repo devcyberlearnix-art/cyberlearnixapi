@@ -8,7 +8,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class CartRequest {
-    private String courseId;
+    private Long courseId;
     private String instructorId;
 
     // These replace the "Course Service" lookup

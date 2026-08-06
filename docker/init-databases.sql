@@ -1,21 +1,36 @@
--- CyberLearnix LMS – Database-per-Service initialization
--- This script runs once when the PostgreSQL container starts for the first time.
--- Each microservice owns its own isolated database – no cross-service table access.
+-- Create all databases for CyberLearnix LMS microservices.
+-- PostgreSQL does not support CREATE DATABASE IF NOT EXISTS,
+-- so we use conditional CREATE statements via psql \gexec.
 
--- userservice  → owns all user, session, instructor data
-CREATE DATABASE lms_user_db;
+SELECT 'CREATE DATABASE lms_user_db'
+WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'lms_user_db')\gexec
 
--- course-service → owns all course, section, lecture data
-CREATE DATABASE lms_course_db;
+SELECT 'CREATE DATABASE lms_admin_db'
+WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'lms_admin_db')\gexec
 
--- cart-service   → owns cart and cart-item data
-CREATE DATABASE lms_cart_db;
+SELECT 'CREATE DATABASE lms_course_db'
+WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'lms_course_db')\gexec
 
--- coupon-service → owns coupon and redemption data
-CREATE DATABASE lms_coupon_db;
+SELECT 'CREATE DATABASE lms_cart_db'
+WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'lms_cart_db')\gexec
 
--- Grant all privileges to the shared app user
-GRANT ALL PRIVILEGES ON DATABASE lms_user_db   TO cyberlearnix;
-GRANT ALL PRIVILEGES ON DATABASE lms_course_db TO cyberlearnix;
-GRANT ALL PRIVILEGES ON DATABASE lms_cart_db   TO cyberlearnix;
-GRANT ALL PRIVILEGES ON DATABASE lms_coupon_db TO cyberlearnix;
+SELECT 'CREATE DATABASE lms_coupon_db'
+WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'lms_coupon_db')\gexec
+
+SELECT 'CREATE DATABASE lms_order_db'
+WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'lms_order_db')\gexec
+
+SELECT 'CREATE DATABASE lms_payment_db'
+WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'lms_payment_db')\gexec
+
+SELECT 'CREATE DATABASE lms_review_db'
+WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'lms_review_db')\gexec
+
+SELECT 'CREATE DATABASE lms_instructor_db'
+WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'lms_instructor_db')\gexec
+
+SELECT 'CREATE DATABASE lms_wishlist_db'
+WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'lms_wishlist_db')\gexec
+
+SELECT 'CREATE DATABASE lms_notification_db'
+WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'lms_notification_db')\gexec

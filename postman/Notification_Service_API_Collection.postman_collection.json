@@ -1,0 +1,290 @@
+{
+	"info": {
+		"name": "CyberLearnix Notification Service API",
+		"_postman_id": "notification-service-collection",
+		"description": "Complete API collection for CyberLearnix Notification Service. All endpoints organized by functionality with authentication, variables, and test scripts.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:8093",
+			"type": "string"
+		},
+		{
+			"key": "accessToken",
+			"value": "",
+			"type": "string"
+		}
+	],
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "{{accessToken}}"
+			}
+		]
+	},
+	"item": [
+		{
+			"name": "Notification Management",
+			"item": [
+				{
+					"name": "Create Notification",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"userId\": \"user-uuid-here\",\n    \"title\": \"Welcome\",\n    \"message\": \"Welcome to CyberLearnix!\",\n    \"type\": \"INFO\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/notifications",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "notifications"]
+						},
+						"description": "Create a new notification. Requires authentication."
+					},
+					"response": []
+				},
+				{
+					"name": "Create Bulk Notifications",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"userIds\": [\"user-uuid-1\", \"user-uuid-2\"],\n    \"title\": \"System Update\",\n    \"message\": \"System maintenance scheduled\",\n    \"type\": \"SYSTEM\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/notifications/bulk",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "notifications", "bulk"]
+						},
+						"description": "Create bulk notifications for multiple users. Requires authentication."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Notification by ID",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}"
+								}
+							]
+						},
+						"method": "GET",
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/notifications/:id",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "notifications", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "notification-id-here"
+								}
+							]
+						},
+						"description": "Get notification by ID. Requires authentication."
+					},
+					"response": []
+				},
+				{
+					"name": "Get All Notifications",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}"
+								}
+							]
+						},
+						"method": "GET",
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/notifications",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "notifications"]
+						},
+						"description": "Get all notifications. Requires authentication."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Notifications by User",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}"
+								}
+							]
+						},
+						"method": "GET",
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/notifications/user/:userId",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "notifications", "user", ":userId"],
+							"variable": [
+								{
+									"key": "userId",
+									"value": "user-uuid-here"
+								}
+							]
+						},
+						"description": "Get notifications for a specific user. Requires authentication."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Combined User Notifications",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}"
+								}
+							]
+						},
+						"method": "GET",
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/notifications/user/:userId/combined",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "notifications", "user", ":userId", "combined"],
+							"variable": [
+								{
+									"key": "userId",
+									"value": "user-uuid-here"
+								}
+							]
+						},
+						"description": "Get all and unread notifications for a user in one call. Requires authentication."
+					},
+					"response": []
+				},
+				{
+					"name": "Mark as Read",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}"
+								}
+							]
+						},
+						"method": "PUT",
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/notifications/:id/read",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "notifications", ":id", "read"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "notification-id-here"
+								}
+							]
+						},
+						"description": "Mark notification as read. Requires authentication."
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Notification",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}"
+								}
+							]
+						},
+						"method": "DELETE",
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/notifications/:id",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "notifications", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "notification-id-here"
+								}
+							]
+						},
+						"description": "Delete notification. Requires authentication."
+					},
+					"response": []
+				},
+				{
+					"name": "Retry Notification",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}"
+								}
+							]
+						},
+						"method": "POST",
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/notifications/:id/retry",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "notifications", ":id", "retry"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "notification-id-here"
+								}
+							]
+						},
+						"description": "Retry failed notification. Requires authentication."
+					},
+					"response": []
+				}
+			]
+		}
+	]
+}
