@@ -51,13 +51,13 @@ public class SecurityConfig {
 
                         // ============== STUDENT-ONLY ENDPOINTS ==============
                         // Enroll in course (Student)
-                        .requestMatchers(HttpMethod.POST, "/api/v1/courses/*/enroll")
-                        .hasRole("STUDENT")
+                        .requestMatchers(HttpMethod.POST, "/api/v1/courses/*/enroll", "/api/v1/courses/*/enroll/")
+                        .hasAnyRole("STUDENT", "USER", "INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN", "ADMIN")
 
                         // ============== INSTRUCTOR/ADMIN ENDPOINTS ==============
                         // Create course
-                        .requestMatchers(HttpMethod.POST, "/api/v1/courses")
-                        .hasAnyRole("INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/v1/courses", "/api/v1/courses/")
+                        .hasAnyRole("INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN", "ADMIN")
                         // Update course (full)
                         .requestMatchers(HttpMethod.PUT, "/api/v1/courses/*")
                         .hasAnyRole("INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN")
@@ -70,30 +70,30 @@ public class SecurityConfig {
 
                         // ============== SECTION MANAGEMENT ==============
                         // Create section
-                        .requestMatchers(HttpMethod.POST, "/api/v1/courses/*/sections")
-                        .hasAnyRole("INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/v1/courses/*/sections", "/api/v1/courses/*/sections/")
+                        .hasAnyRole("INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN", "ADMIN")
                         // Update section
-                        .requestMatchers(HttpMethod.PATCH, "/api/v1/courses/sections/*")
-                        .hasAnyRole("INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN")
+                        .requestMatchers(HttpMethod.PATCH, "/api/v1/courses/sections/*", "/api/v1/courses/sections/*/")
+                        .hasAnyRole("INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN", "ADMIN")
                         // Delete section
-                        .requestMatchers(HttpMethod.DELETE, "/api/v1/courses/sections/*")
-                        .hasAnyRole("INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/courses/sections/*", "/api/v1/courses/sections/*/")
+                        .hasAnyRole("INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN", "ADMIN")
 
                         // ============== LECTURE MANAGEMENT ==============
                         // Create lecture
-                        .requestMatchers(HttpMethod.POST, "/api/v1/sections/*/lectures")
-                        .hasAnyRole("INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/v1/sections/*/lectures", "/api/v1/sections/*/lectures/")
+                        .hasAnyRole("INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN", "ADMIN")
                         // Update lecture
-                        .requestMatchers(HttpMethod.PATCH, "/api/v1/sections/*/lectures/*")
-                        .hasAnyRole("INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN")
+                        .requestMatchers(HttpMethod.PATCH, "/api/v1/sections/*/lectures/*", "/api/v1/sections/*/lectures/*/")
+                        .hasAnyRole("INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN", "ADMIN")
                         // Delete lecture
-                        .requestMatchers(HttpMethod.DELETE, "/api/v1/sections/*/lectures/*")
-                        .hasAnyRole("INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/sections/*/lectures/*", "/api/v1/sections/*/lectures/*/")
+                        .hasAnyRole("INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN", "ADMIN")
 
                         // ============== COURSE PREVIEW ==============
                         // Create preview
-                        .requestMatchers(HttpMethod.POST, "/api/v1/courses/*/preview")
-                        .hasAnyRole("INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/v1/courses/*/preview", "/api/v1/courses/*/preview/")
+                        .hasAnyRole("INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN", "ADMIN")
 
                         // Default: deny all other requests
                         .anyRequest().denyAll())

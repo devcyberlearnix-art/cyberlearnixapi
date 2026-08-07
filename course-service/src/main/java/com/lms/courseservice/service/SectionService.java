@@ -2,10 +2,13 @@ package com.lms.courseservice.service;
 
 import com.lms.courseservice.entity.Course;
 import com.lms.courseservice.entity.Section;
+import com.lms.courseservice.entity.Lecture;
 import com.lms.courseservice.repository.CourseRepository;
 import com.lms.courseservice.repository.SectionRepository;
+import com.lms.courseservice.repository.LectureRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -15,6 +18,7 @@ public class SectionService {
 
     private final SectionRepository sectionRepository;
     private final CourseRepository courseRepository;
+    private final LectureRepository lectureRepository;
 
     // Create Section
     public Section createSection(Long courseId, Section section) {
@@ -53,9 +57,20 @@ public class SectionService {
 
         return section.getCourse().getId();
     }
-    // Delete Section
 
-    public void deleteSection(Long sectionId) {
-        sectionRepository.deleteById(sectionId);
+    // Delete Section
+    @Transactional
+    public Section deleteSection(Long sectionId) {
+        Section section = sectionRepository.findById(sectionId)
+                .orElseThrow(() -> new RuntimeException("Section not found"));
+
+        // Delete lectures in this section first to avoid FK violation
+        List<Lecture> lectures = lectureRepository.findBySectionId(sectionId);
+        if (!lectures.isEmpty()) {
+            lectureRepository.deleteAll(lectures);
+        }
+
+        sectionRepository.delete(section);
+        return section;
     }
-}
+}

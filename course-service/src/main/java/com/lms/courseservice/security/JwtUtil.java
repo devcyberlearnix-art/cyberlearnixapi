@@ -44,6 +44,10 @@ public class JwtUtil {
             return "STUDENT";
         }
         String upper = role.toUpperCase();
+        if (upper.startsWith("ROLE_")) {
+            upper = upper.substring(5);
+        }
+        
         if ("USER".equals(upper) || "STUDENT".equals(upper)) {
             return "STUDENT";
         }
@@ -52,6 +56,12 @@ public class JwtUtil {
         }
         if (upper.contains("SUB_ADMIN")) {
             return "SUB_ADMIN";
+        }
+        if (upper.contains("INSTRUCTOR")) {
+            return "INSTRUCTOR";
+        }
+        if (upper.contains("ADMIN")) {
+            return "MAIN_ADMIN"; // Fallback for general ADMIN
         }
         return upper;
     }

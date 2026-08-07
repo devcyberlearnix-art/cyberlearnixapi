@@ -1,6 +1,12 @@
 package com.lms.courseservice.controller;
 
 import com.lms.courseservice.dto.ApiResponse;
+import com.lms.courseservice.dto.CourseInfo;
+import com.lms.courseservice.dto.DeleteCourseResponse;
+import com.lms.courseservice.dto.EnrollCourseResponse;
+import com.lms.courseservice.dto.EnrollmentInfo;
+import com.lms.courseservice.dto.EnrolledStudentInfo;
+import com.lms.courseservice.dto.EnrolledStudentsResponse;
 import com.lms.courseservice.entity.Course;
 import com.lms.courseservice.security.JwtUtil;
 import com.lms.courseservice.service.CourseService;
@@ -78,16 +84,44 @@ public class CourseController {
      * Delete Course (Instructor/Admin only)
      */
     @DeleteMapping("/{id}")
-    public void deleteCourse(@PathVariable Long id) {
+    public DeleteCourseResponse deleteCourse(@PathVariable Long id) {
+        // Retrieve the course before deletion to include its details in the response
+        Course course = courseService.getCourseById(id);
+        // Perform deletion
         courseService.deleteCourse(id);
+        // Build the data payload
+        CourseInfo courseInfo = new CourseInfo(
+                course.getId(),
+                course.getTitle(),
+                course.getDescription(),
+                course.getCategory(),
+                String.valueOf(course.getInstructorId()), // Placeholder for actual instructor name if needed
+                true // deleted flag
+        );
+        return new DeleteCourseResponse(true,
+                "Course deleted successfully",
+                courseInfo);
     }
 
     /**
      * Get students enrolled in course (Public)
      */
     @GetMapping("/{courseId}/students")
-    public List<UUID> getStudents(@PathVariable Long courseId) {
-        return courseService.getStudents(courseId);
+    public EnrolledStudentsResponse getStudents(@PathVariable Long courseId) {
+        Course course = courseService.getCourseById(courseId);
+        java.util.List<EnrolledStudentInfo> studentList = courseService.getEnrolledStudentDetails(courseId);
+
+        EnrolledStudentsResponse.EnrolledStudentsData data =
+                new EnrolledStudentsResponse.EnrolledStudentsData(
+                        course.getId(),
+                        course.getTitle(),
+                        studentList.size(),
+                        studentList
+                );
+
+        return new EnrolledStudentsResponse(true,
+                "Enrolled students fetched successfully",
+                data);
     }
 
     /**
@@ -95,12 +129,22 @@ public class CourseController {
      * Token/User extracted from SecurityContext by JwtFilter
      */
     @PostMapping("/{courseId}/enroll")
-    public ApiResponse enroll(@PathVariable Long courseId) {
+    public EnrollCourseResponse enroll(@PathVariable Long courseId) {
         UUID userId = extractUserIdFromContext();
         courseService.enrollFreeCourse(courseId, userId);
-        return new ApiResponse(true,
+        
+        Course course = courseService.getCourseById(courseId);
+        EnrollmentInfo info = new EnrollmentInfo(
+                course.getId(),
+                course.getTitle(),
+                userId,
+                course.getCategory(),
+                "Enrolled"
+        );
+        
+        return new EnrollCourseResponse(true,
             "Student enrolled in the course successfully.",
-            Instant.now());
+            info);
     }
 
     /**

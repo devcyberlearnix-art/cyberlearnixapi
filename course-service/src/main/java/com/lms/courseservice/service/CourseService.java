@@ -12,6 +12,12 @@ import java.math.BigDecimal;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
 
+import com.lms.courseservice.entity.CoursePreview;
+import com.lms.courseservice.entity.Section;
+import com.lms.courseservice.repository.CoursePreviewRepository;
+import com.lms.courseservice.repository.SectionRepository;
+import org.springframework.transaction.annotation.Transactional;
+
 import java.util.List;
 
 @Service
@@ -21,6 +27,8 @@ public class CourseService {
     private final LectureRepository lectureRepository;
     private final CourseRepository courseRepository;
     private final EnrollmentRepository enrollmentRepository;
+    private final CoursePreviewRepository coursePreviewRepository;
+    private final SectionRepository sectionRepository;
 
     public Course createCourse(Course course) {
         course.setStatus("Draft");
@@ -74,7 +82,36 @@ public class CourseService {
         return courseRepository.save(course);
     }
 
+    @Transactional
     public void deleteCourse(Long id) {
+        // 1. Check if course exists
+        getCourseById(id);
+
+        // 2. Delete Course Previews
+        List<CoursePreview> previews = coursePreviewRepository.findByCourseId(id);
+        if (!previews.isEmpty()) {
+            coursePreviewRepository.deleteAll(previews);
+        }
+
+        // 3. Delete Enrollments
+        List<Enrollment> enrollments = enrollmentRepository.findByCourseId(id);
+        if (!enrollments.isEmpty()) {
+            enrollmentRepository.deleteAll(enrollments);
+        }
+
+        // 4. Delete Sections and their Lectures
+        List<Section> sections = sectionRepository.findByCourseId(id);
+        for (Section section : sections) {
+            List<Lecture> lectures = lectureRepository.findBySectionId(section.getId());
+            if (!lectures.isEmpty()) {
+                lectureRepository.deleteAll(lectures);
+            }
+        }
+        if (!sections.isEmpty()) {
+            sectionRepository.deleteAll(sections);
+        }
+
+        // 5. Finally delete the course
         courseRepository.deleteById(id);
     }
 
@@ -102,19 +139,23 @@ public class CourseService {
                 .toList();
     }
 
-    // 🔥 FIXED → UUID
+    public List<com.lms.courseservice.dto.EnrolledStudentInfo> getEnrolledStudentDetails(Long courseId) {
+        return enrollmentRepository.findByCourseId(courseId)
+                .stream()
+                .map(e -> new com.lms.courseservice.dto.EnrolledStudentInfo(
+                        e.getStudentId(),
+                        e.getStudentName(),
+                        e.getEnrolledAt(),
+                        e.getStatus() != null ? e.getStatus() : "Active",
+                        e.getProgress() != null ? e.getProgress() : 0.0
+                ))
+                .toList();
+    }
+
+    // Enroll student in course (free or paid)
     public void enrollFreeCourse(Long courseId, UUID userId) {
-        Course course = getCourseById(courseId);
-
-        BigDecimal price = course.getPrice() == null
-                ? BigDecimal.ZERO
-                : course.getPrice();
-
-        if (price.compareTo(BigDecimal.ZERO) > 0) {
-            throw new EnrollmentException(
-                    "This is a paid course. Please complete payment first.");
-        }
-
+        // Verify course exists
+        getCourseById(courseId);
         createEnrollment(courseId, userId);
     }
 
