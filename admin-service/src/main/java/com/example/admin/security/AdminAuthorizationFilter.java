@@ -21,16 +21,17 @@ public class AdminAuthorizationFilter extends OncePerRequestFilter {
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
         String path = request.getRequestURI();
-        return !path.startsWith("/admin/")
-                || path.equals("/admin/register")
-                || path.equals("/admin/users")
+        return !path.startsWith("/api/v1/admin/")
+                || path.equals("/api/v1/admin/login")
+                || path.equals("/api/v1/admin/login/otp/request")
+                || path.equals("/api/v1/admin/login/otp/verify")
                 // Allow internal/service-crafted content endpoints without admin JWT
-                || path.startsWith("/admin/sections")
-                || path.matches("/admin/courses/\\d+/sections")
+                || path.startsWith("/api/v1/admin/sections")
+                || path.matches("/api/v1/admin/courses/\\d+/sections")
                 // Allow admin API endpoints for orders, payments, and reviews
-                || path.equals("/admin/orders")
-                || path.equals("/admin/payments")
-                || path.equals("/admin/reviews");
+                || path.equals("/api/v1/admin/orders")
+                || path.equals("/api/v1/admin/payments")
+                || path.equals("/api/v1/admin/reviews");
     }
 
     @Override
@@ -38,16 +39,16 @@ public class AdminAuthorizationFilter extends OncePerRequestFilter {
             throws ServletException, IOException {
 
         String path = request.getRequestURI();
-        
+
         // Skip authorization for admin API endpoints
-        if (path.equals("/admin/orders") || path.equals("/admin/payments") || path.equals("/admin/reviews")) {
+        if (path.equals("/api/v1/admin/orders") || path.equals("/api/v1/admin/payments") || path.equals("/api/v1/admin/reviews")) {
             filterChain.doFilter(request, response);
             return;
         }
 
         AdminPrincipal principal = AdminSecurityContext.getPrincipal();
 
-        if ("/admin/register".equals(request.getRequestURI())
+        if ("/api/v1/admin/register".equals(request.getRequestURI())
                 && "POST".equalsIgnoreCase(request.getMethod())) {
             try {
                 adminPermissionService.requireMainAdmin(principal);

@@ -10,6 +10,6 @@ class AdminPermissionServiceTest {
 
     @Test
     void allowCourseApprovalWithoutPrincipalForInternalAdminFlow() {
-        assertDoesNotThrow(() -> permissionService.requireServiceAccess(null, "/admin/courses/1/approve"));
+        assertDoesNotThrow(() -> permissionService.requireServiceAccess(null, "/api/v1/admin/courses/1/approve"));
     }
 }

@@ -48,13 +48,23 @@ public class JwtService {
     }
 
     public String generateServiceToken(String role, UUID subject) {
+        return generateServiceToken(role, subject, null);
+    }
+
+    public String generateServiceToken(String role, UUID subject, AssignedService assignedService) {
         String roleWithPrefix = role.startsWith("ROLE_") ? role : "ROLE_" + role;
-        return Jwts.builder()
+        var builder = Jwts.builder()
                 .setSubject(subject.toString())
                 .setIssuer(ISSUER)
                 .setAudience("cyberlearnix-clients")
                 .claim("role", roleWithPrefix)
-                .claim("type", "access")
+                .claim("type", "access");
+
+        if (assignedService != null) {
+            builder.claim("assignedService", assignedService.name());
+        }
+
+        return builder
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + ACCESS_TOKEN_EXPIRATION))
                 .signWith(key, SignatureAlgorithm.HS256)
