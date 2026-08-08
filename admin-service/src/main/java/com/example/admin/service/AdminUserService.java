@@ -346,6 +346,44 @@ public class AdminUserService {
 
     }
 
+    public AdminApproveInstructorResponse approveInstructorApplicationByUserId(UUID userId, String authorizationHeader) {
+
+        AdminUserServiceClient.InstructorApplicationDTO application = userClient.approveInstructorApplication(userId, authorizationHeader);
+
+        
+
+        if (application == null) {
+
+            return AdminApproveInstructorResponse.builder()
+
+                    .success(false)
+
+                    .message("Failed to approve instructor application")
+
+                    .timestamp(LocalDateTime.now().toString())
+
+                    .build();
+
+        }
+
+
+
+        AdminApproveInstructorResponse.ApprovedApplicationDetail detail = convertToApprovedDetail(application);
+
+        return AdminApproveInstructorResponse.builder()
+
+                .success(true)
+
+                .message("Instructor application approved successfully")
+
+                .data(detail)
+
+                .timestamp(LocalDateTime.now().toString())
+
+                .build();
+
+    }
+
 
 
     public AdminApproveInstructorResponse rejectInstructorApplicationByUserId(UUID userId) {
@@ -369,6 +407,42 @@ public class AdminUserService {
         }
 
 
+
+        AdminApproveInstructorResponse.ApprovedApplicationDetail detail = convertToApprovedDetail(application);
+
+        return AdminApproveInstructorResponse.builder()
+
+                .success(true)
+
+                .message("Instructor application rejected successfully")
+
+                .data(detail)
+
+                .timestamp(LocalDateTime.now().toString())
+
+                .build();
+
+    }
+
+    public AdminApproveInstructorResponse rejectInstructorApplicationByUserId(UUID userId, String authorizationHeader) {
+
+        AdminUserServiceClient.InstructorApplicationDTO application = userClient.rejectInstructorApplication(userId, authorizationHeader);
+
+
+
+        if (application == null) {
+
+            return AdminApproveInstructorResponse.builder()
+
+                    .success(false)
+
+                    .message("Failed to reject instructor application")
+
+                    .timestamp(LocalDateTime.now().toString())
+
+                    .build();
+
+        }
 
         AdminApproveInstructorResponse.ApprovedApplicationDetail detail = convertToApprovedDetail(application);
 

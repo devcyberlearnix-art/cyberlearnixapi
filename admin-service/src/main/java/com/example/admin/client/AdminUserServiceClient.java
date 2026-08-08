@@ -153,6 +153,24 @@ public class AdminUserServiceClient {
         }
     }
 
+    public InstructorApplicationDTO approveInstructorApplication(UUID userId, String authorizationHeader) {
+        try {
+            String url = userServiceUrl + "/api/v1/admin/instructors/applications/" + userId + "/approve";
+            HttpHeaders headers = new HttpHeaders();
+            headers.set("Authorization", authorizationHeader);
+            ResponseEntity<Map> response = restTemplate.exchange(
+                    url,
+                    org.springframework.http.HttpMethod.PUT,
+                    new HttpEntity<>(headers),
+                    Map.class
+            );
+            return mapToApplicationDto(response.getBody());
+        } catch (RestClientException e) {
+            System.err.println("✗ Failed to approve instructor application: " + e.getMessage());
+            return null;
+        }
+    }
+
     public InstructorApplicationDTO rejectInstructorApplication(UUID userId) {
         try {
             String url = userServiceUrl + "/api/v1/admin/instructors/applications/" + userId + "/reject";
@@ -160,6 +178,24 @@ public class AdminUserServiceClient {
                     url,
                     org.springframework.http.HttpMethod.PUT,
                     new HttpEntity<>(createHeaders()),
+                    Map.class
+            );
+            return mapToApplicationDto(response.getBody());
+        } catch (RestClientException e) {
+            System.err.println("✗ Failed to reject instructor application: " + e.getMessage());
+            return null;
+        }
+    }
+
+    public InstructorApplicationDTO rejectInstructorApplication(UUID userId, String authorizationHeader) {
+        try {
+            String url = userServiceUrl + "/api/v1/admin/instructors/applications/" + userId + "/reject";
+            HttpHeaders headers = new HttpHeaders();
+            headers.set("Authorization", authorizationHeader);
+            ResponseEntity<Map> response = restTemplate.exchange(
+                    url,
+                    org.springframework.http.HttpMethod.PUT,
+                    new HttpEntity<>(headers),
                     Map.class
             );
             return mapToApplicationDto(response.getBody());

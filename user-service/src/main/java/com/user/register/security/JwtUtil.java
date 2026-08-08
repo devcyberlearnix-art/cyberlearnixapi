@@ -209,6 +209,22 @@ public class JwtUtil {
         }
     }
 
+    public void requireAdminAccessToken(String token) {
+        Claims claims = parseAccessTokenClaims(token);
+        String role = claims.get("role", String.class);
+        if (role == null) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.FORBIDDEN, "Token missing role claim");
+        }
+        String normalized = role.toUpperCase();
+        if (!"MAIN_ADMIN".equals(normalized) && !"SUB_ADMIN".equals(normalized)) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.FORBIDDEN,
+                    "Admin action requires Admin access token (MAIN_ADMIN or SUB_ADMIN). Current token role: " + role
+                            + ". Login as admin and pass that access token in Authorization Bearer header.");
+        }
+    }
+
     public UUID resolveUserIdFromAccessToken(String token, UserRepository userRepository) {
         String subject = parseAccessTokenClaims(token).getSubject();
         try {

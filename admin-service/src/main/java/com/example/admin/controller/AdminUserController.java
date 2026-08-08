@@ -101,8 +101,9 @@ public class AdminUserController {
 
     @PutMapping("/instructors/applications/{userId}/approve")
     public ResponseEntity<AdminApproveInstructorResponse> approveInstructorApplicationByUserId(
-            @PathVariable UUID userId) {
-        AdminApproveInstructorResponse response = adminUserService.approveInstructorApplicationByUserId(userId);
+            @PathVariable UUID userId,
+            @RequestHeader("Authorization") String authorization) {
+        AdminApproveInstructorResponse response = adminUserService.approveInstructorApplicationByUserId(userId, authorization);
         return ResponseEntity
                 .status(response.isSuccess() ? HttpStatus.OK : HttpStatus.BAD_REQUEST)
                 .body(response);
@@ -110,8 +111,9 @@ public class AdminUserController {
 
     @PutMapping("/instructors/applications/{userId}/reject")
     public ResponseEntity<AdminApproveInstructorResponse> rejectInstructorApplicationByUserId(
-            @PathVariable UUID userId) {
-        AdminApproveInstructorResponse response = adminUserService.rejectInstructorApplicationByUserId(userId);
+            @PathVariable UUID userId,
+            @RequestHeader("Authorization") String authorization) {
+        AdminApproveInstructorResponse response = adminUserService.rejectInstructorApplicationByUserId(userId, authorization);
         return ResponseEntity
                 .status(response.isSuccess() ? HttpStatus.OK : HttpStatus.BAD_REQUEST)
                 .body(response);

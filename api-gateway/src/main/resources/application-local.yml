@@ -222,7 +222,7 @@ spring:
 
 
 
-            - Path=/api/v1/instructors/apply/**
+            - Path=/api/v1/instructors/applications/**
 
 
 
@@ -510,6 +510,22 @@ spring:
 
 
 
+        - id: userservice-admin-instructors
+
+
+
+          uri: http://localhost:8091
+
+
+
+          predicates:
+
+
+
+            - Path=/api/v1/admin/instructors/**
+
+
+
         - id: adminservice
 
 
@@ -546,7 +562,7 @@ spring:
 
 
 
-            - Path=/api/v1/instructors/**
+            - Path=/api/v1/instructors/{id}/**
 
 
 
