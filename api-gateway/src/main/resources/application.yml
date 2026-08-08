@@ -270,6 +270,30 @@ spring:
 
 
 
+        - id: userservice-admin-instructors
+
+
+
+          uri: ${USER_SERVICE_URL:http://localhost:8091}
+
+
+
+          predicates:
+
+
+
+            - Path=/api/v1/admin/instructors/**
+
+
+
+          filters:
+
+
+
+            - StripPrefix=0
+
+
+
         - id: adminservice
 
 
@@ -678,7 +702,11 @@ spring:
 
 
 
-            - Path=/api/v1/instructors/**
+            - Path=/api/v1/instructors/{id}/courses/**
+
+
+
+            - Path=/dashboard
 
 
 

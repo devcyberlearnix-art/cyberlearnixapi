@@ -168,6 +168,8 @@ public class UnifiedSecurityConfig {
 
                         .requestMatchers("/api/v1/admins/**").hasAnyRole("MAIN_ADMIN", "SUB_ADMIN")
 
+                        .requestMatchers("/api/v1/admin/instructors/**").hasAnyRole("MAIN_ADMIN", "SUB_ADMIN")
+
                         
 
                         // Super Admin only endpoints

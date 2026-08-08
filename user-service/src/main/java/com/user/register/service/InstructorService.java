@@ -158,7 +158,7 @@ public class InstructorService {
         }).toList();
     }
 
-    public InstructorApplyDetailedResponse approveApplicationByUserId(UUID userId) {
+    public InstructorApplyDetailedResponse approveApplicationByUserId(UUID userId, UUID adminId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found with ID: " + userId));
 
@@ -179,6 +179,7 @@ public class InstructorService {
         // Approve the application
         application.setStatus(InstructorApplication.ApplicationStatus.APPROVED);
         application.setReviewedAt(LocalDateTime.now());
+        application.setReviewedBy(adminId.toString());
         applicationRepository.save(application);
 
         // Update user: set role to INSTRUCTOR, mark as approved
@@ -190,7 +191,7 @@ public class InstructorService {
 
         return buildResponse(user, application);
     }
-    public InstructorApplyDetailedResponse rejectApplicationByUserId(UUID userId) {
+    public InstructorApplyDetailedResponse rejectApplicationByUserId(UUID userId, UUID adminId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found with ID: " + userId));
 
@@ -206,6 +207,7 @@ public class InstructorService {
         // Reject the application
         application.setStatus(InstructorApplication.ApplicationStatus.REJECTED);
         application.setReviewedAt(LocalDateTime.now());
+        application.setReviewedBy(adminId.toString());
         applicationRepository.save(application);
 
         // Update user

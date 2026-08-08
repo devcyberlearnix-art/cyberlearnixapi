@@ -22,6 +22,16 @@ public final class BearerTokenResolver {
         return jwtUtil.resolveUserIdFromAccessToken(token, userRepository);
     }
 
+    public static UUID resolveAdminAccessToken(HttpServletRequest request, JwtUtil jwtUtil, UserRepository userRepository) {
+        return resolveAdminAccessToken(request.getHeader("Authorization"), jwtUtil, userRepository);
+    }
+
+    public static UUID resolveAdminAccessToken(String authorizationHeader, JwtUtil jwtUtil, UserRepository userRepository) {
+        String token = extractBearerToken(authorizationHeader);
+        jwtUtil.requireAdminAccessToken(token);
+        return jwtUtil.resolveUserIdFromAccessToken(token, userRepository);
+    }
+
     public static String resolveTokenRole(String authorizationHeader, JwtUtil jwtUtil) {
         String token = extractBearerToken(authorizationHeader);
         jwtUtil.requireUserAccessToken(token);
