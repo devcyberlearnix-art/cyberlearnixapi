@@ -35,11 +35,11 @@ public class ModuleService {
     @Value("${cloudinary.folder:cyberlearnix}")
     private String folder;
     @Transactional
-    public ModuleResponse addModule(UUID instructorId, UUID courseId, ModuleRequest request) {
+    public ModuleResponse addModule(UUID instructorId, Long courseId, ModuleRequest request) {
         Instructor instructor = instructorRepository.findById(instructorId)
                 .orElseThrow(() -> new RuntimeException("Instructor not found"));
 
-        Course course = courseRepository.findById(Long.valueOf(courseId.toString()))
+        Course course = courseRepository.findById(courseId)
                 .orElseThrow(() -> new RuntimeException("Course not found"));
 
         if (!course.getInstructor().getId().equals(instructor.getId())) {
@@ -55,6 +55,10 @@ public class ModuleService {
         module.setTitle(request.getTitle());
         module.setDescription(request.getDescription());
         module.setCourse(course);
+        module.setOrderNumber(moduleOrder);
+        module.setStatus("ACTIVE");
+        module.setCreatedAt(now);
+        module.setUpdatedAt(now);
 
         Module savedModule = moduleRepository.save(module);
 
@@ -62,21 +66,21 @@ public class ModuleService {
                 .moduleId(savedModule.getId())
                 .moduleTitle(savedModule.getTitle())
                 .moduleDescription(savedModule.getDescription())
-                .moduleStatus("ACTIVE")
-                .moduleOrder(moduleOrder)
-                .moduleCreatedAt(now)
-                .moduleUpdatedAt(now)
+                .moduleStatus(savedModule.getStatus())
+                .moduleOrder(savedModule.getOrderNumber())
+                .moduleCreatedAt(savedModule.getCreatedAt())
+                .moduleUpdatedAt(savedModule.getUpdatedAt())
 
                 .courseId(course.getId())
                 .courseTitle(course.getTitle())
-                .courseDescription(course.getTitle() + " Description")
-                .courseStatus("PUBLISHED")
-                .courseCreatedAt(course.getCreatedAt()) // if available
+                .courseDescription(course.getDescription())
+                .courseStatus(course.getStatus() != null ? course.getStatus().name() : "DRAFT")
+                .courseCreatedAt(course.getCreatedAt())
                 .totalModules(moduleOrder)
 
                 .instructorId(instructor.getId())
                 .instructorName(instructor.getName())
-                .instructorEmail(instructor.getEmail()) // fetch real email
+                .instructorEmail(instructor.getEmail())
 
                 .status("success")
                 .message("Module added successfully")
@@ -86,12 +90,12 @@ public class ModuleService {
     }
 
     @Transactional
-    public ModuleResponse updateModule(UUID instructorId, UUID courseId, UUID moduleId, ModuleRequest request) {
+    public ModuleResponse updateModule(UUID instructorId, Long courseId, UUID moduleId, ModuleRequest request) {
 
         Instructor instructor = instructorRepository.findById(instructorId)
                 .orElseThrow(() -> new RuntimeException("Instructor not found"));
 
-        Course course = courseRepository.findById(Long.valueOf(courseId.toString()))
+        Course course = courseRepository.findById(courseId)
                 .orElseThrow(() -> new RuntimeException("Course not found"));
 
         if (!course.getInstructor().getId().equals(instructor.getId())) {
@@ -105,9 +109,13 @@ public class ModuleService {
             throw new RuntimeException("Module does not belong to this course");
         }
 
-        // Update fields
-        module.setTitle(request.getTitle());
-        module.setDescription(request.getDescription());
+        // Update only non-null fields
+        if (request.getTitle() != null) {
+            module.setTitle(request.getTitle());
+        }
+        if (request.getDescription() != null) {
+            module.setDescription(request.getDescription());
+        }
         module.setUpdatedAt(LocalDateTime.now());
 
         Module updatedModule = moduleRepository.save(module);
@@ -127,8 +135,8 @@ public class ModuleService {
                 // Course Info
                 .courseId(course.getId())
                 .courseTitle(course.getTitle())
-                .courseDescription(course.getTitle() + " Description")
-                .courseStatus("PUBLISHED")
+                .courseDescription(course.getDescription())
+                .courseStatus(course.getStatus() != null ? course.getStatus().name() : "DRAFT")
                 .courseCreatedAt(course.getCreatedAt())
                 .totalModules(moduleRepository.findByCourseId(course.getId()).size())
 
@@ -146,12 +154,12 @@ public class ModuleService {
     }
 
     @Transactional
-    public ModuleResponse deleteModule(UUID instructorId, UUID courseId, UUID moduleId) {
+    public ModuleResponse deleteModule(UUID instructorId, Long courseId, UUID moduleId) {
 
         Instructor instructor = instructorRepository.findById(instructorId)
                 .orElseThrow(() -> new RuntimeException("Instructor not found"));
 
-        Course course = courseRepository.findById(Long.valueOf(courseId.toString()))
+        Course course = courseRepository.findById(courseId)
                 .orElseThrow(() -> new RuntimeException("Course not found"));
 
         if (!course.getInstructor().getId().equals(instructor.getId())) {
@@ -190,8 +198,8 @@ public class ModuleService {
                 // Course Info
                 .courseId(course.getId())
                 .courseTitle(course.getTitle())
-                .courseDescription(course.getTitle() + " Description")
-                .courseStatus("PUBLISHED")
+                .courseDescription(course.getDescription())
+                .courseStatus(course.getStatus() != null ? course.getStatus().name() : "DRAFT")
                 .courseCreatedAt(course.getCreatedAt())
                 .totalModules(moduleRepository.findByCourseId(course.getId()).size()) // updated count
 
@@ -211,7 +219,7 @@ public class ModuleService {
     @Transactional
     public ResourceResponse uploadResource(
             UUID instructorId,
-            UUID courseId,
+            Long courseId,
             MultipartFile file,
             String type
     ) {
@@ -219,7 +227,7 @@ public class ModuleService {
         Instructor instructor = instructorRepository.findById(instructorId)
                 .orElseThrow(() -> new RuntimeException("Instructor not found"));
 
-        Course course = courseRepository.findById(Long.valueOf(courseId.toString()))
+        Course course = courseRepository.findById(courseId)
                 .orElseThrow(() -> new RuntimeException("Course not found"));
 
         if (!course.getInstructor().getId().equals(instructor.getId())) {

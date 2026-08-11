@@ -19,7 +19,7 @@ public class AnnouncementController {
     @PostMapping("/{id}/courses/{courseId}/announcements")
     public ResponseEntity<AnnouncementResponse> createAnnouncement(
             @PathVariable("id") UUID instructorId,
-            @PathVariable UUID courseId,
+            @PathVariable Long courseId,
             @RequestBody AnnouncementRequest request
     ) {
         return ResponseEntity.ok(

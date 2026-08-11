@@ -7,6 +7,7 @@ import com.example.instructorservice.entity.Instructor;
 import com.example.instructorservice.repository.ContentRepository;
 import com.example.instructorservice.repository.CourseRepository;
 import com.example.instructorservice.repository.InstructorRepository;
+import com.example.instructorservice.exeception.NotFoundException;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -24,13 +25,13 @@ public class ContentService {
 
     // ✅ CREATE CONTENT (VERY IMPORTANT)
     @Transactional
-    public ContentResponse createContent(UUID instructorId, UUID courseId, String title, String type) {
+    public ContentResponse createContent(UUID instructorId, Long courseId, String title, String type) {
 
         Instructor instructor = instructorRepository.findById(instructorId)
-                .orElseThrow(() -> new RuntimeException("Instructor not found"));
+                .orElseThrow(() -> new NotFoundException("Instructor not found"));
 
-        Course course = courseRepository.findById(Long.valueOf(courseId.toString()))
-                .orElseThrow(() -> new RuntimeException("Course not found"));
+        Course course = courseRepository.findById(courseId)
+                .orElseThrow(() -> new NotFoundException("Course not found"));
 
         Content content = Content.builder()
                 .title(title)
@@ -49,11 +50,18 @@ public class ContentService {
 
     // ✅ PUBLISH CONTENT (YOUR API)
     @Transactional
-    public ContentResponse publishContent(UUID instructorId, UUID contentId, boolean publish) {
+    public ContentResponse publishContent(UUID instructorId, String contentIdStr, boolean publish) {
+
+        UUID contentId;
+        try {
+            contentId = UUID.fromString(contentIdStr);
+        } catch (IllegalArgumentException e) {
+            throw new NotFoundException("Content not found with id: " + contentIdStr);
+        }
 
         Content content = contentRepository
                 .findByIdAndInstructorId(contentId, instructorId)
-                .orElseThrow(() -> new RuntimeException("Content not found for this instructor"));
+                .orElseThrow(() -> new NotFoundException("Content not found for this instructor"));
 
         content.setStatus(publish ? Course.CourseStatus.PUBLISHED : Course.CourseStatus.DRAFT);
         content.setUpdatedAt(LocalDateTime.now());
@@ -72,9 +80,9 @@ public class ContentService {
                 .contentId(content.getId())
                 .contentTitle(content.getTitle())
                 .contentType(content.getType())
-                .courseId(content.getCourse().getId())
-                .instructorId(content.getInstructor().getId().toString())
-                .status(content.getStatus().name())
+                .courseId(content.getCourse() != null ? content.getCourse().getId() : null)
+                .instructorId(content.getInstructor() != null ? content.getInstructor().getId().toString() : null)
+                .status(content.getStatus() != null ? content.getStatus().name() : "DRAFT")
                 .message(message)
                 .requestId(UUID.randomUUID().toString())
                 .timestamp(LocalDateTime.now())

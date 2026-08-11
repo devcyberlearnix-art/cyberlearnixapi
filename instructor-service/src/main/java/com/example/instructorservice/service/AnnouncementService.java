@@ -8,6 +8,8 @@ import com.example.instructorservice.repository.CourseRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import com.example.instructorservice.entity.Instructor;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Service
@@ -19,11 +21,11 @@ public class AnnouncementService {
 
     public AnnouncementResponse createAnnouncement(
             UUID instructorId,
-            UUID courseId,
+            Long courseId,
             AnnouncementRequest request
     ) {
 
-        Course course = courseRepository.findById(Long.valueOf(courseId.toString()))
+        Course course = courseRepository.findById(courseId)
                 .orElseThrow(() -> new RuntimeException("Course not found"));
 
         if (!course.getInstructor().getId().equals(instructorId)) {
@@ -38,14 +40,27 @@ public class AnnouncementService {
 
         announcement = announcementRepository.save(announcement);
 
+        Instructor instructor = course.getInstructor();
+
         return AnnouncementResponse.builder()
                 .announcementId(announcement.getId())
-                .courseId(course.getId())
-                .instructorId(instructorId)
                 .title(announcement.getTitle())
                 .message(announcement.getMessage())
                 .createdAt(announcement.getCreatedAt())
                 .status("PUBLISHED")
+
+                .courseId(course.getId())
+                .courseTitle(course.getTitle())
+                .courseDescription(course.getDescription())
+                .courseStatus(course.getStatus() != null ? course.getStatus().name() : "DRAFT")
+                .courseCreatedAt(course.getCreatedAt())
+
+                .instructorId(instructor.getId())
+                .instructorName(instructor.getName())
+                .instructorEmail(instructor.getEmail())
+
+                .requestId(UUID.randomUUID().toString())
+                .timestamp(LocalDateTime.now())
                 .build();
     }
 }
