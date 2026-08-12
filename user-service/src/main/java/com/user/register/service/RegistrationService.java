@@ -311,6 +311,7 @@ public class RegistrationService {
                     throw new RuntimeException("Mobile number already registered");
                 }
 
+                enforceRegistrationOtpSendLimit(mobileUser.getEmail());
                 String otp = generateOTP();
 
                 otpService.createSession(mobileUser.getEmail(), "registration", otp, 5, 5);
@@ -358,6 +359,7 @@ public class RegistrationService {
 
                 userRepository.save(existingUser);
 
+                enforceRegistrationOtpSendLimit(existingUser.getEmail());
                 String otp = generateOTP();
 
                 otpService.createSession(existingUser.getEmail(), "registration", otp, 5, 5);
@@ -568,6 +570,16 @@ public class RegistrationService {
         response.put("expiresInSeconds", 300);
         response.put("cooldownSeconds", 30);
         return response;
+    }
+
+    private void enforceRegistrationOtpSendLimit(String email) {
+        OtpService.OtpSendClaim claim = otpService.claimOtpSend(email, "registration", 30, 5, 3600);
+        if (!claim.allowed()) {
+            String message = claim.hourlyLimitReached()
+                    ? "Too many OTP requests. Please try again later."
+                    : "Please wait before requesting another OTP.";
+            throw new OtpRateLimitException(message, claim.retryAfterSeconds());
+        }
     }
 
     public Map<String, Object> changePendingRegistrationEmail(String otpSessionId, String newEmail) {

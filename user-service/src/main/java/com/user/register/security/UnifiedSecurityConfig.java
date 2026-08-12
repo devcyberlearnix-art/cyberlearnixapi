@@ -72,7 +72,11 @@ public class UnifiedSecurityConfig {
 
                         // Public endpoints
 
-                        .requestMatchers("/api/v1/auth/login", "/api/v1/auth/register", "/api/v1/auth/register/email").permitAll()
+                        .requestMatchers(
+                            "/api/v1/auth/login",
+                            "/api/v1/auth/register",
+                            "/api/v1/auth/register/email",
+                            "/api/v1/auth/register/resend-otp").permitAll()
 
                         .requestMatchers("/api/v1/auth/verify-email").permitAll()
 
