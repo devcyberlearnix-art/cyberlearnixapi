@@ -16,6 +16,7 @@ public class VerifyOtpResponse {
     private boolean success;
     private String message;
     private String timestamp;
+    private String otpSessionId;
     private AdminInfo data;
 
     @Data

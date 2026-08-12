@@ -28,6 +28,10 @@ import com.user.register.util.SecurityUtils;
 
 import jakarta.servlet.http.HttpServletRequest;
 
+import java.util.HashMap;
+
+import java.util.Map;
+
 import jakarta.transaction.Transactional;
 
 import org.springframework.stereotype.Service;
@@ -966,6 +970,45 @@ public class UserService {
 
                 .collect(Collectors.toList());
 
+    }
+
+    public Map<String, Object> getAllUsersProfilesPaginated(int page, int size) {
+        org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(page, size);
+        org.springframework.data.domain.Page<User> userPage = userRepository.findAll(pageable);
+        
+        List<UserProfileResponse> users = userPage.stream()
+                .map(user -> UserProfileResponse.builder()
+                        .userId(user.getId())
+                        .firstName(decrypt(user.getFirstName()))
+                        .lastName(decrypt(user.getLastName()))
+                        .email(user.getEmail())
+                        .mobile(decrypt(user.getMobile()))
+                        .dob(decrypt(user.getDob()))
+                        .profilePhoto(user.getProfilePhoto())
+                        .city(decrypt(user.getCity()))
+                        .state(decrypt(user.getState()))
+                        .country(decrypt(user.getCountry()))
+                        .preferredLanguage(user.getPreferredLanguage())
+                        .organization(decrypt(user.getOrganization()))
+                        .skills(user.getSkills())
+                        .fieldOfStudy(user.getFieldOfStudy())
+                        .highestQualification(user.getHighestQualification())
+                        .role(user.getRole().name())
+                        .status(user.getStatus().name())
+                        .createdAt(user.getCreatedAt())
+                        .updatedAt(user.getUpdatedAt())
+                        .lastLogin(user.getLastLoginAt())
+                        .build())
+                .collect(Collectors.toList());
+        
+        Map<String, Object> response = new HashMap<>();
+        response.put("users", users);
+        response.put("currentPage", userPage.getNumber());
+        response.put("totalPages", userPage.getTotalPages());
+        response.put("totalUsers", userPage.getTotalElements());
+        response.put("pageSize", userPage.getSize());
+        
+        return response;
     }
 
 

@@ -1485,17 +1485,28 @@ public class UnifiedAuthenticationService {
 
 
 
-                    String adminUrl = adminServiceUrl + "/api/v1/admins/password/forgot";
+                    String adminUrl = adminServiceUrl + "/api/v1/admin/password/forgot";
 
 
 
                     ResponseEntity<Map> adminResponse = restTemplate.postForEntity(adminUrl, adminRequest, Map.class);
 
-
-
+                    // Extract otpSessionId from admin response
+                    if (adminResponse.getBody() != null) {
+                        Map<String, Object> adminData = (Map<String, Object>) adminResponse.getBody().get("data");
+                        if (adminData != null) {
+                            Object adminOtpSessionId = adminData.get("otpSessionId");
+                            if (adminOtpSessionId != null) {
+                                otpSessionId = adminOtpSessionId.toString();
+                                Object adminExpiresAt = adminData.get("expiresAt");
+                                if (adminExpiresAt != null) {
+                                    otpSessionExpiresAt = LocalDateTime.parse(adminExpiresAt.toString());
+                                }
+                            }
+                        }
+                    }
 
                     log.info("Password reset OTP sent to admin: {}", email);
-
 
 
                 }
@@ -1503,13 +1514,13 @@ public class UnifiedAuthenticationService {
 
 
             } catch (Exception e) {
-
-
-
                 log.error("Failed to send password reset OTP to admin: {}", email, e);
-
-
-
+                // Return error when Admin Service fails - don't return success with null otpSessionId
+                Map<String, Object> errorResponse = new HashMap<>();
+                errorResponse.put("success", false);
+                errorResponse.put("message", "Failed to process password reset request. Please try again later.");
+                errorResponse.put("timestamp", LocalDateTime.now());
+                return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(errorResponse);
             }
 
 
@@ -1568,13 +1579,7 @@ public class UnifiedAuthenticationService {
 
 
     public ResponseEntity<Map<String, Object>> verifyPasswordOtp(VerifyOtpRequest request) {
-
-
-
         String email = request.getEmail();
-
-
-
         String otp = request.getOtp();
         String otpSessionId = request.getOtpSessionId();
         if (otpSessionId == null || otpSessionId.isBlank()) {
@@ -1585,82 +1590,87 @@ public class UnifiedAuthenticationService {
             return ResponseEntity.badRequest().body(response);
         }
 
-        OtpService.OtpVerifyResult result = otpService.verifySession(
-            otpSessionId,
-            email,
-            otp,
-            "password_reset",
-            false
-        );
+        // Resolve email from session if not provided
+        String resolvedEmail = (email != null && !email.isBlank())
+            ? email.trim()
+            : otpService.resolveSessionEmail(otpSessionId, "password_reset")
+                .orElse(null);
 
-        boolean isValid = result.valid();
-
-
-
-
-
-
-
-        if (!isValid) {
-
-
-
+        if (resolvedEmail == null) {
             Map<String, Object> response = new HashMap<>();
-
-
-
             response.put("success", false);
-
-
-
-            response.put("message", result.reason());
-            response.put("remainingAttempts", result.remainingAttempts());
-
-
-
+            response.put("message", "Valid otpSessionId is required when email is not provided");
             response.put("timestamp", LocalDateTime.now());
-
-
-
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
-
-
-
+            return ResponseEntity.badRequest().body(response);
         }
 
+        // Check if user exists in user database
+        Optional<User> userOptional = userRepository.findByEmail(resolvedEmail);
 
+        if (userOptional.isPresent()) {
+            OtpService.OtpVerifyResult result = otpService.verifySession(
+                otpSessionId,
+                resolvedEmail,
+                otp,
+                "password_reset",
+                false
+            );
 
+            boolean isValid = result.valid();
 
+            if (!isValid) {
+                Map<String, Object> response = new HashMap<>();
+                response.put("success", false);
+                response.put("message", result.reason());
+                response.put("remainingAttempts", result.remainingAttempts());
+                response.put("timestamp", LocalDateTime.now());
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+            }
 
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("message", "OTP verified successfully");
+            response.put("otpSessionId", otpSessionId);
+            response.put("sessionValidatedAt", LocalDateTime.now());
+            response.put("timestamp", LocalDateTime.now());
+            return ResponseEntity.ok(response);
+        }
 
-
-        Map<String, Object> response = new HashMap<>();
-
-
-
-        response.put("success", true);
-
-
-
-        response.put("message", "OTP verified successfully");
-        response.put("otpSessionId", otpSessionId);
-        response.put("sessionValidatedAt", LocalDateTime.now());
-
-
-
-        response.put("timestamp", LocalDateTime.now());
-
-
-
-
-
-
-
-        return ResponseEntity.ok(response);
-
-
-
+        // Not a user-service account; delegate to admin service
+        return tryAdminVerifyPasswordOtp(resolvedEmail, otp, otpSessionId);
     }
+
+    private ResponseEntity<Map<String, Object>> tryAdminVerifyPasswordOtp(String email, String otp, String otpSessionId) {
+        try {
+            Map<String, Object> adminRequest = new HashMap<>();
+            adminRequest.put("email", email);
+            adminRequest.put("otp", otp);
+            adminRequest.put("otpSessionId", otpSessionId);
+
+            String adminUrl = adminServiceUrl + "/api/v1/admin/password/verify-otp";
+            ResponseEntity<Map> adminResponse = restTemplate.postForEntity(adminUrl, adminRequest, Map.class);
+
+            if (adminResponse.getStatusCode() == HttpStatus.OK && adminResponse.getBody() != null) {
+                return ResponseEntity.ok(adminResponse.getBody());
+            }
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", "Admin OTP verification failed");
+            response.put("timestamp", LocalDateTime.now());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+
+        } catch (Exception e) {
+            log.error("Failed to verify admin password OTP: {}", email, e);
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", "Admin service unavailable");
+            response.put("timestamp", LocalDateTime.now());
+            return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(response);
+        }
+    }
+
+
 
 
 
@@ -2065,6 +2075,10 @@ public class UnifiedAuthenticationService {
 
 
 
+        String otp = request.getOtp();
+
+
+
 
 
 
@@ -2281,6 +2295,12 @@ public class UnifiedAuthenticationService {
 
 
 
+                    adminRequest.put("otp", request.getOtp());
+
+                    adminRequest.put("otpSessionId", otpSessionId);
+
+
+
                     adminRequest.put("newPassword", newPassword);
 
 
@@ -2289,11 +2309,43 @@ public class UnifiedAuthenticationService {
 
 
 
-                    String adminUrl = adminServiceUrl + "/api/v1/admins/password/reset";
+                    String adminUrl = adminServiceUrl + "/api/v1/admin/password/reset";
 
 
 
-                    restTemplate.postForEntity(adminUrl, adminRequest, Map.class);
+                    ResponseEntity<Map> adminResponse = restTemplate.postForEntity(adminUrl, adminRequest, Map.class);
+
+
+
+                    if (adminResponse.getStatusCode() != HttpStatus.OK || adminResponse.getBody() == null) {
+
+
+
+                        log.error("Admin password reset failed for email: {}", email);
+
+
+
+                        Map<String, Object> response = new HashMap<>();
+
+
+
+                        response.put("success", false);
+
+
+
+                        response.put("message", "Failed to reset password");
+
+
+
+                        response.put("timestamp", LocalDateTime.now());
+
+
+
+                        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+
+
+
+                    }
 
 
 
@@ -2556,9 +2608,20 @@ public class UnifiedAuthenticationService {
                             downstreamErrorResponse.put("timestamp", LocalDateTime.now());
                             return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body(downstreamErrorResponse);
                         }
+
+                        // Extract otpSessionId from admin response
+                        Map<String, Object> adminData = (Map<String, Object>) adminResponse.getBody().get("data");
+                        if (adminData != null) {
+                            Object adminOtpSessionId = adminData.get("otpSessionId");
+                            if (adminOtpSessionId != null) {
+                                otpSessionId = adminOtpSessionId.toString();
+                                Object adminExpiresAt = adminData.get("expiresAt");
+                                if (adminExpiresAt != null) {
+                                    otpSessionExpiresAt = LocalDateTime.parse(adminExpiresAt.toString());
+                                }
+                            }
+                        }
                     }
-
-
 
                     log.info("Login OTP sent to admin: {}", email);
 
@@ -2772,7 +2835,7 @@ public class UnifiedAuthenticationService {
 
 
 
-        return tryAdminOtpLogin(resolvedEmail, otp, httpRequest);
+        return tryAdminOtpLogin(resolvedEmail, otp, otpSessionId, httpRequest);
 
 
 
@@ -2784,7 +2847,7 @@ public class UnifiedAuthenticationService {
 
 
 
-    private ResponseEntity<LoginResponse> tryAdminOtpLogin(String email, String otp, HttpServletRequest httpRequest) {
+    private ResponseEntity<LoginResponse> tryAdminOtpLogin(String email, String otp, String otpSessionId, HttpServletRequest httpRequest) {
 
 
 
@@ -2801,6 +2864,8 @@ public class UnifiedAuthenticationService {
 
 
             adminRequest.put("otp", otp);
+
+            adminRequest.put("otpSessionId", otpSessionId);
 
 
 

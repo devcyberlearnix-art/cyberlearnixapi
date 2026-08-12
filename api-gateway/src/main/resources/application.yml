@@ -270,30 +270,6 @@ spring:
 
 
 
-        - id: userservice-admin-instructors
-
-
-
-          uri: ${USER_SERVICE_URL:http://localhost:8091}
-
-
-
-          predicates:
-
-
-
-            - Path=/api/v1/admin/instructors/**
-
-
-
-          filters:
-
-
-
-            - StripPrefix=0
-
-
-
         - id: adminservice
 
 
@@ -598,7 +574,7 @@ spring:
 
 
 
-          uri: ${WISHLISTSERVICE_URL:http://localhost:8090}
+          uri: ${WISHLISTSERVICE_URL:http://localhost:8092}
 
 
 
@@ -682,6 +658,36 @@ spring:
 
 
 
+        - id: paymentservice-test
+
+
+
+          uri: ${PAYMENTSERVICE_URL:http://localhost:8085}
+
+
+
+          predicates:
+
+
+
+            - Path=/test/**
+
+
+
+          filters:
+
+
+
+            - StripPrefix=0
+
+
+
+
+
+
+
+
+
 
 
 
@@ -710,7 +716,6 @@ spring:
 
 
 
-          filters:
 
 
 
@@ -742,7 +747,6 @@ spring:
 
 
 
-          filters:
 
 
 
@@ -774,7 +778,6 @@ spring:
 
 
 
-          filters:
 
 
 
@@ -782,7 +785,7 @@ spring:
 
 
 
-        - id: notificationservice-direct
+        - id: notificationservice-system
 
 
 
@@ -794,11 +797,56 @@ spring:
 
 
 
-            - Path=/notifications/**
+            - Path=/api/v1/system/**
 
 
 
-          filters:
+
+
+
+            - StripPrefix=0
+
+
+
+        - id: notificationservice-templates
+
+
+
+          uri: ${NOTIFICATIONSERVICE_URL:http://localhost:8093}
+
+
+
+          predicates:
+
+
+
+            - Path=/api/v1/templates/**
+
+
+
+
+
+
+            - StripPrefix=0
+
+
+
+        - id: notificationservice-preferences
+
+
+
+          uri: ${NOTIFICATIONSERVICE_URL:http://localhost:8093}
+
+
+
+          predicates:
+
+
+
+            - Path=/api/v1/preferences/**
+
+
+
 
 
 
@@ -830,7 +878,6 @@ spring:
 
 
 
-          filters:
 
 
 
@@ -858,7 +905,6 @@ spring:
 
 
 
-          filters:
 
 
 
@@ -886,7 +932,6 @@ spring:
 
 
 
-          filters:
 
 
 
@@ -914,7 +959,6 @@ spring:
 
 
 
-          filters:
 
 
 

@@ -73,6 +73,30 @@ public class AdminController {
         return ResponseEntity.ok(adminAuthService.verifyLoginOtp(request, httpRequest));
     }
 
+    /**
+     * Admin forgot password OTP request. Called by User Service's /api/v1/auth/password/forgot fallback.
+     */
+    @PostMapping("/password/forgot")
+    public ResponseEntity<ForgotPasswordResponse> forgotPassword(@RequestBody ForgotPasswordRequest request) {
+        return ResponseEntity.ok(adminAuthService.forgotPassword(request.getEmail()));
+    }
+
+    /**
+     * Admin verify password OTP. Called by User Service's /api/v1/auth/password/verify-otp fallback.
+     */
+    @PostMapping("/password/verify-otp")
+    public ResponseEntity<VerifyOtpResponse> verifyPasswordOtp(@RequestBody VerifyOtpRequest request) {
+        return ResponseEntity.ok(adminAuthService.verifyPasswordOtp(request));
+    }
+
+    /**
+     * Admin reset password.
+     */
+    @PostMapping("/password/reset")
+    public ResponseEntity<PasswordResetResponse> resetPassword(@RequestBody PasswordResetRequest request) {
+        return ResponseEntity.ok(adminAuthService.resetPassword(request));
+    }
+
     @PutMapping("/me")
     public ResponseEntity<?> updateProfile(
                 @RequestBody UpdateAdminProfileRequest request,

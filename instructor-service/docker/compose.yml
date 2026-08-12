@@ -138,7 +138,7 @@ services:
       - "8080:8080"
     environment:
       SPRING_PROFILES_ACTIVE: production
-      USERSERVICE_URL: http://userservice:8086
+      USERSERVICE_URL: http://userservice:8091
       COURSESERVICE_URL: http://course-service:8083
       CARTSERVICE_URL: http://cart-service:8081
       COUPONSERVICE_URL: http://coupon-service:8082

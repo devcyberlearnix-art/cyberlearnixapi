@@ -80,6 +80,17 @@ public class JwtAuthFilter implements Filter {
 
     private boolean isPermitAllEndpoint(String requestURI, String method) {
 
+        // Password recovery endpoints (public - no auth required)
+        if (requestURI.equals("/api/v1/admin/password/forgot") && "POST".equalsIgnoreCase(method)) {
+            return true;
+        }
+        if (requestURI.equals("/api/v1/admin/password/verify-otp") && "POST".equalsIgnoreCase(method)) {
+            return true;
+        }
+        if (requestURI.equals("/api/v1/admin/password/reset") && "POST".equalsIgnoreCase(method)) {
+            return true;
+        }
+
         // Course endpoints (public/internal)
 
         if (requestURI.equals("/api/v1/admin/courses") && "GET".equalsIgnoreCase(method)) {

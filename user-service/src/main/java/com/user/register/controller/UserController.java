@@ -334,7 +334,10 @@ public class UserController {
 
 
 
-    public ResponseEntity<ApiResponse<List<UserProfileResponse>>> getAllUsers(HttpServletRequest request) {
+    public ResponseEntity<ApiResponse<Map<String, Object>>> getAllUsers(
+            HttpServletRequest request,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
 
 
 
@@ -366,7 +369,7 @@ public class UserController {
 
 
 
-                    List<UserProfileResponse> users = userService.getAllUsersProfiles();
+                    Map<String, Object> usersData = userService.getAllUsersProfilesPaginated(page, size);
 
 
 
@@ -374,7 +377,7 @@ public class UserController {
 
 
 
-                            new ApiResponse<>(true, "All users fetched successfully", users, LocalDateTime.now())
+                            new ApiResponse<>(true, "All users fetched successfully", usersData, LocalDateTime.now())
 
 
 
@@ -386,27 +389,39 @@ public class UserController {
 
 
 
+            } else {
+
+
+
+                // No authorization header provided
+
+
+
+                return ResponseEntity.status(401)
+
+
+
+                        .body(new ApiResponse<>(false, "Authorization header required", null, LocalDateTime.now()));
+
+
+
             }
 
 
 
-            // Regular admin authentication
+            // Regular admin authentication - should have proper JWT validation
 
 
 
-            List<UserProfileResponse> users = userService.getAllUsersProfiles();
+            // For now, returning unauthorized if not a service token
 
 
 
-            return ResponseEntity.ok(
+            return ResponseEntity.status(401)
 
 
 
-                    new ApiResponse<>(true, "All users fetched successfully", users, LocalDateTime.now())
-
-
-
-            );
+                    .body(new ApiResponse<>(false, "Valid authorization token required", null, LocalDateTime.now()));
 
 
 
@@ -414,11 +429,11 @@ public class UserController {
 
 
 
-            return ResponseEntity.status(400)
+            return ResponseEntity.status(401)
 
 
 
-                    .body(new ApiResponse<>(false, e.getMessage(), null, LocalDateTime.now()));
+                    .body(new ApiResponse<>(false, "Authentication failed: " + e.getMessage(), null, LocalDateTime.now()));
 
 
 

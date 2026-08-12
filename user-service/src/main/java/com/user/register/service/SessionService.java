@@ -61,6 +61,14 @@ public class SessionService {
 
         User user = session.getUser();
 
+        // Blacklist tokens before deleting session
+        if (session.getAccessToken() != null) {
+            blacklistService.blacklistToken(session.getAccessToken());
+        }
+        if (session.getRefreshToken() != null) {
+            blacklistService.blacklistToken(session.getRefreshToken());
+        }
+
         LogoutResponse response = new LogoutResponse(
                 user.getId(),
                 user.getEmail(),
@@ -80,6 +88,16 @@ public class SessionService {
                 .stream()
                 .filter(s -> s.getExpiresAt() == null || s.getExpiresAt().isAfter(LocalDateTime.now()))
                 .toList();
+
+        // Blacklist all tokens before deleting sessions
+        for (UserSession session : activeSessions) {
+            if (session.getAccessToken() != null) {
+                blacklistService.blacklistToken(session.getAccessToken());
+            }
+            if (session.getRefreshToken() != null) {
+                blacklistService.blacklistToken(session.getRefreshToken());
+            }
+        }
 
         List<SessionDto> revokedSessions = activeSessions.stream()
                 .map(s -> new SessionDto(

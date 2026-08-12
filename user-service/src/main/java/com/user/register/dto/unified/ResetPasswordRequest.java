@@ -10,6 +10,8 @@ public class ResetPasswordRequest {
 
     private String email;
 
+    private String otp;
+
     private String otpSessionId;
 
     @NotBlank(message = "New password is required")

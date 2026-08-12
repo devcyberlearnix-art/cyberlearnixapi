@@ -22,9 +22,11 @@ public class AdminUserController {
     private final AdminUserService adminUserService;
 
     @GetMapping("/users")
-    public ResponseEntity<AdminUsersResponse> getAllUsers() {
+    public ResponseEntity<AdminUsersResponse> getAllUsers(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
         try {
-            AdminUsersResponse response = adminUserService.getAllUsers();
+            AdminUsersResponse response = adminUserService.getAllUsers(page, size);
             return ResponseEntity.status(response.isSuccess() ? 200 : 400).body(response);
         } catch (Exception e) {
             System.err.println("Error in getAllUsers: " + e.getMessage());
