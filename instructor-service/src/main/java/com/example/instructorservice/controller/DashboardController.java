@@ -1,5 +1,6 @@
 package com.example.instructorservice.controller;
 
+import com.example.instructorservice.dto.ApiResponse;
 import com.example.instructorservice.dto.DashboardResponseDTO;
 import com.example.instructorservice.dto.InstructorEarningsResponse;
 import com.example.instructorservice.service.DashboardService;
@@ -25,9 +26,11 @@ public class DashboardController {
     }
 
     @GetMapping("/{id}/earnings")
-    public ResponseEntity<InstructorEarningsResponse> getInstructorEarnings(
+    public ResponseEntity<ApiResponse<InstructorEarningsResponse>> getInstructorEarnings(
             @PathVariable("id") UUID instructorId
     ) {
-        return ResponseEntity.ok(dashboardService.getInstructorEarnings(instructorId));
+        return ResponseEntity.ok(ApiResponse.success(
+                "Instructor earnings fetched successfully",
+                dashboardService.getInstructorEarnings(instructorId)));
     }
 }

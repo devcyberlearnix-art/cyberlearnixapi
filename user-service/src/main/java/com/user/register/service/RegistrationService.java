@@ -68,6 +68,8 @@ import com.user.register.entity.User;
 
 import com.user.register.exception.LoginFailedException;
 
+import com.user.register.exception.OtpRateLimitException;
+
 import com.user.register.repository.AuditLogRepository;
 
 import com.user.register.repository.UserRepository;
@@ -464,6 +466,7 @@ public class RegistrationService {
         log.info("Registration OTP generated for user: {}", savedUser.getEmail());
 
         OtpService.OtpSession otpSession = otpService.createSession(savedUser.getEmail(), "registration", otp, 5, 5);
+        otpService.claimOtpSend(savedUser.getEmail(), "registration", 30, 5, 3600);
 
         log.debug("Registration OTP session created with id: {}", otpSession.sessionId());
 
@@ -517,7 +520,98 @@ public class RegistrationService {
         metadata.put("expiresInSeconds", expiresInSeconds);
         metadata.put("sessionStartedAt", LocalDateTime.now());
         metadata.put("expiresAt", LocalDateTime.now().plusSeconds(expiresInSeconds));
+        metadata.put("cooldownSeconds", otpService.getCooldownSeconds(email, "registration"));
         return metadata;
+    }
+
+    public Map<String, Object> resendRegistrationOtp(String otpSessionId) {
+        String email = otpService.resolveSessionEmail(otpSessionId, "registration")
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.GONE,
+                        "Registration session expired. Please register again."
+                ));
+
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.GONE, "Registration session expired."));
+        if (user.getStatus() != User.Status.PENDING_VERIFICATION) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Email is already verified");
+        }
+
+        OtpService.OtpSendClaim claim = otpService.claimOtpSend(email, "registration", 30, 5, 3600);
+        if (!claim.allowed()) {
+            String message = claim.hourlyLimitReached()
+                    ? "Too many OTP requests. Please try again later."
+                    : "Please wait before requesting another OTP.";
+            throw new OtpRateLimitException(message, claim.retryAfterSeconds());
+        }
+
+        String otp = generateOTP();
+        try {
+            sendOtpEmail(email, otp, "Registration OTP");
+        } catch (Exception exception) {
+            log.error("Failed to resend registration OTP email to: {}", email, exception);
+            throw new ResponseStatusException(
+                    HttpStatus.SERVICE_UNAVAILABLE,
+                    "Unable to send OTP email right now. Please try again later."
+            );
+        }
+
+        OtpService.OtpSession newSession = otpService.createSession(email, "registration", otp, 5, 5);
+        otpService.deleteSessionByTypeAndEmail(otpSessionId, email, "registration");
+
+        Map<String, Object> response = new LinkedHashMap<>();
+        response.put("email", email);
+        response.put("otpSessionId", newSession.sessionId());
+        response.put("otpType", "registration");
+        response.put("validForMinutes", 5);
+        response.put("expiresAt", newSession.expiresAt());
+        response.put("expiresInSeconds", 300);
+        response.put("cooldownSeconds", 30);
+        return response;
+    }
+
+    public Map<String, Object> changePendingRegistrationEmail(String otpSessionId, String newEmail) {
+        String currentEmail = otpService.resolveSessionEmail(otpSessionId, "registration")
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.GONE,
+                        "Registration session expired. Please register again."
+                ));
+
+        String normalizedEmail = newEmail.trim().toLowerCase();
+        if (currentEmail.equalsIgnoreCase(normalizedEmail)) {
+            throw new IllegalArgumentException("Enter a different email address");
+        }
+        if (userRepository.findByEmail(normalizedEmail).isPresent()) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Email already registered");
+        }
+
+        User user = userRepository.findByEmail(currentEmail)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Pending account not found"));
+        if (user.getStatus() != User.Status.PENDING_VERIFICATION) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Only pending accounts can change email");
+        }
+
+        OtpService.OtpSendClaim claim = otpService.claimOtpSend(normalizedEmail, "registration", 30, 5, 3600);
+        if (!claim.allowed()) {
+            throw new OtpRateLimitException("Please wait before requesting another OTP.", claim.retryAfterSeconds());
+        }
+
+        user.setEmail(normalizedEmail);
+        userRepository.save(user);
+        otpService.deleteSessionByTypeAndEmail(otpSessionId, currentEmail, "registration");
+
+        String otp = generateOTP();
+        otpService.createSession(normalizedEmail, "registration", otp, 5, 5);
+        try {
+            sendOtpEmail(normalizedEmail, otp, "Registration OTP");
+        } catch (Exception exception) {
+            log.error("Failed to send registration OTP email to corrected address: {}", normalizedEmail, exception);
+        }
+
+        Map<String, Object> response = new LinkedHashMap<>();
+        response.put("email", normalizedEmail);
+        response.putAll(getRegistrationOtpMetadata(normalizedEmail));
+        return response;
     }
 
 

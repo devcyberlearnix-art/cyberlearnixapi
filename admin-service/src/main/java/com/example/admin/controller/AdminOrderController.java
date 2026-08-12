@@ -17,8 +17,9 @@ public class AdminOrderController {
     private final OrderService orderService;
 
     @GetMapping
-    public ApiResponse<List<OrderDto>> getAllOrders() {
-        List<OrderDto> orders = orderService.getAllOrders();
+    public ApiResponse<List<OrderDto>> getAllOrders(
+            @RequestHeader("Authorization") String authorization) {
+        List<OrderDto> orders = orderService.getAllOrders(authorization);
         return new ApiResponse<>(
                 true,
                 "Orders fetched successfully",
@@ -28,8 +29,10 @@ public class AdminOrderController {
     }
 
     @GetMapping("/{id}")
-    public ApiResponse<OrderDto> getOrderById(@PathVariable String id) {
-        OrderDto order = orderService.getOrderById(id);
+    public ApiResponse<OrderDto> getOrderById(
+            @PathVariable String id,
+            @RequestHeader("Authorization") String authorization) {
+        OrderDto order = orderService.getOrderById(id, authorization);
         if (order == null) {
             return new ApiResponse<>(false, "Order not found", null, LocalDateTime.now().toString());
         }
@@ -39,8 +42,9 @@ public class AdminOrderController {
     @PutMapping("/{id}/status")
     public ApiResponse<OrderDto> updateOrderStatus(
             @PathVariable String id,
-            @RequestParam String status) {
-        OrderDto updatedOrder = orderService.updateOrderStatus(id, status);
+            @RequestParam String status,
+            @RequestHeader("Authorization") String authorization) {
+        OrderDto updatedOrder = orderService.updateOrderStatus(id, status, authorization);
         if (updatedOrder == null) {
             return new ApiResponse<>(false, "Order not found or update failed", null, LocalDateTime.now().toString());
         }
@@ -48,9 +52,11 @@ public class AdminOrderController {
     }
 
     @PostMapping("/{id}/refund")
-    public ApiResponse<OrderDto> processRefund(@PathVariable String id) {
+    public ApiResponse<OrderDto> processRefund(
+            @PathVariable String id,
+            @RequestHeader("Authorization") String authorization) {
         try {
-            OrderDto refundedOrder = orderService.processRefund(id);
+            OrderDto refundedOrder = orderService.processRefund(id, authorization);
             if (refundedOrder == null) {
                 return new ApiResponse<>(false, "Refund failed or order not found", null, LocalDateTime.now().toString());
             }

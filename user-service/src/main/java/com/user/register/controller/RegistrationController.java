@@ -298,6 +298,33 @@ public class RegistrationController {
 
     }
 
+        @PostMapping("/register/resend-otp")
+        public ResponseEntity<ApiResponse<Map<String, Object>>> resendRegistrationOtp(
+            @Valid @RequestBody ResendRegistrationOtpRequest request) {
+        Map<String, Object> responseData = registrationService.resendRegistrationOtp(request.getOtpSessionId());
+        return ResponseEntity.ok(new ApiResponse<>(
+            true,
+            "A new verification code has been sent.",
+            responseData,
+            LocalDateTime.now()
+        ));
+        }
+
+        @PatchMapping("/register/email")
+        public ResponseEntity<ApiResponse<Map<String, Object>>> changeRegistrationEmail(
+            @Valid @RequestBody ChangeRegistrationEmailRequest request) {
+        Map<String, Object> responseData = registrationService.changePendingRegistrationEmail(
+            request.getOtpSessionId(),
+            request.getEmail()
+        );
+        return ResponseEntity.ok(new ApiResponse<>(
+            true,
+            "Email updated. A new OTP has been sent.",
+            responseData,
+            LocalDateTime.now()
+        ));
+        }
+
 
 
     @PostMapping("/verify-email")

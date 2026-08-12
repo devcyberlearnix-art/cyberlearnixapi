@@ -106,14 +106,16 @@ public class AdminUserServiceClient {
         }
     }
 
-    public List<UserDTO> getAllInstructors() {
+        public List<UserDTO> getAllInstructors(String authorization) {
         try {
             String url = userServiceUrl + "/api/v1/admin/instructors";
-            ResponseEntity<Object[]> response = restTemplate.exchange(
+            HttpHeaders headers = new HttpHeaders();
+            headers.set(HttpHeaders.AUTHORIZATION, authorization);
+            ResponseEntity<Object> response = restTemplate.exchange(
                     url,
                     org.springframework.http.HttpMethod.GET,
-                    new HttpEntity<>(createHeaders()),
-                    Object[].class
+                new HttpEntity<>(headers),
+                Object.class
             );
             return parseUserList(response.getBody());
         } catch (RestClientException e) {
@@ -122,14 +124,16 @@ public class AdminUserServiceClient {
         }
     }
 
-    public List<InstructorApplicationDTO> getAllInstructorApplications() {
+        public List<InstructorApplicationDTO> getAllInstructorApplications(String authorization) {
         try {
             String url = userServiceUrl + "/api/v1/admin/instructors/applications";
-            ResponseEntity<Object[]> response = restTemplate.exchange(
+            HttpHeaders headers = new HttpHeaders();
+            headers.set(HttpHeaders.AUTHORIZATION, authorization);
+            ResponseEntity<Object> response = restTemplate.exchange(
                     url,
                     org.springframework.http.HttpMethod.GET,
-                    new HttpEntity<>(createHeaders()),
-                    Object[].class
+                new HttpEntity<>(headers),
+                Object.class
             );
             return parseApplicationList(response.getBody());
         } catch (RestClientException e) {

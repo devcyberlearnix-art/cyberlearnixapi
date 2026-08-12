@@ -2,11 +2,13 @@ package com.user.register.service;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.stereotype.Service;
 
 import java.security.MessageDigest;
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 import java.util.Base64;
 import java.util.Random;
@@ -20,10 +22,25 @@ public class OtpService {
     private static final String OTP_SESSION_PREFIX = "OTP:SESSION:";
     private static final String OTP_COOLDOWN_PREFIX = "OTP:COOLDOWN:";
     private static final String OTP_LATEST_PREFIX = "OTP:LATEST:";
+    private static final String OTP_RATE_PREFIX = "OTP:RATE:";
+    private static final DefaultRedisScript<Long> CLAIM_SEND_SCRIPT = new DefaultRedisScript<>("""
+            local cooldownTtl = redis.call('TTL', KEYS[1])
+            if cooldownTtl > 0 then return -cooldownTtl end
+            local count = tonumber(redis.call('GET', KEYS[2]) or '0')
+            if count >= tonumber(ARGV[2]) then
+                return -(100000 + math.max(redis.call('TTL', KEYS[2]), 1))
+            end
+            count = redis.call('INCR', KEYS[2])
+            if count == 1 then redis.call('EXPIRE', KEYS[2], ARGV[3]) end
+            redis.call('SET', KEYS[1], '1', 'EX', ARGV[1])
+            return count
+            """, Long.class);
 
     public record OtpSession(String sessionId, LocalDateTime expiresAt) {}
 
     public record OtpVerifyResult(boolean valid, String reason, int remainingAttempts) {}
+
+    public record OtpSendClaim(boolean allowed, boolean hourlyLimitReached, long retryAfterSeconds) {}
 
     public String generateOtp() {
         return String.valueOf(new Random().nextInt(900000) + 100000);
@@ -99,6 +116,32 @@ public class OtpService {
     public void markCooldown(String email, String otpType, int seconds) {
         String cooldownKey = OTP_COOLDOWN_PREFIX + otpType + ":" + email;
         redisTemplate.opsForValue().set(cooldownKey, "1", Duration.ofSeconds(seconds));
+    }
+
+    public OtpSendClaim claimOtpSend(
+            String email,
+            String otpType,
+            int cooldownSeconds,
+            int maxRequests,
+            int windowSeconds) {
+        String normalizedEmail = email.trim().toLowerCase();
+        Long result = redisTemplate.execute(
+                CLAIM_SEND_SCRIPT,
+                List.of(
+                        OTP_COOLDOWN_PREFIX + otpType + ":" + normalizedEmail,
+                        OTP_RATE_PREFIX + otpType + ":" + normalizedEmail),
+                String.valueOf(cooldownSeconds),
+                String.valueOf(maxRequests),
+                String.valueOf(windowSeconds));
+
+        long value = result == null ? -cooldownSeconds : result;
+        if (value <= -100000) {
+            return new OtpSendClaim(false, true, Math.abs(value + 100000));
+        }
+        if (value < 0) {
+            return new OtpSendClaim(false, false, Math.abs(value));
+        }
+        return new OtpSendClaim(true, false, cooldownSeconds);
     }
 
     public OtpVerifyResult verifySession(String sessionId, String email, String otp, String otpType, boolean consumeOnSuccess) {

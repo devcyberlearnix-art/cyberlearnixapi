@@ -1,0 +1,68 @@
+{
+  "info": {
+    "name": "CyberLearnix FE Backend Aligned Contracts",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8080" },
+    { "key": "accessToken", "value": "" },
+    { "key": "courseId", "value": "1" },
+    { "key": "orderId", "value": "" },
+    { "key": "instructorId", "value": "b00b333c-7788-4c70-a239-6ff18c34a3b4" },
+    { "key": "instructorCourseId", "value": "5" }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [{ "key": "token", "value": "{{accessToken}}", "type": "string" }]
+  },
+  "item": [
+    {
+      "name": "Login Student",
+      "auth": { "type": "noauth" },
+      "event": [{
+        "listen": "test",
+        "script": { "exec": ["const body = pm.response.json();", "pm.collectionVariables.set('accessToken', body.authentication.accessToken);"] }
+      }],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{\n  \"email\": \"demo.student1@cyberlearnix.com\",\n  \"password\": \"Demo@12345\"\n}" },
+        "url": "{{baseUrl}}/api/v1/auth/login"
+      }
+    },
+    { "name": "Get Cart", "request": { "method": "GET", "url": "{{baseUrl}}/api/v1/cart" } },
+    { "name": "Delete Cart Course", "request": { "method": "DELETE", "url": "{{baseUrl}}/api/v1/cart/{{courseId}}" } },
+    { "name": "Checkout Cart", "request": { "method": "POST", "url": "{{baseUrl}}/api/v1/cart/checkout" } },
+    { "name": "Get Orders", "request": { "method": "GET", "url": "{{baseUrl}}/api/v1/orders" } },
+    {
+      "name": "Create Order",
+      "event": [{
+        "listen": "test",
+        "script": { "exec": ["const body = pm.response.json();", "if (body.data && body.data.orderId) pm.collectionVariables.set('orderId', body.data.orderId);"] }
+      }],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{\n  \"courseIds\": [{{courseId}}],\n  \"couponCode\": null\n}" },
+        "url": "{{baseUrl}}/api/v1/orders/create"
+      }
+    },
+    { "name": "Cancel Order", "request": { "method": "DELETE", "url": "{{baseUrl}}/api/v1/orders/{{orderId}}/cancel" } },
+    { "name": "Refund Order", "request": { "method": "POST", "url": "{{baseUrl}}/api/v1/orders/{{orderId}}/refund" } },
+    { "name": "Get Wishlist", "request": { "method": "GET", "url": "{{baseUrl}}/api/v1/wishlist" } },
+    { "name": "Delete Wishlist Course", "request": { "method": "DELETE", "url": "{{baseUrl}}/api/v1/wishlist/{{courseId}}" } },
+    { "name": "Instructor Dashboard", "request": { "method": "GET", "url": "{{baseUrl}}/api/v1/instructors/{{instructorId}}/dashboard" } },
+    { "name": "Instructor Earnings", "request": { "method": "GET", "url": "{{baseUrl}}/api/v1/instructors/{{instructorId}}/earnings" } },
+    { "name": "Instructor Courses", "request": { "method": "GET", "url": "{{baseUrl}}/api/v1/instructors/{{instructorId}}/courses" } },
+    {
+      "name": "Create Instructor Course",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{\n  \"title\": \"API Design with Spring\",\n  \"subtitle\": \"Build consistent REST APIs\",\n  \"description\": \"A practical API design course.\",\n  \"price\": 999.0,\n  \"category\": \"Backend Development\",\n  \"status\": \"DRAFT\",\n  \"tags\": [\"Java\", \"Spring Boot\", \"REST\"]\n}" },
+        "url": "{{baseUrl}}/api/v1/instructors/{{instructorId}}/courses"
+      }
+    },
+    { "name": "Delete Instructor Course", "request": { "method": "DELETE", "url": "{{baseUrl}}/api/v1/instructors/{{instructorId}}/courses/{{instructorCourseId}}" } }
+  ]
+}

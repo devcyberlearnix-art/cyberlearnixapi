@@ -185,12 +185,6 @@ public class JwtAuthFilter implements Filter {
 
         // Admin API endpoints for orders, payments, and reviews
 
-        if (requestURI.equals("/api/v1/admin/orders") && "GET".equalsIgnoreCase(method)) {
-
-            return true;
-
-        }
-
         if (requestURI.equals("/api/v1/admin/payments") && "GET".equalsIgnoreCase(method)) {
 
             return true;

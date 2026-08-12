@@ -56,21 +56,23 @@ services:
       - "8091:8091"
     environment:
       SERVER_PORT: 8091
+      JAVA_TOOL_OPTIONS: ${USER_SERVICE_JAVA_OPTS:--Xms128m -Xmx512m -XX:+UseG1GC -XX:+ExitOnOutOfMemoryError}
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/lms_user_db
       SPRING_DATASOURCE_USERNAME: ${DB_USER:-cyberlearnix}
       SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-cyberlearnix123}
       SPRING_DATA_REDIS_HOST: redis
       SPRING_DATA_REDIS_PORT: 6379
       ADMIN_SERVICE_URL: http://admin-service:8087
+      JWT_SECRET: ${JWT_ACCESS_SECRET:-myVerySecretKeyForAccessTokenThatIsAtLeast32Chars}
       JWT_ACCESS_TOKEN_SECRET: ${JWT_ACCESS_SECRET:-myVerySecretKeyForAccessTokenThatIsAtLeast32Chars}
       JWT_REFRESH_TOKEN_SECRET: ${JWT_REFRESH_SECRET:-myVerySecretKeyForRefreshTokenThatIsAtLeast32Chars}
       DB_HOST: postgres
       DB_PORT: 5432
-      SPRING_MAIL_HOST: mailhog
-      SPRING_MAIL_PORT: 1025
-      SPRING_MAIL_SMTP_AUTH: "false"
-      SPRING_MAIL_SMTP_STARTTLS: "false"
-      SPRING_MAIL_SMTP_STARTTLS_REQUIRED: "false"
+      SPRING_MAIL_HOST: ${SMTP_HOST:-smtp.gmail.com}
+      SPRING_MAIL_PORT: ${SMTP_PORT:-587}
+      SPRING_MAIL_SMTP_AUTH: ${SMTP_AUTH:-true}
+      SPRING_MAIL_SMTP_STARTTLS: ${SMTP_STARTTLS:-true}
+      SPRING_MAIL_SMTP_STARTTLS_REQUIRED: ${SMTP_STARTTLS_REQUIRED:-true}
     depends_on:
       postgres:
         condition: service_healthy
@@ -90,10 +92,12 @@ services:
       - "8083:8083"
     environment:
       SERVER_PORT: 8083
+      JAVA_TOOL_OPTIONS: ${COURSE_SERVICE_JAVA_OPTS:--Xms128m -Xmx384m -XX:+UseG1GC -XX:+ExitOnOutOfMemoryError}
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/lms_course_db
       SPRING_DATASOURCE_USERNAME: ${DB_USER:-cyberlearnix}
       SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-cyberlearnix123}
       JWT_SECRET: ${JWT_ACCESS_SECRET:-myVerySecretKeyForAccessTokenThatIsAtLeast32Chars}
+      REVIEW_SERVICE_URL: http://review-service:8089
       DB_HOST: postgres
       DB_PORT: 5432
     depends_on:
@@ -111,12 +115,16 @@ services:
       - "8081:8081"
     environment:
       SERVER_PORT: 8081
+      JAVA_TOOL_OPTIONS: ${CART_SERVICE_JAVA_OPTS:--Xms128m -Xmx384m -XX:+UseG1GC -XX:+ExitOnOutOfMemoryError}
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/lms_cart_db
       SPRING_DATASOURCE_USERNAME: ${DB_USER:-cyberlearnix}
       SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-cyberlearnix123}
+      JWT_SECRET: ${JWT_ACCESS_SECRET:-myVerySecretKeyForAccessTokenThatIsAtLeast32Chars}
       JWT_ACCESS_TOKEN_SECRET: ${JWT_ACCESS_SECRET:-myVerySecretKeyForAccessTokenThatIsAtLeast32Chars}
       COUPON_SERVICE_URL: http://coupon-service:8082
       INSTRUCTOR_SERVICE_URL: http://instructor-service:8088
+      COURSE_SERVICE_URL: http://course-service:8083
+      ORDER_SERVICE_URL: http://order-service:8084
       DB_HOST: postgres
       DB_PORT: 5432
     depends_on:
@@ -134,11 +142,13 @@ services:
       - "8082:8082"
     environment:
       SERVER_PORT: 8082
+      JAVA_TOOL_OPTIONS: ${COUPON_SERVICE_JAVA_OPTS:--Xms128m -Xmx384m -XX:+UseG1GC -XX:+ExitOnOutOfMemoryError}
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/lms_coupon_db
       SPRING_DATASOURCE_USERNAME: ${DB_USER:-cyberlearnix}
       SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-cyberlearnix123}
       SPRING_DATA_REDIS_HOST: redis
       SPRING_DATA_REDIS_PORT: 6379
+      JWT_SECRET: ${JWT_ACCESS_SECRET:-myVerySecretKeyForAccessTokenThatIsAtLeast32Chars}
       DB_HOST: postgres
       DB_PORT: 5432
     depends_on:
@@ -158,8 +168,9 @@ services:
       - "8080:8080"
     environment:
       SERVER_PORT: 8080
+      JAVA_TOOL_OPTIONS: ${API_GATEWAY_JAVA_OPTS:--Xms128m -Xmx384m -XX:+UseG1GC -XX:+ExitOnOutOfMemoryError}
       SPRING_PROFILES_ACTIVE: production
-      CORS_ALLOWED_ORIGINS: http://localhost:3000,http://localhost:3002
+      CORS_ALLOWED_ORIGINS: http://localhost:3000,http://localhost:3002,http://localhost:5173
       USER_SERVICE_URL: http://user-service:8091
       USERSERVICE_URL: http://user-service:8091
       ADMIN_SERVICE_URL: http://admin-service:8087
@@ -174,6 +185,7 @@ services:
       NOTIFICATIONSERVICE_URL: http://notification-service:8093
       SPRING_DATA_REDIS_HOST: redis
       SPRING_DATA_REDIS_PORT: 6379
+      JWT_SECRET: ${JWT_ACCESS_SECRET:-myVerySecretKeyForAccessTokenThatIsAtLeast32Chars}
       JWT_ACCESS_TOKEN_SECRET: ${JWT_ACCESS_SECRET:-myVerySecretKeyForAccessTokenThatIsAtLeast32Chars}
       JWT_REFRESH_TOKEN_SECRET: ${JWT_REFRESH_SECRET:-myVerySecretKeyForRefreshTokenThatIsAtLeast32Chars}
     depends_on:
@@ -199,10 +211,14 @@ services:
       - "8087:8087"
     environment:
       SERVER_PORT: 8087
+      JAVA_TOOL_OPTIONS: ${ADMIN_SERVICE_JAVA_OPTS:--Xms128m -Xmx384m -XX:+UseG1GC -XX:+ExitOnOutOfMemoryError}
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/lms_admin_db
       SPRING_DATASOURCE_USERNAME: ${DB_USER:-cyberlearnix}
       SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-cyberlearnix123}
+      JWT_SECRET: ${JWT_ACCESS_SECRET:-myVerySecretKeyForAccessTokenThatIsAtLeast32Chars}
       JWT_ACCESS_TOKEN_SECRET: ${JWT_ACCESS_SECRET:-myVerySecretKeyForAccessTokenThatIsAtLeast32Chars}
+      MAIN_ADMIN_EMAIL: ${MAIN_ADMIN_EMAIL:-admin@merqora.com}
+      MAIN_ADMIN_PASSWORD: ${MAIN_ADMIN_PASSWORD:-MainAdmin@123}
       USER_SERVICE_URL: http://user-service:8091
       COURSE_SERVICE_URL: http://course-service:8083
       INSTRUCTOR_SERVICE_URL: http://instructor-service:8088
@@ -239,9 +255,11 @@ services:
       - "8084:8084"
     environment:
       SERVER_PORT: 8084
+      JAVA_TOOL_OPTIONS: ${ORDER_SERVICE_JAVA_OPTS:--Xms128m -Xmx384m -XX:+UseG1GC -XX:+ExitOnOutOfMemoryError}
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/lms_order_db
       SPRING_DATASOURCE_USERNAME: ${DB_USER:-cyberlearnix}
       SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-cyberlearnix123}
+      JWT_SECRET: ${JWT_ACCESS_SECRET:-myVerySecretKeyForAccessTokenThatIsAtLeast32Chars}
       JWT_ACCESS_TOKEN_SECRET: ${JWT_ACCESS_SECRET:-myVerySecretKeyForAccessTokenThatIsAtLeast32Chars}
       CART_SERVICE_URL: http://cart-service:8081
       COUPON_SERVICE_URL: http://coupon-service:8082
@@ -264,9 +282,11 @@ services:
       - "8085:8085"
     environment:
       SERVER_PORT: 8085
+      JAVA_TOOL_OPTIONS: ${PAYMENT_SERVICE_JAVA_OPTS:--Xms128m -Xmx384m -XX:+UseG1GC -XX:+ExitOnOutOfMemoryError}
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/lms_payment_db
       SPRING_DATASOURCE_USERNAME: ${DB_USER:-cyberlearnix}
       SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-cyberlearnix123}
+      JWT_SECRET: ${JWT_ACCESS_SECRET:-myVerySecretKeyForAccessTokenThatIsAtLeast32Chars}
       PAYMENT_CALLBACK_BASE_URL: http://payment-service:8085
       DB_HOST: postgres
       DB_PORT: 5432
@@ -285,9 +305,11 @@ services:
       - "8089:8089"
     environment:
       SERVER_PORT: 8089
+      JAVA_TOOL_OPTIONS: ${REVIEW_SERVICE_JAVA_OPTS:--Xms128m -Xmx384m -XX:+UseG1GC -XX:+ExitOnOutOfMemoryError}
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/lms_review_db
       SPRING_DATASOURCE_USERNAME: ${DB_USER:-cyberlearnix}
       SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-cyberlearnix123}
+      JWT_SECRET: ${JWT_ACCESS_SECRET:-myVerySecretKeyForAccessTokenThatIsAtLeast32Chars}
       JWT_ACCESS_TOKEN_SECRET: ${JWT_ACCESS_SECRET:-myVerySecretKeyForAccessTokenThatIsAtLeast32Chars}
       ENROLLMENT_SERVICE_URL: http://course-service:8083
       COURSE_SERVICE_URL: http://course-service:8083
@@ -309,10 +331,13 @@ services:
       - "8088:8088"
     environment:
       SERVER_PORT: 8088
+      JAVA_TOOL_OPTIONS: ${INSTRUCTOR_SERVICE_JAVA_OPTS:--Xms128m -Xmx384m -XX:+UseG1GC -XX:+ExitOnOutOfMemoryError}
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/lms_instructor_db
       SPRING_DATASOURCE_USERNAME: ${DB_USER:-cyberlearnix}
       SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-cyberlearnix123}
+      JWT_SECRET: ${JWT_ACCESS_SECRET:-myVerySecretKeyForAccessTokenThatIsAtLeast32Chars}
       JWT_ACCESS_TOKEN_SECRET: ${JWT_ACCESS_SECRET:-myVerySecretKeyForAccessTokenThatIsAtLeast32Chars}
+      COURSE_SERVICE_URL: http://course-service:8083
       DB_HOST: postgres
       DB_PORT: 5432
     depends_on:
@@ -330,9 +355,11 @@ services:
       - "8090:8090"
     environment:
       SERVER_PORT: 8090
+      JAVA_TOOL_OPTIONS: ${WISHLIST_SERVICE_JAVA_OPTS:--Xms128m -Xmx384m -XX:+UseG1GC -XX:+ExitOnOutOfMemoryError}
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/lms_wishlist_db
       SPRING_DATASOURCE_USERNAME: ${DB_USER:-cyberlearnix}
       SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-cyberlearnix123}
+      JWT_SECRET: ${JWT_ACCESS_SECRET:-myVerySecretKeyForAccessTokenThatIsAtLeast32Chars}
       JWT_ACCESS_TOKEN_SECRET: ${JWT_ACCESS_SECRET:-myVerySecretKeyForAccessTokenThatIsAtLeast32Chars}
       COURSE_SERVICE_URL: http://course-service:8083
       DB_HOST: postgres
@@ -352,9 +379,11 @@ services:
       - "8093:8093"
     environment:
       SERVER_PORT: 8093
+      JAVA_TOOL_OPTIONS: ${NOTIFICATION_SERVICE_JAVA_OPTS:--Xms128m -Xmx384m -XX:+UseG1GC -XX:+ExitOnOutOfMemoryError}
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/lms_notification_db
       SPRING_DATASOURCE_USERNAME: ${DB_USER:-cyberlearnix}
       SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-cyberlearnix123}
+      JWT_SECRET: ${JWT_ACCESS_SECRET:-myVerySecretKeyForAccessTokenThatIsAtLeast32Chars}
       JWT_ACCESS_TOKEN_SECRET: ${JWT_ACCESS_SECRET:-myVerySecretKeyForAccessTokenThatIsAtLeast32Chars}
       DB_HOST: postgres
       DB_PORT: 5432

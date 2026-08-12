@@ -26,7 +26,7 @@ repositories {
 
 ext {
     set('springCloudVersion', '2023.0.3')
-    set('jjwtVersion', '0.12.6')
+    set('jjwtVersion', '0.11.5')
     set('springdocVersion', '2.6.0')
 }
 

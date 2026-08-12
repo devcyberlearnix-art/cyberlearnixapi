@@ -195,9 +195,9 @@ public class AdminUserService {
 
     }
 
-    public AdminUsersResponse getAllInstructors() {
+        public AdminUsersResponse getAllInstructors(String authorization) {
 
-        List<AdminUserServiceClient.UserDTO> instructors = userClient.getAllInstructors();
+                List<AdminUserServiceClient.UserDTO> instructors = userClient.getAllInstructors(authorization);
 
         
 
@@ -267,9 +267,9 @@ public class AdminUserService {
 
 
 
-    public AdminInstructorApplicationsResponse getAllInstructorApplicationsDetailed() {
+        public AdminInstructorApplicationsResponse getAllInstructorApplicationsDetailed(String authorization) {
 
-        List<AdminUserServiceClient.InstructorApplicationDTO> applications = userClient.getAllInstructorApplications();
+                List<AdminUserServiceClient.InstructorApplicationDTO> applications = userClient.getAllInstructorApplications(authorization);
 
         
 

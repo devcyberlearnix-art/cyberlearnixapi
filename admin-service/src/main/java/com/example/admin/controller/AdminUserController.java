@@ -84,9 +84,10 @@ public class AdminUserController {
                 .body(response);
     }
     @GetMapping("/instructors")
-    public ResponseEntity<AdminUsersResponse> getAllInstructors() {
+    public ResponseEntity<AdminUsersResponse> getAllInstructors(
+            @RequestHeader("Authorization") String authorization) {
 
-        AdminUsersResponse response = adminUserService.getAllInstructors();
+        AdminUsersResponse response = adminUserService.getAllInstructors(authorization);
 
         return ResponseEntity
                 .status(response.isSuccess() ? 200 : 400)
@@ -94,8 +95,9 @@ public class AdminUserController {
     }
 
     @GetMapping("/instructors/applications")
-    public ResponseEntity<AdminInstructorApplicationsResponse> getAllInstructorApplicationsDetailed() {
-        AdminInstructorApplicationsResponse response = adminUserService.getAllInstructorApplicationsDetailed();
+    public ResponseEntity<AdminInstructorApplicationsResponse> getAllInstructorApplicationsDetailed(
+            @RequestHeader("Authorization") String authorization) {
+        AdminInstructorApplicationsResponse response = adminUserService.getAllInstructorApplicationsDetailed(authorization);
         return ResponseEntity
                 .status(response.isSuccess() ? 200 : 500)
                 .body(response);

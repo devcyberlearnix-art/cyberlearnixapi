@@ -72,7 +72,7 @@ public class UnifiedSecurityConfig {
 
                         // Public endpoints
 
-                        .requestMatchers("/api/v1/auth/login", "/api/v1/auth/register").permitAll()
+                        .requestMatchers("/api/v1/auth/login", "/api/v1/auth/register", "/api/v1/auth/register/email").permitAll()
 
                         .requestMatchers("/api/v1/auth/verify-email").permitAll()
 
@@ -133,6 +133,8 @@ public class UnifiedSecurityConfig {
                         
 
                         // Admin user management endpoints (require admin role or service token)
+
+                        .requestMatchers("/api/v1/users/stats").hasAnyRole("MAIN_ADMIN", "SUB_ADMIN")
 
                         .requestMatchers("/api/v1/users").permitAll()
 

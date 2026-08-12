@@ -61,6 +61,10 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
 
             "/api/v1/auth/register",
 
+            "/api/v1/auth/register/email",
+
+            "/api/v1/auth/register/resend-otp",
+
             "/api/v1/auth/verify-email",
 
             "/api/v1/auth/refresh",
@@ -89,6 +93,8 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
 
             "/api/v1/courses/*/students",
 
+            "/api/v1/courses/*/impressions",
+
             // Course service internal enrollment (payment service)
 
             "/api/v1/enrollments/internal/enroll",
@@ -96,10 +102,6 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
             // Review service – public course reviews
 
             "/api/v1/reviews/course/**",
-
-            // Order service
-
-            "/api/v1/orders/**",
 
             // Actuator / health
 
@@ -732,59 +734,38 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
 
 
     private Mono<Void> unauthorizedResponse(ServerWebExchange exchange, String message) {
-
-        log.warn("Unauthorized access attempt: {}", message);
-
-        var response = exchange.getResponse();
-
-        if (response.isCommitted()) {
-
-            log.debug("Response already committed, cannot send unauthorized response");
-
-            return Mono.empty();
-
-        }
-
-        response.setStatusCode(HttpStatus.UNAUTHORIZED);
-
-        response.getHeaders().set("Content-Type", "application/json");
-
-        String escapedMessage = message.replace("\"", "\\\"").replace("\n", "\\n").replace("\r", "\\r");
-
-        String errorBody = String.format("{\"error\":\"Unauthorized\",\"message\":\"%s\"}", escapedMessage);
-
-        var buffer = response.bufferFactory().wrap(errorBody.getBytes(java.nio.charset.StandardCharsets.UTF_8));
-
-        return response.writeWith(Mono.just(buffer));
+        return errorResponse(exchange, HttpStatus.UNAUTHORIZED, "UNAUTHORIZED", message);
 
     }
 
 
 
     private Mono<Void> forbiddenResponse(ServerWebExchange exchange, String message) {
+        return errorResponse(exchange, HttpStatus.FORBIDDEN, "FORBIDDEN", message);
+    }
 
-        log.warn("Forbidden: {}", message);
-
+    private Mono<Void> errorResponse(
+            ServerWebExchange exchange, HttpStatus status, String code, String message) {
+        log.warn("{}: {}", code, message);
         var response = exchange.getResponse();
-
         if (response.isCommitted()) {
-
-            log.debug("Response already committed, cannot send forbidden response");
-
             return Mono.empty();
-
         }
 
-        response.setStatusCode(HttpStatus.FORBIDDEN);
-
+        String traceId = exchange.getRequest().getHeaders().getFirst("X-Trace-Id");
+        if (traceId == null || traceId.isBlank()) {
+            traceId = java.util.UUID.randomUUID().toString();
+        }
+        response.setStatusCode(status);
         response.getHeaders().set("Content-Type", "application/json");
+        response.getHeaders().set("X-Trace-Id", traceId);
 
         String escapedMessage = message.replace("\"", "\\\"").replace("\n", "\\n").replace("\r", "\\r");
-
-        String errorBody = String.format("{\"error\":\"Forbidden\",\"message\":\"%s\"}", escapedMessage);
-
+        String errorBody = String.format(
+                "{\"timestamp\":\"%s\",\"status\":%d,\"code\":\"%s\",\"message\":\"%s\",\"path\":\"%s\",\"traceId\":\"%s\"}",
+                java.time.Instant.now(), status.value(), code, escapedMessage,
+                exchange.getRequest().getPath().value(), traceId);
         var buffer = response.bufferFactory().wrap(errorBody.getBytes(java.nio.charset.StandardCharsets.UTF_8));
-
         return response.writeWith(Mono.just(buffer));
 
     }

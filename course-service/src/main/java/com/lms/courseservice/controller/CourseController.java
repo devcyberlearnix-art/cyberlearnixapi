@@ -1,6 +1,7 @@
 package com.lms.courseservice.controller;
 
 import com.lms.courseservice.dto.ApiResponse;
+import com.lms.courseservice.dto.FeaturedCourseResponse;
 import com.lms.courseservice.entity.Course;
 import com.lms.courseservice.security.JwtUtil;
 import com.lms.courseservice.service.CourseService;
@@ -10,6 +11,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -34,6 +36,23 @@ public class CourseController {
     @GetMapping
     public List<Course> getAllCourses() {
         return courseService.getAllCourses();
+    }
+
+    @GetMapping("/stats")
+    public Map<String, Object> getCourseStats() {
+        return courseService.getCourseStats();
+    }
+
+    @GetMapping("/featured")
+    public List<FeaturedCourseResponse> getFeaturedCourses(@RequestParam(defaultValue = "6") int limit) {
+        return courseService.getFeaturedCourses(limit);
+    }
+
+    @PostMapping("/{courseId}/impressions")
+    public void trackCourseImpression(
+            @PathVariable Long courseId,
+            @RequestParam(defaultValue = "HOME") String source) {
+        courseService.trackImpression(courseId, source);
     }
 
     /**

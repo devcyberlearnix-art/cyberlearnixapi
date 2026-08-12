@@ -61,10 +61,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter  {
         try {
 
             if (!jwtService.isTokenValid(jwt)) {
-                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                response.setContentType("application/json");
-                response.getWriter().write(
-                        "{\"error\":\"Unauthorized\",\"message\":\"Invalid or expired token\"}");
+                writeUnauthorized(request, response);
                 return;
             }
 
@@ -92,15 +89,26 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter  {
 
             log.error("JWT authentication failed", e);
 
-            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            response.setContentType("application/json");
-            response.getWriter().write(
-                    "{\"error\":\"Unauthorized\",\"message\":\"Invalid or expired token\"}");
+                writeUnauthorized(request, response);
             return;
         }
 
         filterChain.doFilter(request, response);
     }
+
+    private void writeUnauthorized(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        String traceId = request.getHeader("X-Trace-Id");
+        if (traceId == null || traceId.isBlank()) {
+            traceId = java.util.UUID.randomUUID().toString();
+        }
+        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+        response.setContentType("application/json");
+        response.setHeader("X-Trace-Id", traceId);
+        response.getWriter().write(String.format(
+                "{\"timestamp\":\"%s\",\"status\":401,\"code\":\"UNAUTHORIZED\",\"message\":\"Invalid or expired token\",\"path\":\"%s\",\"traceId\":\"%s\"}",
+                java.time.Instant.now(), request.getRequestURI(), traceId));
+    }
+
     private static String toSpringSecurityRole(String role) {
 
         if (role == null || role.isBlank()) {

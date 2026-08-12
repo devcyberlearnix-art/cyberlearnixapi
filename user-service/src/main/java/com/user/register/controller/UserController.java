@@ -96,6 +96,15 @@ public class UserController {
 
     }
 
+    @GetMapping("/stats")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> getUserStats() {
+        return ResponseEntity.ok(new ApiResponse<>(
+                true,
+                "User statistics fetched successfully",
+                userService.getUserStats(),
+                LocalDateTime.now()));
+    }
+
 
 
 

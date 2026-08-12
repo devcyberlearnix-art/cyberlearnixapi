@@ -50,36 +50,31 @@ public class AdminReportService {
 
     // ===== USERS REPORT =====
     public Map<String, Object> getUserReport(String token) {
-        try {
-            return restTemplate.exchange(
-                    userService + "/users/stats",
-                    HttpMethod.GET,
-                    getEntity(token),
-                    new ParameterizedTypeReference<Map<String, Object>>() {}
-            ).getBody();
-        } catch (Exception e) {
-            return Map.of(
-                    "error", "Failed to fetch user stats",
-                    "details", e.getMessage()
-            );
-        }
+        Map<String, Object> response = restTemplate.exchange(
+            userService + "/api/v1/users/stats",
+            HttpMethod.GET,
+            getEntity(token),
+            new ParameterizedTypeReference<Map<String, Object>>() {}
+        ).getBody();
+        return extractData(response);
     }
 
     // ===== COURSES REPORT =====
     public Map<String, Object> getCourseReport(String token) {
-        try {
-            return restTemplate.exchange(
-                    courseService + "/courses/stats",
-                    HttpMethod.GET,
-                    getEntity(token),
-                    new ParameterizedTypeReference<Map<String, Object>>() {}
-            ).getBody();
-        } catch (Exception e) {
-            return Map.of(
-                    "error", "Failed to fetch course stats",
-                    "details", e.getMessage()
-            );
+        return restTemplate.exchange(
+                courseService + "/api/v1/courses/stats",
+                HttpMethod.GET,
+                getEntity(token),
+                new ParameterizedTypeReference<Map<String, Object>>() {}
+        ).getBody();
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> extractData(Map<String, Object> response) {
+        if (response == null || !(response.get("data") instanceof Map<?, ?> data)) {
+            return Map.of();
         }
+        return (Map<String, Object>) data;
     }
 
     // ===== REVENUE REPORT =====

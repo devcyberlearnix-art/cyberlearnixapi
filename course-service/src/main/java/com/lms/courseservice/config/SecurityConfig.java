@@ -23,6 +23,8 @@ public class SecurityConfig {
         http
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
+                    .requestMatchers(HttpMethod.GET, "/api/v1/courses/stats")
+                    .hasAnyRole("MAIN_ADMIN", "SUB_ADMIN")
                         // ============== PUBLIC ENDPOINTS (No Auth Required) ==============
                         // GET all courses
                         .requestMatchers(HttpMethod.GET, "/api/v1/courses").permitAll()
@@ -36,6 +38,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/v1/courses/*/preview").permitAll()
                         // GET course students (for admin dashboard)
                         .requestMatchers(HttpMethod.GET, "/api/v1/courses/*/students").permitAll()
+                        // Track anonymous home/search engagement for featured ranking
+                        .requestMatchers(HttpMethod.POST, "/api/v1/courses/*/impressions").permitAll()
 
                         // ============== INTERNAL ENDPOINTS (Service-to-Service) ==============
                         // Internal enrollment (from payment service)
