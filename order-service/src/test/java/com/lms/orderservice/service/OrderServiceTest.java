@@ -2,6 +2,8 @@ package com.lms.orderservice.service;
 
 import com.lms.orderservice.client.CartClient;
 import com.lms.orderservice.client.CouponClient;
+import com.lms.orderservice.client.dto.cart.ApiResponse;
+import com.lms.orderservice.client.dto.cart.CartResponse;
 import com.lms.orderservice.dto.CreateOrderRequest;
 import com.lms.orderservice.repository.OrderItemRepository;
 import com.lms.orderservice.repository.OrderRepository;
@@ -14,6 +16,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -37,12 +40,15 @@ class OrderServiceTest {
     @Test
     void createOrder_shouldRejectUnknownCourseIds() {
         CreateOrderRequest request = new CreateOrderRequest();
-        request.setUserId("user-1");
-        request.setCourseIds(List.of("999"));
+        request.setCourseIds(List.of(999L));
 
-        when(cartClient.getCart("user-1")).thenThrow(new RuntimeException("cart unavailable"));
+        // Mock cart client to return empty cart so service proceeds to course validation
+        ApiResponse<CartResponse> cartResponse = new ApiResponse<>();
+        cartResponse.setSuccess(true);
+        cartResponse.setData(new CartResponse());
+        when(cartClient.getCart("user-1")).thenReturn(cartResponse);
 
-        RuntimeException exception = assertThrows(RuntimeException.class, () -> service.createOrder(request));
-        assert exception.getMessage().contains("Course not found");
+        RuntimeException exception = assertThrows(RuntimeException.class, () -> service.createOrder("user-1", request));
+        assertTrue(exception.getMessage().contains("Course not found"));
     }
 }
