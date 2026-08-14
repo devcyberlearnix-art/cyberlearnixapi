@@ -526,22 +526,71 @@ public class CourseService {
                 Course course = courseRepository.findByIdAndInstructorId(courseId, instructorId)
                                 .orElseThrow(() -> new RuntimeException("Course not found for this instructor"));
 
-                // 2️⃣ Fetch enrollment
-                Enrollment enrollment = (Enrollment) enrollmentRepository
-                                .findByCourseAndStudentId(course, request.getStudentId())
+                // 2️⃣ Parse studentId string to UUID safely
+                if (request.getStudentId() == null || request.getStudentId().trim().isEmpty()) {
+                        throw new RuntimeException("Student ID must not be empty");
+                }
+                UUID studentUuid;
+                try {
+                        studentUuid = UUID.fromString(request.getStudentId().trim());
+                } catch (Exception e) {
+                        throw new RuntimeException("Invalid student ID format: " + request.getStudentId());
+                }
+
+                // 3️⃣ Fetch enrollment
+                Enrollment enrollment = enrollmentRepository
+                                .findByCourseAndStudentId(course, studentUuid)
                                 .orElseThrow(() -> new RuntimeException("Student not enrolled in this course"));
 
-                // 3️⃣ Update grade
-                enrollment.setGrade(request.getGrade());
+                // 4️⃣ Parse and validate grade value
+                Object rawGrade = request.getGrade();
+                if (rawGrade == null) {
+                        throw new RuntimeException("Grade value must not be null");
+                }
+                Double gradeValue = parseGradeValue(rawGrade);
+
+                // 5️⃣ Update grade
+                enrollment.setGrade(gradeValue);
                 enrollmentRepository.save(enrollment);
 
-                // 4️⃣ Return response
+                // 6️⃣ Return response
                 return GradeResponseDTO.builder()
                                 .studentId(enrollment.getStudentId())
                                 .courseId(courseId)
                                 .grade(enrollment.getGrade())
                                 .updatedAt(LocalDateTime.now())
                                 .build();
+        }
+
+        private Double parseGradeValue(Object rawGrade) {
+                if (rawGrade instanceof Number) {
+                        return ((Number) rawGrade).doubleValue();
+                }
+                String str = rawGrade.toString().trim();
+                if (str.isEmpty()) {
+                        throw new RuntimeException("Grade value must not be empty");
+                }
+                try {
+                        return Double.parseDouble(str);
+                } catch (NumberFormatException e) {
+                        switch (str.toUpperCase()) {
+                                case "A+": return 4.0;
+                                case "A":  return 4.0;
+                                case "A-": return 3.7;
+                                case "B+": return 3.3;
+                                case "B":  return 3.0;
+                                case "B-": return 2.7;
+                                case "C+": return 2.3;
+                                case "C":  return 2.0;
+                                case "C-": return 1.7;
+                                case "D+": return 1.3;
+                                case "D":  return 1.0;
+                                case "D-": return 0.7;
+                                case "F":  return 0.0;
+                                default:
+                                        throw new RuntimeException("Invalid grade value: '" + str + "'. Must be a numeric value (e.g. 95.0, 4.0) or a standard letter grade (A+, A, A-, B+, B, C+, C, D, F).");
+                        }
+                }
         }
 
         public CourseFullResponseDTO getCourseAnalytics(UUID instructorId, Long courseId) {
