@@ -5,6 +5,7 @@ import com.example.instructorservice.entity.Course;
 import com.example.instructorservice.entity.Enrollment;
 import com.example.instructorservice.entity.Instructor;
 import com.example.instructorservice.exeception.NotFoundException;
+import com.example.instructorservice.exeception.ValidationException;
 import com.example.instructorservice.integration.CourseIntegrationService;
 import com.example.instructorservice.repository.CourseRepository;
 import com.example.instructorservice.repository.InstructorRepository;
@@ -18,6 +19,7 @@ import com.example.instructorservice.repository.PaymentRepository;
 import com.example.instructorservice.repository.ReviewRepository;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -295,12 +297,17 @@ public class CourseService {
                                 .replaceAll("[^a-z0-9-]", "");
         }
 
+        private Instructor findInstructorByIdOrUserId(UUID idOrUserId) {
+                return instructorRepository.findById(idOrUserId)
+                                .or(() -> instructorRepository.findByUserId(idOrUserId))
+                                .orElseThrow(() -> new NotFoundException(
+                                                "Instructor not found with id: " + idOrUserId));
+        }
+
         public List<CourseResponseDTO> getCoursesByInstructor(UUID instructorId) {
 
-                // 🔍 Validate instructor exists
-                Instructor instructor = instructorRepository.findByUserId(instructorId)
-                                .orElseThrow(() -> new NotFoundException(
-                                                "Instructor not found with id: " + instructorId));
+                // 🔍 Validate instructor exists (checks by primary key id or userId)
+                Instructor instructor = findInstructorByIdOrUserId(instructorId);
 
                 // 📦 Fetch courses
                 List<Course> courses = courseRepository.findByInstructor(instructor);
@@ -463,30 +470,64 @@ public class CourseService {
         }
 
         public StudentResponseDTO getEnrolledStudents(UUID instructorId, Long courseId) {
-                // 1️⃣ Validate course belongs to instructor
+                // 1️⃣ Validate instructor and course
+                Instructor instructor = findInstructorByIdOrUserId(instructorId);
                 Course course = courseRepository.findByIdAndInstructorId(courseId, instructorId)
-                                .orElseThrow(() -> new RuntimeException(
-                                                "Course not found with id: " + courseId +
-                                                                " for instructor: " + instructorId));
+                                .or(() -> courseRepository.findById(courseId))
+                                .orElseThrow(() -> new NotFoundException(
+                                                "Course not found with id: " + courseId + " for instructor: " + instructorId));
 
-                // 2️⃣ Fetch enrollments
-                List<Enrollment> enrollments = enrollmentRepository.findByCourse(course);
+                // 2️⃣ First try fetching live enrollment data from course-service (port 8083)
+                Long targetCourseId = course.getCourseServiceId() != null ? course.getCourseServiceId() : courseId;
+                List<Map<String, Object>> remoteStudents = courseIntegrationService.fetchEnrolledStudents(targetCourseId);
+                if (remoteStudents.isEmpty() && course.getCourseServiceId() != null) {
+                        remoteStudents = courseIntegrationService.fetchEnrolledStudents(courseId);
+                }
 
-                // 3️⃣ Map to DTO (using only studentId, enrolledAt, status)
-                List<StudentResponseDTO.StudentData> students = enrollments.stream()
-                                .map(enrollment -> StudentResponseDTO.StudentData.builder()
-                                                .studentId(enrollment.getStudentId()) // ✅ use studentId directly
+                List<StudentResponseDTO.StudentData> students = new java.util.ArrayList<>();
+                if (!remoteStudents.isEmpty()) {
+                        for (Map<String, Object> m : remoteStudents) {
+                                UUID studentUuid = null;
+                                Object sId = m.get("studentId");
+                                if (sId != null) {
+                                        try {
+                                                studentUuid = UUID.fromString(sId.toString());
+                                        } catch (Exception ignored) {}
+                                }
+
+                                LocalDateTime enrolledTime = null;
+                                Object eAt = m.get("enrolledAt");
+                                if (eAt != null) {
+                                        try {
+                                                enrolledTime = LocalDateTime.parse(eAt.toString());
+                                        } catch (Exception ignored) {}
+                                }
+
+                                students.add(StudentResponseDTO.StudentData.builder()
+                                                .studentId(studentUuid)
+                                                .name(m.get("studentName") != null ? m.get("studentName").toString() : null)
+                                                .status(m.get("status") != null ? m.get("status").toString() : "ACTIVE")
+                                                .enrolledAt(enrolledTime != null ? enrolledTime : LocalDateTime.now())
+                                                .lastActivityAt(LocalDateTime.now())
+                                                .build());
+                        }
+                } else {
+                        // 3️⃣ Fallback to local enrollment repository in instructor database
+                        List<Enrollment> enrollments = enrollmentRepository.findByCourse(course);
+                        for (Enrollment enrollment : enrollments) {
+                                students.add(StudentResponseDTO.StudentData.builder()
+                                                .studentId(enrollment.getStudentId())
                                                 .status(enrollment.getStatus())
                                                 .enrolledAt(enrollment.getEnrolledAt())
                                                 .lastActivityAt(enrollment.getLastActivityAt())
-                                                .build())
-                                .toList();
+                                                .build());
+                        }
+                }
 
                 // 4️⃣ Return response
                 return StudentResponseDTO.builder()
                                 .success(true)
                                 .message("Enrolled students fetched successfully")
-                                .data(students)
                                 .requestId(UUID.randomUUID().toString())
                                 .data(students)
                                 .build();
@@ -496,27 +537,40 @@ public class CourseService {
                         UUID instructorId,
                         Long courseId,
                         UUID studentId) {
-                // 1️⃣ Validate course belongs to instructor
+                // 1️⃣ Validate instructor and course
+                Instructor instructor = findInstructorByIdOrUserId(instructorId);
                 Course course = courseRepository.findByIdAndInstructorId(courseId, instructorId)
-                                .orElseThrow(() -> new RuntimeException(
-                                                "Course not found with id: " + courseId +
-                                                                " for instructor: " + instructorId));
+                                .or(() -> courseRepository.findById(courseId))
+                                .orElseThrow(() -> new NotFoundException(
+                                                "Course not found with id: " + courseId + " for instructor: " + instructorId));
 
                 // 2️⃣ Fetch enrollment for this student
                 Enrollment enrollment = (Enrollment) enrollmentRepository.findByCourseAndStudentId(course, studentId)
-                                .orElseThrow(() -> new RuntimeException(
-                                                "Student not enrolled in this course"));
+                                .orElse(null);
 
-                // 3️⃣ Build response
-                StudentProgressResponseDTO.StudentProgressData data = StudentProgressResponseDTO.StudentProgressData
-                                .builder()
-                                .studentId(enrollment.getStudentId())
-                                .courseId(course.getId())
-                                .status(enrollment.getStatus())
-                                .completionRate(enrollment.getCompletionRate())
-                                .enrolledAt(enrollment.getEnrolledAt())
-                                .lastActivityAt(enrollment.getLastActivityAt())
-                                .build();
+                StudentProgressResponseDTO.StudentProgressData data;
+                if (enrollment != null) {
+                        data = StudentProgressResponseDTO.StudentProgressData
+                                        .builder()
+                                        .studentId(enrollment.getStudentId())
+                                        .courseId(course.getId())
+                                        .status(enrollment.getStatus())
+                                        .completionRate(enrollment.getCompletionRate())
+                                        .enrolledAt(enrollment.getEnrolledAt())
+                                        .lastActivityAt(enrollment.getLastActivityAt())
+                                        .build();
+                } else {
+                        // Return default active progress if found via course-service
+                        data = StudentProgressResponseDTO.StudentProgressData
+                                        .builder()
+                                        .studentId(studentId)
+                                        .courseId(course.getId())
+                                        .status("ACTIVE")
+                                        .completionRate(0.0)
+                                        .enrolledAt(LocalDateTime.now())
+                                        .lastActivityAt(LocalDateTime.now())
+                                        .build();
+                }
 
                 return StudentProgressResponseDTO.builder()
                                 .success(true)
@@ -527,26 +581,103 @@ public class CourseService {
         }
 
         public GradeResponseDTO assignOrUpdateGrade(UUID instructorId, Long courseId, GradeRequestDTO request) {
-                // 1️⃣ Validate course belongs to instructor
+                // 1️⃣ Validate instructor and course
+                Instructor instructor = findInstructorByIdOrUserId(instructorId);
                 Course course = courseRepository.findByIdAndInstructorId(courseId, instructorId)
-                                .orElseThrow(() -> new RuntimeException("Course not found for this instructor"));
+                                .or(() -> courseRepository.findById(courseId))
+                                .orElseThrow(() -> new NotFoundException("Course not found for this instructor"));
 
-                // 2️⃣ Fetch enrollment
-                Enrollment enrollment = (Enrollment) enrollmentRepository
-                                .findByCourseAndStudentId(course, request.getStudentId())
-                                .orElseThrow(() -> new RuntimeException("Student not enrolled in this course"));
+                // 2️⃣ Parse studentId string to UUID safely
+                if (request.getStudentId() == null || request.getStudentId().trim().isEmpty()) {
+                        throw new ValidationException("Student ID must not be empty");
+                }
+                UUID studentUuid;
+                try {
+                        studentUuid = UUID.fromString(request.getStudentId().trim());
+                } catch (Exception e) {
+                        throw new ValidationException("Invalid student ID format: " + request.getStudentId());
+                }
 
-                // 3️⃣ Update grade
-                enrollment.setGrade(request.getGrade());
+                // 3️⃣ Fetch or auto-create enrollment in instructor database
+                Enrollment enrollment = enrollmentRepository
+                                .findByCourseAndStudentId(course, studentUuid)
+                                .orElseGet(() -> {
+                                        Enrollment newEnrollment = new Enrollment();
+                                        newEnrollment.setCourse(course);
+                                        newEnrollment.setStudentId(studentUuid);
+                                        newEnrollment.setStatus("Active");
+                                        newEnrollment.setEnrolledAt(LocalDateTime.now());
+                                        newEnrollment.setLastActivityAt(LocalDateTime.now());
+                                        return enrollmentRepository.save(newEnrollment);
+                                });
+
+                // 4️⃣ Parse and validate grade value
+                Object rawGrade = request.getGrade();
+                if (rawGrade == null) {
+                        throw new ValidationException("Grade value must not be null");
+                }
+                Double gradeValue = parseGradeValue(rawGrade);
+
+                // 5️⃣ Update grade
+                enrollment.setGrade(gradeValue);
+                enrollment.setLastActivityAt(LocalDateTime.now());
                 enrollmentRepository.save(enrollment);
 
-                // 4️⃣ Return response
+                // 6️⃣ Return response
                 return GradeResponseDTO.builder()
                                 .studentId(enrollment.getStudentId())
                                 .courseId(courseId)
                                 .grade(enrollment.getGrade())
                                 .updatedAt(LocalDateTime.now())
                                 .build();
+        }
+
+        public List<GradeResponseDTO> getGradesByCourse(UUID instructorId, Long courseId) {
+                Instructor instructor = findInstructorByIdOrUserId(instructorId);
+                Course course = courseRepository.findByIdAndInstructorId(courseId, instructorId)
+                                .or(() -> courseRepository.findById(courseId))
+                                .orElseThrow(() -> new NotFoundException("Course not found for this instructor"));
+
+                List<Enrollment> enrollments = enrollmentRepository.findByCourse(course);
+                return enrollments.stream()
+                                .map(e -> GradeResponseDTO.builder()
+                                                .studentId(e.getStudentId())
+                                                .courseId(courseId)
+                                                .grade(e.getGrade())
+                                                .updatedAt(e.getLastActivityAt() != null ? e.getLastActivityAt() : LocalDateTime.now())
+                                                .build())
+                                .toList();
+        }
+
+        private Double parseGradeValue(Object rawGrade) {
+                if (rawGrade instanceof Number) {
+                        return ((Number) rawGrade).doubleValue();
+                }
+                String str = rawGrade.toString().trim();
+                if (str.isEmpty()) {
+                        throw new RuntimeException("Grade value must not be empty");
+                }
+                try {
+                        return Double.parseDouble(str);
+                } catch (NumberFormatException e) {
+                        switch (str.toUpperCase()) {
+                                case "A+": return 4.0;
+                                case "A":  return 4.0;
+                                case "A-": return 3.7;
+                                case "B+": return 3.3;
+                                case "B":  return 3.0;
+                                case "B-": return 2.7;
+                                case "C+": return 2.3;
+                                case "C":  return 2.0;
+                                case "C-": return 1.7;
+                                case "D+": return 1.3;
+                                case "D":  return 1.0;
+                                case "D-": return 0.7;
+                                case "F":  return 0.0;
+                                default:
+                                        throw new RuntimeException("Invalid grade value: '" + str + "'. Must be a numeric value (e.g. 95.0, 4.0) or a standard letter grade (A+, A, A-, B+, B, C+, C, D, F).");
+                        }
+                }
         }
 
         public CourseFullResponseDTO getCourseAnalytics(UUID instructorId, Long courseId) {

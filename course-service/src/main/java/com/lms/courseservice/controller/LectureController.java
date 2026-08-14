@@ -1,5 +1,7 @@
 package com.lms.courseservice.controller;
 
+import com.lms.courseservice.dto.CreateLectureResponse;
+import com.lms.courseservice.dto.DeleteLectureResponse;
 import com.lms.courseservice.entity.Lecture;
 import com.lms.courseservice.service.LectureService;
 import lombok.RequiredArgsConstructor;
@@ -18,15 +20,35 @@ public class LectureController {
     private final LectureService lectureService;
 
     // ✅ Instructor/Admin only
-    @PreAuthorize("hasAnyRole('INSTRUCTOR','ADMIN')")
+    @PreAuthorize("hasAnyRole('INSTRUCTOR','MAIN_ADMIN','SUB_ADMIN','ADMIN')")
     @PostMapping("/{sectionId}/lectures")
-    public Lecture createLecture(@PathVariable Long sectionId,
+    public CreateLectureResponse createLecture(@PathVariable Long sectionId,
                                  @RequestBody Lecture lecture) {
-        return lectureService.createLecture(sectionId, lecture);
+        Lecture saved = lectureService.createLecture(sectionId, lecture);
+
+        CreateLectureResponse.LectureInfo info = new CreateLectureResponse.LectureInfo(
+                saved.getId(),
+                saved.getTitle(),
+                saved.getDescription(),
+                saved.getVideoUrl(),
+                saved.getDuration(),
+                saved.getOrderIndex(),
+                saved.getPreviewEnabled(),
+                saved.getResources(),
+                saved.getSection().getId(),
+                saved.getSection().getTitle(),
+                saved.getSection().getCourse() != null ? saved.getSection().getCourse().getId() : null
+        );
+
+        return new CreateLectureResponse(
+                true,
+                "Lecture created successfully",
+                info
+        );
     }
 
     // ✅ Instructor/Admin only
-    @PreAuthorize("hasAnyRole('INSTRUCTOR','ADMIN')")
+    @PreAuthorize("hasAnyRole('INSTRUCTOR','MAIN_ADMIN','SUB_ADMIN','ADMIN')")
     @PatchMapping("/{sectionId}/lectures/{lectureId}")
     public Lecture updateLecture(@PathVariable Long sectionId,
                                  @PathVariable Long lectureId,
@@ -36,12 +58,24 @@ public class LectureController {
     }
 
     // ✅ Instructor/Admin only
-    @PreAuthorize("hasAnyRole('INSTRUCTOR','ADMIN')")
+    @PreAuthorize("hasAnyRole('INSTRUCTOR','MAIN_ADMIN','SUB_ADMIN','ADMIN')")
     @DeleteMapping("/{sectionId}/lectures/{lectureId}")
-    public Map<String, String> deleteLecture(@PathVariable Long sectionId,
+    public DeleteLectureResponse deleteLecture(@PathVariable Long sectionId,
                                              @PathVariable Long lectureId) {
-        lectureService.deleteLecture(sectionId, lectureId);
-        return Map.of("message", "Lecture deleted successfully");
+        Lecture lecture = lectureService.deleteLecture(sectionId, lectureId);
+
+        DeleteLectureResponse.DeletedLectureInfo info = new DeleteLectureResponse.DeletedLectureInfo(
+                lecture.getId(),
+                lecture.getTitle(),
+                lecture.getSection() != null ? lecture.getSection().getId() : null,
+                true
+        );
+
+        return new DeleteLectureResponse(
+                true,
+                "Lecture deleted successfully",
+                info
+        );
     }
 
     // 🔒 Only enrolled users (handled in service)

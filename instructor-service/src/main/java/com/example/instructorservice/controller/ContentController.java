@@ -19,7 +19,7 @@ public class ContentController {
     @PatchMapping("/{contentId}/publish")
     public ResponseEntity<ContentResponse> publishContent(
             @PathVariable UUID instructorId,
-            @PathVariable UUID contentId,
+            @PathVariable String contentId,
             @RequestBody PublishRequest request
     ) {
         ContentResponse response = contentService.publishContent(

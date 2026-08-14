@@ -189,31 +189,19 @@ public class LectureService {
 
 
     // 🔒 Delete Lecture
-
-    public void deleteLecture(Long sectionId, Long lectureId) {
-
-
+    public Lecture deleteLecture(Long sectionId, Long lectureId) {
 
         Lecture lecture = lectureRepository.findById(lectureId)
-
                 .orElseThrow(() -> new RuntimeException("Lecture not found"));
 
-
-
         if (!lecture.getSection().getId().equals(sectionId)) {
-
             throw new RuntimeException("Lecture does not belong to this section");
-
         }
-
-
 
         // ❌ REMOVE enrollment validation here
 
-
-
         lectureRepository.delete(lecture);
-
+        return lecture;
     }
 
 }

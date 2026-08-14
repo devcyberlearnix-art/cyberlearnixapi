@@ -1,10 +1,10 @@
 package com.example.instructorservice.controller;
 
-
 import com.example.instructorservice.dto.ModuleRequest;
 import com.example.instructorservice.dto.ModuleResponse;
 import com.example.instructorservice.dto.ResourceResponse;
 import com.example.instructorservice.service.ModuleService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -29,8 +29,8 @@ public class ModuleController {
     @PostMapping
     public ResponseEntity<ModuleResponse> addModule(
             @PathVariable("instructorId") UUID instructorId,
-            @PathVariable("courseId") UUID courseId,
-            @RequestBody ModuleRequest request
+            @PathVariable("courseId") Long courseId,
+            @Valid @RequestBody ModuleRequest request
     ) {
         ModuleResponse response = moduleService.addModule(instructorId, courseId, request);
         return ResponseEntity.ok(response);
@@ -38,7 +38,7 @@ public class ModuleController {
     @PutMapping("/{moduleId}")
     public ResponseEntity<ModuleResponse> updateModule(
             @PathVariable UUID instructorId,
-            @PathVariable UUID courseId,
+            @PathVariable Long courseId,
             @PathVariable UUID moduleId,
             @RequestBody ModuleRequest request
     ) {
@@ -48,7 +48,7 @@ public class ModuleController {
     @DeleteMapping("/{moduleId}")
     public ResponseEntity<ModuleResponse> deleteModule(
             @PathVariable UUID instructorId,
-            @PathVariable UUID courseId,
+            @PathVariable Long courseId,
             @PathVariable UUID moduleId
     ) {
         ModuleResponse response = moduleService.deleteModule(instructorId, courseId, moduleId);
@@ -57,7 +57,7 @@ public class ModuleController {
     @PostMapping(value = "/upload", consumes = "multipart/form-data")
     public ResponseEntity<ResourceResponse> uploadResource(
             @PathVariable UUID instructorId,
-            @PathVariable UUID courseId,
+            @PathVariable Long courseId,
             @RequestParam("file") MultipartFile file,
             @RequestParam("type") String type
     ) {

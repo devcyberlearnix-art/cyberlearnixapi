@@ -56,6 +56,24 @@ public class CourseIntegrationService {
         log.info("Course update sync requested for courseId={}", course.getId());
     }
 
+    @SuppressWarnings("unchecked")
+    public java.util.List<Map<String, Object>> fetchEnrolledStudents(Long courseId) {
+        try {
+            ResponseEntity<Map> response = restTemplate.getForEntity(
+                    courseServiceUrl + "/api/v1/courses/" + courseId + "/students", Map.class);
+            if (response.getBody() != null && response.getBody().get("data") instanceof Map dataMap) {
+                Object studentsObj = dataMap.get("students");
+                if (studentsObj instanceof java.util.List list) {
+                    log.info("Fetched {} enrolled student(s) from course-service for courseId={}", list.size(), courseId);
+                    return (java.util.List<Map<String, Object>>) list;
+                }
+            }
+        } catch (Exception ex) {
+            log.warn("Unable to fetch enrolled students from course-service for courseId={}: {}", courseId, ex.getMessage());
+        }
+        return java.util.Collections.emptyList();
+    }
+
     private Map<String, Object> buildCoursePayload(Course course, CourseRequestDTO request) {
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("title", request.getTitle());

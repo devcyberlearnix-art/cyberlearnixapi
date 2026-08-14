@@ -11,6 +11,6 @@ import java.util.UUID;
 @AllArgsConstructor
 @Builder
 public class GradeRequestDTO {
-    private UUID studentId;  // student to assign grade
-    private Double grade;    // grade value
+    private String studentId;  // student to assign grade (accepts string or UUID formatted string)
+    private Object grade;      // grade value (accepts Double, Integer, String numbers, or letter grades like "A", "B", etc.)
 }

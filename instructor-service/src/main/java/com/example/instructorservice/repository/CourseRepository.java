@@ -15,8 +15,11 @@ public interface CourseRepository extends JpaRepository<Course, Long> {
     List<Course> findByInstructor(Instructor instructor);
     Optional<Course> findByIdAndInstructor(Long courseId, Instructor instructor);
 
-    @Query("SELECT c FROM Course c WHERE c.id = :courseId AND c.instructor.userId = :instructorId")
+    @Query("SELECT c FROM Course c WHERE c.id = :courseId AND (c.instructor.userId = :instructorId OR c.instructor.id = :instructorId)")
     Optional<Course> findByIdAndInstructorId(@Param("courseId") Long courseId, @Param("instructorId") UUID instructorId);
+
+    @Query("SELECT c FROM Course c WHERE c.instructor.userId = :instructorId OR c.instructor.id = :instructorId")
+    List<Course> findByInstructorUserIdOrId(@Param("instructorId") UUID instructorId);
 
     List<Course> findByInstructorUserId(UUID instructorId);
 }

@@ -5,6 +5,9 @@ import com.example.instructorservice.dto.ModuleResponse;
 import com.example.instructorservice.dto.ResourceResponse;
 import com.example.instructorservice.entity.*;
 import com.example.instructorservice.entity.Module;
+import com.example.instructorservice.exeception.ForbiddenException;
+import com.example.instructorservice.exeception.NotFoundException;
+import com.example.instructorservice.exeception.ValidationException;
 import com.example.instructorservice.repository.*;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -34,17 +37,29 @@ public class ModuleService {
 
     @Value("${cloudinary.folder:cyberlearnix}")
     private String folder;
-    @Transactional
-    public ModuleResponse addModule(UUID instructorId, UUID courseId, ModuleRequest request) {
-        Instructor instructor = instructorRepository.findById(instructorId)
-                .orElseThrow(() -> new RuntimeException("Instructor not found"));
 
-        Course course = courseRepository.findById(Long.valueOf(courseId.toString()))
-                .orElseThrow(() -> new RuntimeException("Course not found"));
+    private Instructor findInstructorByIdOrUserId(UUID idOrUserId) {
+        return instructorRepository.findById(idOrUserId)
+                .or(() -> instructorRepository.findByUserId(idOrUserId))
+                .orElseThrow(() -> new NotFoundException("Instructor not found with id: " + idOrUserId));
+    }
 
-        if (!course.getInstructor().getId().equals(instructor.getId())) {
-            throw new RuntimeException("Instructor does not own this course");
+    private void validateCourseOwnership(Course course, Instructor instructor) {
+        boolean owns = (course.getInstructor().getId() != null && course.getInstructor().getId().equals(instructor.getId()))
+                || (course.getInstructor().getUserId() != null && course.getInstructor().getUserId().equals(instructor.getUserId()));
+        if (!owns) {
+            throw new ForbiddenException("Instructor does not own this course");
         }
+    }
+
+    @Transactional
+    public ModuleResponse addModule(UUID instructorId, Long courseId, ModuleRequest request) {
+        Instructor instructor = findInstructorByIdOrUserId(instructorId);
+
+        Course course = courseRepository.findById(courseId)
+                .orElseThrow(() -> new NotFoundException("Course not found with id: " + courseId));
+
+        validateCourseOwnership(course, instructor);
 
         LocalDateTime now = LocalDateTime.now();
 
@@ -55,6 +70,10 @@ public class ModuleService {
         module.setTitle(request.getTitle());
         module.setDescription(request.getDescription());
         module.setCourse(course);
+        module.setOrderNumber(moduleOrder);
+        module.setStatus("ACTIVE");
+        module.setCreatedAt(now);
+        module.setUpdatedAt(now);
 
         Module savedModule = moduleRepository.save(module);
 
@@ -62,21 +81,21 @@ public class ModuleService {
                 .moduleId(savedModule.getId())
                 .moduleTitle(savedModule.getTitle())
                 .moduleDescription(savedModule.getDescription())
-                .moduleStatus("ACTIVE")
-                .moduleOrder(moduleOrder)
-                .moduleCreatedAt(now)
-                .moduleUpdatedAt(now)
+                .moduleStatus(savedModule.getStatus())
+                .moduleOrder(savedModule.getOrderNumber())
+                .moduleCreatedAt(savedModule.getCreatedAt())
+                .moduleUpdatedAt(savedModule.getUpdatedAt())
 
                 .courseId(course.getId())
                 .courseTitle(course.getTitle())
-                .courseDescription(course.getTitle() + " Description")
-                .courseStatus("PUBLISHED")
-                .courseCreatedAt(course.getCreatedAt()) // if available
+                .courseDescription(course.getDescription())
+                .courseStatus(course.getStatus() != null ? course.getStatus().name() : "DRAFT")
+                .courseCreatedAt(course.getCreatedAt())
                 .totalModules(moduleOrder)
 
                 .instructorId(instructor.getId())
                 .instructorName(instructor.getName())
-                .instructorEmail(instructor.getEmail()) // fetch real email
+                .instructorEmail(instructor.getEmail())
 
                 .status("success")
                 .message("Module added successfully")
@@ -86,28 +105,29 @@ public class ModuleService {
     }
 
     @Transactional
-    public ModuleResponse updateModule(UUID instructorId, UUID courseId, UUID moduleId, ModuleRequest request) {
+    public ModuleResponse updateModule(UUID instructorId, Long courseId, UUID moduleId, ModuleRequest request) {
 
-        Instructor instructor = instructorRepository.findById(instructorId)
-                .orElseThrow(() -> new RuntimeException("Instructor not found"));
+        Instructor instructor = findInstructorByIdOrUserId(instructorId);
 
-        Course course = courseRepository.findById(Long.valueOf(courseId.toString()))
-                .orElseThrow(() -> new RuntimeException("Course not found"));
+        Course course = courseRepository.findById(courseId)
+                .orElseThrow(() -> new NotFoundException("Course not found with id: " + courseId));
 
-        if (!course.getInstructor().getId().equals(instructor.getId())) {
-            throw new RuntimeException("Instructor does not own this course");
-        }
+        validateCourseOwnership(course, instructor);
 
         Module module = moduleRepository.findById(moduleId)
-                .orElseThrow(() -> new RuntimeException("Module not found"));
+                .orElseThrow(() -> new NotFoundException("Module not found with id: " + moduleId));
 
         if (!module.getCourse().getId().equals(courseId)) {
-            throw new RuntimeException("Module does not belong to this course");
+            throw new ValidationException("Module does not belong to this course");
         }
 
-        // Update fields
-        module.setTitle(request.getTitle());
-        module.setDescription(request.getDescription());
+        // Update only non-null fields
+        if (request.getTitle() != null) {
+            module.setTitle(request.getTitle());
+        }
+        if (request.getDescription() != null) {
+            module.setDescription(request.getDescription());
+        }
         module.setUpdatedAt(LocalDateTime.now());
 
         Module updatedModule = moduleRepository.save(module);
@@ -127,8 +147,8 @@ public class ModuleService {
                 // Course Info
                 .courseId(course.getId())
                 .courseTitle(course.getTitle())
-                .courseDescription(course.getTitle() + " Description")
-                .courseStatus("PUBLISHED")
+                .courseDescription(course.getDescription())
+                .courseStatus(course.getStatus() != null ? course.getStatus().name() : "DRAFT")
                 .courseCreatedAt(course.getCreatedAt())
                 .totalModules(moduleRepository.findByCourseId(course.getId()).size())
 
@@ -146,23 +166,20 @@ public class ModuleService {
     }
 
     @Transactional
-    public ModuleResponse deleteModule(UUID instructorId, UUID courseId, UUID moduleId) {
+    public ModuleResponse deleteModule(UUID instructorId, Long courseId, UUID moduleId) {
 
-        Instructor instructor = instructorRepository.findById(instructorId)
-                .orElseThrow(() -> new RuntimeException("Instructor not found"));
+        Instructor instructor = findInstructorByIdOrUserId(instructorId);
 
-        Course course = courseRepository.findById(Long.valueOf(courseId.toString()))
-                .orElseThrow(() -> new RuntimeException("Course not found"));
+        Course course = courseRepository.findById(courseId)
+                .orElseThrow(() -> new NotFoundException("Course not found with id: " + courseId));
 
-        if (!course.getInstructor().getId().equals(instructor.getId())) {
-            throw new RuntimeException("Instructor does not own this course");
-        }
+        validateCourseOwnership(course, instructor);
 
         Module module = moduleRepository.findById(moduleId)
-                .orElseThrow(() -> new RuntimeException("Module not found"));
+                .orElseThrow(() -> new NotFoundException("Module not found with id: " + moduleId));
 
         if (!module.getCourse().getId().equals(courseId)) {
-            throw new RuntimeException("Module does not belong to this course");
+            throw new ValidationException("Module does not belong to this course");
         }
 
         // Capture data BEFORE delete (for response)
@@ -190,8 +207,8 @@ public class ModuleService {
                 // Course Info
                 .courseId(course.getId())
                 .courseTitle(course.getTitle())
-                .courseDescription(course.getTitle() + " Description")
-                .courseStatus("PUBLISHED")
+                .courseDescription(course.getDescription())
+                .courseStatus(course.getStatus() != null ? course.getStatus().name() : "DRAFT")
                 .courseCreatedAt(course.getCreatedAt())
                 .totalModules(moduleRepository.findByCourseId(course.getId()).size()) // updated count
 
@@ -211,23 +228,20 @@ public class ModuleService {
     @Transactional
     public ResourceResponse uploadResource(
             UUID instructorId,
-            UUID courseId,
+            Long courseId,
             MultipartFile file,
             String type
     ) {
 
-        Instructor instructor = instructorRepository.findById(instructorId)
-                .orElseThrow(() -> new RuntimeException("Instructor not found"));
+        Instructor instructor = findInstructorByIdOrUserId(instructorId);
 
-        Course course = courseRepository.findById(Long.valueOf(courseId.toString()))
-                .orElseThrow(() -> new RuntimeException("Course not found"));
+        Course course = courseRepository.findById(courseId)
+                .orElseThrow(() -> new NotFoundException("Course not found with id: " + courseId));
 
-        if (!course.getInstructor().getId().equals(instructor.getId())) {
-            throw new RuntimeException("Instructor does not own this course");
-        }
+        validateCourseOwnership(course, instructor);
 
         if (file.isEmpty()) {
-            throw new RuntimeException("File is empty");
+            throw new ValidationException("File is empty");
         }
 
         String fileName = file.getOriginalFilename();

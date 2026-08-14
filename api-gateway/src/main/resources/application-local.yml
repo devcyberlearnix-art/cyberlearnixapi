@@ -252,6 +252,22 @@ spring:
 
 
 
+        - id: courseservice-upload
+
+
+
+          uri: http://localhost:8083
+
+
+
+          predicates:
+
+
+
+            - Path=/api/v1/upload/**
+
+
+
         - id: courseservice-api-courses
 
 

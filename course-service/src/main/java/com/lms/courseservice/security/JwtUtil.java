@@ -16,6 +16,14 @@ public class JwtUtil {
         this.sharedJwtValidator = sharedJwtValidator;
     }
 
+    public String generateToken(UUID userId, String role) {
+        return sharedJwtValidator.generateToken(userId != null ? userId.toString() : null, role);
+    }
+
+    public String generateToken(String userId, String role) {
+        return sharedJwtValidator.generateToken(userId, role);
+    }
+
     public String extractUsername(String token) {
         return sharedJwtValidator.extractUserId(cleanToken(token));
     }
@@ -44,6 +52,10 @@ public class JwtUtil {
             return "STUDENT";
         }
         String upper = role.toUpperCase();
+        if (upper.startsWith("ROLE_")) {
+            upper = upper.substring(5);
+        }
+        
         if ("USER".equals(upper) || "STUDENT".equals(upper)) {
             return "STUDENT";
         }
@@ -52,6 +64,12 @@ public class JwtUtil {
         }
         if (upper.contains("SUB_ADMIN")) {
             return "SUB_ADMIN";
+        }
+        if (upper.contains("INSTRUCTOR")) {
+            return "INSTRUCTOR";
+        }
+        if (upper.contains("ADMIN")) {
+            return "MAIN_ADMIN"; // Fallback for general ADMIN
         }
         return upper;
     }
