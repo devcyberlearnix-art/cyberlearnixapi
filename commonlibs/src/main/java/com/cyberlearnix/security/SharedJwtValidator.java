@@ -10,11 +10,12 @@ import lombok.extern.slf4j.Slf4j;
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
+import java.util.UUID;
 
 /**
  * Shared JWT Validator for all microservices.
  * This class provides unified JWT validation logic across the entire system.
- * Only the User Service should generate JWTs; all other services should only validate them.
+ * User Service generates JWTs in production; other services use validation or test token generation.
  */
 @Slf4j
 public class SharedJwtValidator {
@@ -27,6 +28,32 @@ public class SharedJwtValidator {
         this.secretKey = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
         this.issuer = issuer;
         this.audience = audience;
+    }
+
+    /**
+     * Generate a signed JWT token with the configured secret, issuer, and audience.
+     * 
+     * @param subject User ID or subject
+     * @param role Role (STUDENT, INSTRUCTOR, MAIN_ADMIN, SUB_ADMIN, etc.)
+     * @return Signed JWT token string
+     */
+    public String generateToken(String subject, String role) {
+        var builder = Jwts.builder()
+                .setId(UUID.randomUUID().toString())
+                .setSubject(subject)
+                .claim("role", role)
+                .setIssuedAt(new Date())
+                .setExpiration(new Date(System.currentTimeMillis() + 86400000L));
+
+        if (issuer != null && !issuer.isBlank()) {
+            builder.setIssuer(issuer);
+        }
+
+        if (audience != null && !audience.isBlank()) {
+            builder.setAudience(audience);
+        }
+
+        return builder.signWith(secretKey).compact();
     }
 
     /**

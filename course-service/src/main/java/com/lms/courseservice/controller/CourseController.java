@@ -1,16 +1,16 @@
 package com.lms.courseservice.controller;
 
 import com.lms.courseservice.dto.ApiResponse;
-<<<<<<< HEAD
+
 import com.lms.courseservice.dto.CourseInfo;
 import com.lms.courseservice.dto.DeleteCourseResponse;
 import com.lms.courseservice.dto.EnrollCourseResponse;
 import com.lms.courseservice.dto.EnrollmentInfo;
 import com.lms.courseservice.dto.EnrolledStudentInfo;
 import com.lms.courseservice.dto.EnrolledStudentsResponse;
-=======
+
 import com.lms.courseservice.dto.FeaturedCourseResponse;
->>>>>>> 093678e3d6b6c36a88d77d92909adc3820bc6f00
+
 import com.lms.courseservice.entity.Course;
 import com.lms.courseservice.security.JwtUtil;
 import com.lms.courseservice.service.CourseService;

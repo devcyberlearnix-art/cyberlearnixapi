@@ -35,7 +35,7 @@ class WishlistServiceTest {
     void addToWishlist_shouldRejectUnknownCourse() {
         Request request = Request.create(Request.HttpMethod.GET, "/courses/999", Collections.emptyMap(), null,
                 StandardCharsets.UTF_8);
-        when(courseClient.getCourseById("999"))
+        when(courseClient.getCourseById(999L))
                 .thenThrow(new FeignException.NotFound("not found", request, null, null));
 
         WishlistException exception = assertThrows(WishlistException.class,

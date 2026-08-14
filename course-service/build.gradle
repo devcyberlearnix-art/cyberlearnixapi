@@ -41,6 +41,9 @@ dependencies {
     // SpringDoc OpenAPI
     implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.3.0'
 
+    // Cloudinary for video/media uploads
+    implementation 'com.cloudinary:cloudinary-http44:1.36.0'
+
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
 }
 

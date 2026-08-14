@@ -32,12 +32,11 @@ public class CourseService {
     private final LectureRepository lectureRepository;
     private final CourseRepository courseRepository;
     private final EnrollmentRepository enrollmentRepository;
-<<<<<<< HEAD
+
     private final CoursePreviewRepository coursePreviewRepository;
     private final SectionRepository sectionRepository;
-=======
+
     private final ReviewRatingClient reviewRatingClient;
->>>>>>> 093678e3d6b6c36a88d77d92909adc3820bc6f00
 
     public Course createCourse(Course course) {
         if (course.getStatus() == null || course.getStatus().isBlank()) {
@@ -255,8 +254,8 @@ public class CourseService {
                 .stream()
                 .map(e -> new com.lms.courseservice.dto.EnrolledStudentInfo(
                         e.getStudentId(),
-                        e.getStudentName(),
-                        e.getEnrolledAt(),
+                        e.getStudentName() != null ? e.getStudentName() : (e.getStudentId() != null ? "Student " + e.getStudentId().toString().substring(0, 8) : "Student"),
+                        e.getEnrolledAt() != null ? e.getEnrolledAt() : java.time.LocalDateTime.now(),
                         e.getStatus() != null ? e.getStatus() : "Active",
                         e.getProgress() != null ? e.getProgress() : 0.0
                 ))

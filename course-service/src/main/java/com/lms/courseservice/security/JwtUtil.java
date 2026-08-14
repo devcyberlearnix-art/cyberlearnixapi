@@ -16,6 +16,14 @@ public class JwtUtil {
         this.sharedJwtValidator = sharedJwtValidator;
     }
 
+    public String generateToken(UUID userId, String role) {
+        return sharedJwtValidator.generateToken(userId != null ? userId.toString() : null, role);
+    }
+
+    public String generateToken(String userId, String role) {
+        return sharedJwtValidator.generateToken(userId, role);
+    }
+
     public String extractUsername(String token) {
         return sharedJwtValidator.extractUserId(cleanToken(token));
     }

@@ -116,17 +116,17 @@ public class CourseController {
         );
     }
     @GetMapping("/{id}/courses/{courseId}/students")
-    public ResponseEntity<ApiResponse<StudentResponseDTO>> getEnrolledStudents(
+    public ResponseEntity<ApiResponse<List<StudentResponseDTO.StudentData>>> getEnrolledStudents(
             @PathVariable("id") UUID instructorId,
             @PathVariable Long courseId
     ) {
         StudentResponseDTO response = courseService.getEnrolledStudents(instructorId, courseId);
 
         return ResponseEntity.ok(
-                ApiResponse.<StudentResponseDTO>builder()
+                ApiResponse.<List<StudentResponseDTO.StudentData>>builder()
                         .success(true)
                         .message("Enrolled students fetched successfully")
-                        .data(response)
+                        .data(response.getData())
                         .timestamp(LocalDateTime.now())
                         .build()
         );
@@ -161,6 +161,23 @@ public class CourseController {
                         .success(true)
                         .message("Grade assigned/updated successfully")
                         .data(gradeResponse)
+                        .timestamp(LocalDateTime.now())
+                        .build()
+        );
+    }
+
+    @GetMapping("/{id}/courses/{courseId}/grades")
+    public ResponseEntity<ApiResponse<List<GradeResponseDTO>>> getGradesByCourse(
+            @PathVariable("id") UUID instructorId,
+            @PathVariable Long courseId
+    ) {
+        List<GradeResponseDTO> gradeResponses = courseService.getGradesByCourse(instructorId, courseId);
+
+        return ResponseEntity.ok(
+                ApiResponse.<List<GradeResponseDTO>>builder()
+                        .success(true)
+                        .message("Course grades fetched successfully")
+                        .data(gradeResponses)
                         .timestamp(LocalDateTime.now())
                         .build()
         );

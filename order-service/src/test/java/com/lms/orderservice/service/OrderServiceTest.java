@@ -37,12 +37,11 @@ class OrderServiceTest {
     @Test
     void createOrder_shouldRejectUnknownCourseIds() {
         CreateOrderRequest request = new CreateOrderRequest();
-        request.setUserId("user-1");
-        request.setCourseIds(List.of("999"));
+        request.setCourseIds(List.of(999L));
 
-        when(cartClient.getCart("user-1")).thenThrow(new RuntimeException("cart unavailable"));
+        when(cartClient.getCart("user-1")).thenReturn(null);
 
-        RuntimeException exception = assertThrows(RuntimeException.class, () -> service.createOrder(request));
+        RuntimeException exception = assertThrows(RuntimeException.class, () -> service.createOrder("user-1", request));
         assert exception.getMessage().contains("Course not found");
     }
 }
