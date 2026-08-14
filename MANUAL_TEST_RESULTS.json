@@ -1,0 +1,194 @@
+﻿[
+    {
+        "Service":  "user-service",
+        "Method":  "POST",
+        "Response":  "{\"message\":\"JSON parse error: Cannot construct instance of `com.user.register.dto.RegisterRequest` (although at least one Creator exists): no String-argument constructor/factory method to deserialize from String value (\u0027System.Collections.Hashtable\u0027)\",\"success\":false,\"timestamp\":\"2026-08-10T22:04:55.593321816\"}",
+        "HttpStatus":  500,
+        "Endpoint":  "/api/v1/auth/register",
+        "Status":  "FAIL"
+    },
+    {
+        "Service":  "user-service",
+        "Method":  "POST",
+        "Response":  "{\"message\":\"JSON parse error: Cannot construct instance of `com.user.register.dto.unified.RequestOtpRequest` (although at least one Creator exists): no String-argument constructor/factory method to deserialize from String value (\u0027System.Collections.Hashtable\u0027)\",\"success\":false,\"timestamp\":\"2026-08-10T22:04:55.626733899\"}",
+        "HttpStatus":  500,
+        "Endpoint":  "/api/v1/auth/login/otp/request",
+        "Status":  "FAIL"
+    },
+    {
+        "Service":  "user-service",
+        "Method":  "POST",
+        "Response":  "{\"message\":\"JSON parse error: Cannot construct instance of `com.user.register.dto.unified.ForgotPasswordRequest` (although at least one Creator exists): no String-argument constructor/factory method to deserialize from String value (\u0027System.Collections.Hashtable\u0027)\",\"success\":false,\"timestamp\":\"2026-08-10T22:04:55.640857024\"}",
+        "HttpStatus":  500,
+        "Endpoint":  "/api/v1/auth/password/forgot",
+        "Status":  "FAIL"
+    },
+    {
+        "Service":  "course-service",
+        "Method":  "GET",
+        "Response":  "[]",
+        "HttpStatus":  200,
+        "Endpoint":  "/api/v1/courses",
+        "Status":  "PASS"
+    },
+    {
+        "Service":  "course-service",
+        "Method":  "GET",
+        "Response":  "{\"success\":false,\"message\":\"Method parameter \u0027id\u0027: Failed to convert value of type \u0027java.lang.String\u0027 to required type \u0027java.lang.Long\u0027; For input string: \\\"123e4567-e89b-12d3-a456-426614174000\\\"\",\"timestamp\":\"2026-08-10T16:34:55.688809720Z\"}",
+        "HttpStatus":  400,
+        "Endpoint":  "/api/v1/courses/123e4567-e89b-12d3-a456-426614174000",
+        "Status":  "FAIL"
+    },
+    {
+        "Service":  "course-service",
+        "Method":  "GET",
+        "Response":  "{\"success\":false,\"message\":\"Method parameter \u0027courseId\u0027: Failed to convert value of type \u0027java.lang.String\u0027 to required type \u0027java.lang.Long\u0027; For input string: \\\"123e4567-e89b-12d3-a456-426614174000\\\"\",\"timestamp\":\"2026-08-10T16:34:55.703531104Z\"}",
+        "HttpStatus":  400,
+        "Endpoint":  "/api/v1/courses/123e4567-e89b-12d3-a456-426614174000/sections",
+        "Status":  "FAIL"
+    },
+    {
+        "Service":  "coupon-service",
+        "Method":  "GET",
+        "Response":  "",
+        "HttpStatus":  401,
+        "Endpoint":  "/api/v1/coupons",
+        "Status":  "FAIL"
+    },
+    {
+        "Service":  "coupon-service",
+        "Method":  "GET",
+        "Response":  "",
+        "HttpStatus":  401,
+        "Endpoint":  "/api/v1/coupons/validate/TEST123",
+        "Status":  "FAIL"
+    },
+    {
+        "Service":  "coupon-service",
+        "Method":  "GET",
+        "Response":  "",
+        "HttpStatus":  401,
+        "Endpoint":  "/api/v1/coupons/campaigns",
+        "Status":  "FAIL"
+    },
+    {
+        "Service":  "notification-service",
+        "Method":  "GET",
+        "Response":  "",
+        "HttpStatus":  404,
+        "Endpoint":  "/api/v1/system/health",
+        "Status":  "FAIL"
+    },
+    {
+        "Service":  "notification-service",
+        "Method":  "GET",
+        "Response":  "",
+        "HttpStatus":  401,
+        "Endpoint":  "/api/v1/notifications",
+        "Status":  "FAIL"
+    },
+    {
+        "Service":  "notification-service",
+        "Method":  "GET",
+        "Response":  "",
+        "HttpStatus":  404,
+        "Endpoint":  "/api/v1/templates",
+        "Status":  "FAIL"
+    },
+    {
+        "Service":  "notification-service",
+        "Method":  "GET",
+        "Response":  "",
+        "HttpStatus":  404,
+        "Endpoint":  "/api/v1/preferences",
+        "Status":  "FAIL"
+    },
+    {
+        "Service":  "order-service",
+        "Method":  "GET",
+        "Response":  "{\"timestamp\":\"2026-08-10T16:34:56.570+00:00\",\"status\":403,\"error\":\"Forbidden\",\"path\":\"/api/v1/orders\"}",
+        "HttpStatus":  403,
+        "Endpoint":  "/api/v1/orders",
+        "Status":  "FAIL"
+    },
+    {
+        "Service":  "order-service",
+        "Method":  "GET",
+        "Response":  "{\"timestamp\":\"2026-08-10T16:34:56.757+00:00\",\"status\":403,\"error\":\"Forbidden\",\"path\":\"/api/v1/orders/123\"}",
+        "HttpStatus":  403,
+        "Endpoint":  "/api/v1/orders/123",
+        "Status":  "FAIL"
+    },
+    {
+        "Service":  "payment-service",
+        "Method":  "GET",
+        "Response":  "",
+        "HttpStatus":  401,
+        "Endpoint":  "/api/v1/payments",
+        "Status":  "FAIL"
+    },
+    {
+        "Service":  "payment-service",
+        "Method":  "GET",
+        "Response":  "",
+        "HttpStatus":  404,
+        "Endpoint":  "/api/v1/test/courses",
+        "Status":  "FAIL"
+    },
+    {
+        "Service":  "user-service",
+        "Method":  "GET",
+        "Response":  "",
+        "HttpStatus":  401,
+        "Endpoint":  "/api/v1/users/me",
+        "Status":  "FAIL"
+    },
+    {
+        "Service":  "cart-service",
+        "Method":  "GET",
+        "Response":  "",
+        "HttpStatus":  401,
+        "Endpoint":  "/api/v1/cart",
+        "Status":  "FAIL"
+    },
+    {
+        "Service":  "wishlist-service",
+        "Method":  "GET",
+        "Response":  "",
+        "HttpStatus":  401,
+        "Endpoint":  "/api/v1/wishlist",
+        "Status":  "FAIL"
+    },
+    {
+        "Service":  "user-service",
+        "Method":  "GET",
+        "Response":  "",
+        "HttpStatus":  401,
+        "Endpoint":  "/api/v1/users",
+        "Status":  "FAIL"
+    },
+    {
+        "Service":  "admin-service",
+        "Method":  "GET",
+        "Response":  "",
+        "HttpStatus":  401,
+        "Endpoint":  "/api/v1/admin/courses",
+        "Status":  "FAIL"
+    },
+    {
+        "Service":  "user-service",
+        "Method":  "GET",
+        "Response":  "",
+        "HttpStatus":  401,
+        "Endpoint":  "/api/v1/admin/instructors",
+        "Status":  "FAIL"
+    },
+    {
+        "Service":  "course-service",
+        "Method":  "POST",
+        "Response":  "",
+        "HttpStatus":  403,
+        "Endpoint":  "/api/v1/courses",
+        "Status":  "FAIL"
+    }
+]

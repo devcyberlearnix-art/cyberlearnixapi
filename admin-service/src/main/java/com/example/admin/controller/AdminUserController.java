@@ -22,9 +22,11 @@ public class AdminUserController {
     private final AdminUserService adminUserService;
 
     @GetMapping("/users")
-    public ResponseEntity<AdminUsersResponse> getAllUsers() {
+    public ResponseEntity<AdminUsersResponse> getAllUsers(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
         try {
-            AdminUsersResponse response = adminUserService.getAllUsers();
+            AdminUsersResponse response = adminUserService.getAllUsers(page, size);
             return ResponseEntity.status(response.isSuccess() ? 200 : 400).body(response);
         } catch (Exception e) {
             System.err.println("Error in getAllUsers: " + e.getMessage());
@@ -82,9 +84,10 @@ public class AdminUserController {
                 .body(response);
     }
     @GetMapping("/instructors")
-    public ResponseEntity<AdminUsersResponse> getAllInstructors() {
+    public ResponseEntity<AdminUsersResponse> getAllInstructors(
+            @RequestHeader("Authorization") String authorization) {
 
-        AdminUsersResponse response = adminUserService.getAllInstructors();
+        AdminUsersResponse response = adminUserService.getAllInstructors(authorization);
 
         return ResponseEntity
                 .status(response.isSuccess() ? 200 : 400)
@@ -92,8 +95,9 @@ public class AdminUserController {
     }
 
     @GetMapping("/instructors/applications")
-    public ResponseEntity<AdminInstructorApplicationsResponse> getAllInstructorApplicationsDetailed() {
-        AdminInstructorApplicationsResponse response = adminUserService.getAllInstructorApplicationsDetailed();
+    public ResponseEntity<AdminInstructorApplicationsResponse> getAllInstructorApplicationsDetailed(
+            @RequestHeader("Authorization") String authorization) {
+        AdminInstructorApplicationsResponse response = adminUserService.getAllInstructorApplicationsDetailed(authorization);
         return ResponseEntity
                 .status(response.isSuccess() ? 200 : 500)
                 .body(response);

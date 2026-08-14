@@ -19,5 +19,6 @@ public class ForgotPasswordResponse {
         private int validForMinutes;
         private String expiresAt;
         private int cooldownSeconds;
+        private String otpSessionId;
     }
 }

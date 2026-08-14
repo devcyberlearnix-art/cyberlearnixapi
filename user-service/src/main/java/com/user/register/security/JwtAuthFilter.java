@@ -44,6 +44,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         // - /switch-role (needs auth)
         // - /sessions (needs auth — list/logout sessions)
         if (path.equals("/api/v1/auth/register") ||
+            path.equals("/api/v1/auth/register/resend-otp") ||
                 path.equals("/api/v1/auth/verify-email") ||
                 path.equals("/api/v1/auth/login") ||
                 path.equals("/api/v1/auth/login/password") ||

@@ -1,6 +1,7 @@
 package com.lms.orderservice.controller;
 
 import com.lms.orderservice.dto.CreateOrderRequest;
+import com.lms.orderservice.dto.ApiResponse;
 import com.lms.orderservice.service.OrderService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -19,41 +20,50 @@ public class OrderController {
 
         String userId = authentication.getName();
 
-        return ResponseEntity.ok(orderService.createOrder(userId, request));
+        return ResponseEntity.ok(ApiResponse.success(
+            "Order created successfully", orderService.createOrder(userId, request)));
     }
 
     @GetMapping("/{orderId}")
-    public ResponseEntity<?> getOrder(@PathVariable String orderId) {
-        return ResponseEntity.ok(orderService.getOrder(orderId));
+    public ResponseEntity<?> getOrder(Authentication authentication, @PathVariable String orderId) {
+        return ResponseEntity.ok(ApiResponse.success(
+            "Order retrieved successfully", orderService.getOrderForUser(orderId, authentication.getName())));
     }
 
     @GetMapping
-    public ResponseEntity<?> getAllOrders() {
-        return ResponseEntity.ok(orderService.getAllOrders());
+    public ResponseEntity<?> getAllOrders(Authentication authentication) {
+        return ResponseEntity.ok(ApiResponse.success(
+            "Orders retrieved successfully", orderService.getOrdersByUser(authentication.getName())));
+    }
+
+    @GetMapping("/admin")
+    public ResponseEntity<?> getAllOrdersForAdmin() {
+        return ResponseEntity.ok(ApiResponse.success(
+                "Orders retrieved successfully", orderService.getAllOrders()));
     }
 
     @GetMapping("/user/{userId}")
     public ResponseEntity<?> getUserOrders(@PathVariable String userId) {
-        return ResponseEntity.ok(orderService.getOrdersByUser(userId));
+        return ResponseEntity.ok(ApiResponse.success(
+            "Orders retrieved successfully", orderService.getOrdersByUser(userId)));
     }
 
     @PutMapping("/{orderId}/status")
     public ResponseEntity<?> updateStatus(@PathVariable String orderId,
                                           @RequestParam String status) {
-        return ResponseEntity.ok(orderService.updateStatus(orderId, status));
+        return ResponseEntity.ok(ApiResponse.success(
+            "Order status updated successfully", orderService.updateStatus(orderId, status)));
     }
 
     @DeleteMapping("/{orderId}/cancel")
-    public ResponseEntity<?> cancelOrder(@PathVariable String orderId) {
-        return ResponseEntity.ok(orderService.cancelOrder(orderId));
+    public ResponseEntity<?> cancelOrder(Authentication authentication, @PathVariable String orderId) {
+        return ResponseEntity.ok(ApiResponse.success(
+            "Order cancelled successfully", orderService.cancelOrder(orderId, authentication.getName())));
     }
 
     @PostMapping("/{orderId}/refund")
-    public ResponseEntity<?> refund(@PathVariable String orderId) {
-        try {
-            return ResponseEntity.ok(orderService.refundOrder(orderId));
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
+    public ResponseEntity<?> refund(Authentication authentication, @PathVariable String orderId) {
+        return ResponseEntity.ok(ApiResponse.success(
+            "Refund processed successfully", orderService.refundOrder(orderId, authentication.getName())));
     }
 }

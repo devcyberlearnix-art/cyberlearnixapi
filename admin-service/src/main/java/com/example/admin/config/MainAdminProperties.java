@@ -9,7 +9,7 @@ import org.springframework.stereotype.Component;
 @ConfigurationProperties(prefix = "main.admin")
 public class MainAdminProperties {
 
-    private String email = "mainadmin@cyberlearnix.com";
+    private String email = "admin@merqora.com";
     private String password = "MainAdmin@123";
     private String firstName = "Main";
     private String lastName = "Admin";

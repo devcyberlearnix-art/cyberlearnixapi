@@ -34,9 +34,12 @@ public class AdminUserService {
 
 
 
-    public AdminUsersResponse getAllUsers() {
+    public AdminUsersResponse getAllUsers(int page, int size) {
 
-        List<AdminUserServiceClient.UserDTO> users = userClient.getAllUsers();
+        Map<String, Object> usersData = userClient.getAllUsers(page, size);
+
+        @SuppressWarnings("unchecked")
+        List<AdminUserServiceClient.UserDTO> users = (List<AdminUserServiceClient.UserDTO>) usersData.get("users");
 
         List<AdminUsersResponse.UserInfo> userList = users.stream()
 
@@ -54,7 +57,7 @@ public class AdminUserService {
 
                 .toList();
 
-
+        int totalUsers = (int) usersData.getOrDefault("totalUsers", 0);
 
         return AdminUsersResponse.builder()
 
@@ -66,7 +69,7 @@ public class AdminUserService {
 
                 .data(AdminUsersResponse.DataInfo.builder()
 
-                        .totalUsers(userList.size())
+                        .totalUsers(totalUsers)
 
                         .users(userList)
 
@@ -192,9 +195,9 @@ public class AdminUserService {
 
     }
 
-    public AdminUsersResponse getAllInstructors() {
+        public AdminUsersResponse getAllInstructors(String authorization) {
 
-        List<AdminUserServiceClient.UserDTO> instructors = userClient.getAllInstructors();
+                List<AdminUserServiceClient.UserDTO> instructors = userClient.getAllInstructors(authorization);
 
         
 
@@ -264,9 +267,9 @@ public class AdminUserService {
 
 
 
-    public AdminInstructorApplicationsResponse getAllInstructorApplicationsDetailed() {
+        public AdminInstructorApplicationsResponse getAllInstructorApplicationsDetailed(String authorization) {
 
-        List<AdminUserServiceClient.InstructorApplicationDTO> applications = userClient.getAllInstructorApplications();
+                List<AdminUserServiceClient.InstructorApplicationDTO> applications = userClient.getAllInstructorApplications(authorization);
 
         
 

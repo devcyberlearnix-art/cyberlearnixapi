@@ -60,18 +60,11 @@ public class JwtAuthFilter implements Filter {
 
         String method = req.getMethod();
 
-
-
         // Skip authentication for permitAll endpoints
 
         boolean isPermitAll = isPermitAllEndpoint(requestURI, method);
 
-
-
-        if ("/admin/register".equals(requestURI) && "POST".equalsIgnoreCase(method)) {
-            // Allow public registration for main admin bootstrap
-            // Authentication will be validated by AdminPermissionService
-        } else if (!isPermitAll) {
+        if (!isPermitAll) {
 
             authenticateBearer(req);
 
@@ -87,15 +80,16 @@ public class JwtAuthFilter implements Filter {
 
     private boolean isPermitAllEndpoint(String requestURI, String method) {
 
-        // Admin user management endpoints (allow internal service calls without admin JWT)
-
-        if (requestURI.equals("/api/v1/admin/users") && "GET".equalsIgnoreCase(method)) {
-
+        // Password recovery endpoints (public - no auth required)
+        if (requestURI.equals("/api/v1/admin/password/forgot") && "POST".equalsIgnoreCase(method)) {
             return true;
-
         }
-
-
+        if (requestURI.equals("/api/v1/admin/password/verify-otp") && "POST".equalsIgnoreCase(method)) {
+            return true;
+        }
+        if (requestURI.equals("/api/v1/admin/password/reset") && "POST".equalsIgnoreCase(method)) {
+            return true;
+        }
 
         // Course endpoints (public/internal)
 
@@ -107,7 +101,7 @@ public class JwtAuthFilter implements Filter {
 
 
 
-        if (requestURI.matches("/admin/courses/\\d+") && "GET".equalsIgnoreCase(method)) {
+        if (requestURI.matches("/api/v1/admin/courses/\\d+") && "GET".equalsIgnoreCase(method)) {
 
             return true;
 
@@ -115,7 +109,7 @@ public class JwtAuthFilter implements Filter {
 
 
 
-        if (requestURI.matches("/admin/courses/\\d+/approve") && "PUT".equalsIgnoreCase(method)) {
+        if (requestURI.matches("/api/v1/admin/courses/\\d+/approve") && "PUT".equalsIgnoreCase(method)) {
 
             return true;
 
@@ -123,7 +117,7 @@ public class JwtAuthFilter implements Filter {
 
 
 
-        if (requestURI.matches("/admin/courses/\\d+/reject") && "PUT".equalsIgnoreCase(method)) {
+        if (requestURI.matches("/api/v1/admin/courses/\\d+/reject") && "PUT".equalsIgnoreCase(method)) {
 
             return true;
 
@@ -131,7 +125,7 @@ public class JwtAuthFilter implements Filter {
 
 
 
-        if (requestURI.matches("/admin/courses/\\d+") && "DELETE".equalsIgnoreCase(method)) {
+        if (requestURI.matches("/api/v1/admin/courses/\\d+") && "DELETE".equalsIgnoreCase(method)) {
 
             return true;
 
@@ -139,7 +133,7 @@ public class JwtAuthFilter implements Filter {
 
 
 
-        if (requestURI.matches("/admin/instructors/\\d+/courses") && "GET".equalsIgnoreCase(method)) {
+        if (requestURI.matches("/api/v1/admin/instructors/\\d+/courses") && "GET".equalsIgnoreCase(method)) {
 
             return true;
 
@@ -151,37 +145,37 @@ public class JwtAuthFilter implements Filter {
 
         // admin JWT)
 
-        if (requestURI.matches("/admin/courses/\\d+/sections") && "POST".equalsIgnoreCase(method)) {
+        if (requestURI.matches("/api/v1/admin/courses/\\d+/sections") && "POST".equalsIgnoreCase(method)) {
 
             return true;
 
         }
 
-        if (requestURI.matches("/admin/sections/\\d+/lectures") && "POST".equalsIgnoreCase(method)) {
+        if (requestURI.matches("/api/v1/admin/sections/\\d+/lectures") && "POST".equalsIgnoreCase(method)) {
 
             return true;
 
         }
 
-        if (requestURI.matches("/admin/sections/\\d+/lectures/\\d+/approve") && "PUT".equalsIgnoreCase(method)) {
+        if (requestURI.matches("/api/v1/admin/sections/\\d+/lectures/\\d+/approve") && "PUT".equalsIgnoreCase(method)) {
 
             return true;
 
         }
 
-        if (requestURI.matches("/admin/sections/\\d+/lectures/\\d+/reject") && "PUT".equalsIgnoreCase(method)) {
+        if (requestURI.matches("/api/v1/admin/sections/\\d+/lectures/\\d+/reject") && "PUT".equalsIgnoreCase(method)) {
 
             return true;
 
         }
 
-        if (requestURI.matches("/admin/sections/\\d+") && "DELETE".equalsIgnoreCase(method)) {
+        if (requestURI.matches("/api/v1/admin/sections/\\d+") && "DELETE".equalsIgnoreCase(method)) {
 
             return true;
 
         }
 
-        if (requestURI.matches("/admin/sections/\\d+/lectures/\\d+") && "DELETE".equalsIgnoreCase(method)) {
+        if (requestURI.matches("/api/v1/admin/sections/\\d+/lectures/\\d+") && "DELETE".equalsIgnoreCase(method)) {
 
             return true;
 
@@ -191,19 +185,13 @@ public class JwtAuthFilter implements Filter {
 
         // Admin API endpoints for orders, payments, and reviews
 
-        if (requestURI.equals("/admin/orders") && "GET".equalsIgnoreCase(method)) {
+        if (requestURI.equals("/api/v1/admin/payments") && "GET".equalsIgnoreCase(method)) {
 
             return true;
 
         }
 
-        if (requestURI.equals("/admin/payments") && "GET".equalsIgnoreCase(method)) {
-
-            return true;
-
-        }
-
-        if (requestURI.equals("/admin/reviews") && "GET".equalsIgnoreCase(method)) {
+        if (requestURI.equals("/api/v1/admin/reviews") && "GET".equalsIgnoreCase(method)) {
 
             return true;
 

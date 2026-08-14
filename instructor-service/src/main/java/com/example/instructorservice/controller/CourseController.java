@@ -23,11 +23,12 @@ public class CourseController {
     @PostMapping("/{id}/courses")
     public ResponseEntity<ApiResponse<CourseFullResponseDTO>> createCourse(
             @PathVariable UUID id,
+            @RequestHeader("Authorization") String authorization,
             @Valid @RequestBody CourseRequestDTO request
     ) {
 
         CourseFullResponseDTO response =
-                courseService.createCourse(id, request);
+                courseService.createCourse(id, request, authorization);
 
         return ResponseEntity.ok(
                 ApiResponse.<CourseFullResponseDTO>builder()

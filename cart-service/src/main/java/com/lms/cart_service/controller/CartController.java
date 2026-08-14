@@ -76,9 +76,10 @@ public class CartController {
     }
 
     @PostMapping("/checkout")
-    public ResponseEntity<ApiResponse<CheckoutResponse>> checkout(Authentication auth) {
+    public ResponseEntity<ApiResponse<CheckoutResponse>> checkout(
+            Authentication auth, @RequestHeader("Authorization") String authorization) {
         String userId = auth.getName();
-        CheckoutResponse data = cartService.checkoutCart(userId);
+        CheckoutResponse data = cartService.checkoutCart(userId, authorization);
         return ResponseEntity.ok(ApiResponse.success("Checkout initiated successfully.", data));
     }
     @GetMapping("/internal/{userId}")

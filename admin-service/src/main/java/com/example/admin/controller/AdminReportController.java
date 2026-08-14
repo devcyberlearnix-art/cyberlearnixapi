@@ -27,13 +27,14 @@ public class AdminReportController {
     // ===== USERS REPORT =====
     @GetMapping("/reports/users")
     public ResponseEntity<ApiResponse<?>> getUsersReport(
-            @AuthenticationPrincipal AdminPrincipal adminPrincipal) {
+            @AuthenticationPrincipal AdminPrincipal adminPrincipal,
+            @RequestHeader("Authorization") String authorization) {
 
         return ResponseEntity.ok(
                 new ApiResponse<>(
                         true,
                         "User statistics fetched successfully",
-                        adminReportService.getUserReport(null), // Service will use service-to-service auth
+                        adminReportService.getUserReport(authorization),
                         now()
                 )
         );
@@ -42,13 +43,14 @@ public class AdminReportController {
     // ===== COURSES REPORT =====
     @GetMapping("/reports/courses")
     public ResponseEntity<ApiResponse<?>> getCoursesReport(
-            @AuthenticationPrincipal AdminPrincipal adminPrincipal) {
+            @AuthenticationPrincipal AdminPrincipal adminPrincipal,
+            @RequestHeader("Authorization") String authorization) {
 
         return ResponseEntity.ok(
                 new ApiResponse<>(
                         true,
                         "Course statistics fetched successfully",
-                        adminReportService.getCourseReport(null), // Service will use service-to-service auth
+                        adminReportService.getCourseReport(authorization),
                         now()
                 )
         );

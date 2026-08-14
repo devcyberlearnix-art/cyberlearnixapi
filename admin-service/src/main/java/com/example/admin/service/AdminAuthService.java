@@ -35,20 +35,49 @@ public class AdminAuthService {
     private final EncryptionService encryptionService;
     private final EmailService emailService;
     private final AdminPermissionService adminPermissionService;
+    private final OtpService otpService;
     private String otp;
 
     public AdminLoginResponse login(AdminLoginRequest request,
                                     HttpServletRequest httpRequest) {
 
-        Admin admin = adminRepository.findByEmail(request.getEmail())
+        String email = request.getEmail().trim().toLowerCase();
+        log.debug("Admin login lookup email={}", email);
+        
+        Optional<Admin> adminOptional = adminRepository.findByEmail(email);
+        log.debug("Admin found={}", adminOptional.isPresent());
+        
+        Admin admin = adminOptional
                 .orElseThrow(() ->
                         new BadCredentialsException("Invalid email or password"));
 
-        if (!passwordEncoder.matches(request.getPassword(), admin.getPassword())) {
+        log.debug("Admin record - id={}, email={}, adminType={}, approvalStatus={}, verified={}", 
+                admin.getId(), admin.getEmail(), admin.getAdminType(), 
+                admin.getApprovalStatus(), admin.isVerified());
+
+        boolean passwordMatches = passwordEncoder.matches(request.getPassword(), admin.getPassword());
+        log.info("Password encoder matches result={}", passwordMatches);
+
+        // Test encoding the request password to see if it produces a valid BCrypt hash
+        String testEncode = passwordEncoder.encode(request.getPassword());
+        log.info("Test encoding request password - starts with $2a: {}", testEncode.startsWith("$2a"));
+
+        log.info(
+            "ADMIN LOGIN DEBUG - email={}, passwordMatches={}, adminType={}, approvalStatus={}, verified={}",
+            email,
+            passwordMatches,
+            admin.getAdminType(),
+            admin.getApprovalStatus(),
+            admin.isVerified()
+        );
+
+        if (!passwordMatches) {
             throw new BadCredentialsException("Invalid email or password");
         }
 
         if (admin.getAdminType() == com.example.admin.entity.AdminType.SUB_ADMIN) {
+            log.debug("SUB_ADMIN check - approvalStatus={}, verified={}", 
+                    admin.getApprovalStatus(), admin.isVerified());
             if (admin.getApprovalStatus() != com.example.admin.entity.AdminApprovalStatus.APPROVED) {
                 throw new BadCredentialsException("Sub Admin account is not approved yet");
             }
@@ -57,7 +86,21 @@ public class AdminAuthService {
             }
         }
 
-        // Return admin data without generating tokens (User Service will generate tokens)
+        // Generate JWT tokens for direct admin login
+        String accessToken = jwtService.generateAccessToken(
+                admin.getId().toString(),
+                admin.getEmail(),
+                admin.getRole(),
+                admin.getAdminType() != null ? admin.getAdminType().name() : "MAIN_ADMIN",
+                admin.getAssignedService() != null ? admin.getAssignedService().name() : "ALL"
+        );
+
+        String refreshToken = jwtService.generateRefreshToken(
+                admin.getId().toString(),
+                admin.getEmail(),
+                admin.getRole()
+        );
+
         String firstName = decryptSafely(admin.getFirstName(), "Admin");
         String lastName = decryptSafely(admin.getLastName(), "");
         String mobileNumber = decryptSafely(admin.getMobileNumber(), "");
@@ -74,10 +117,10 @@ public class AdminAuthService {
                         .mobileNumber(mobileNumber)
                         .build())
                 .authentication(AdminLoginResponse.AuthenticationInfo.builder()
-                        .accessToken("") // Empty string instead of null to avoid JSON issues
-                        .accessTokenExpiresIn("")
-                        .refreshToken("")
-                        .refreshTokenExpiresIn("")
+                        .accessToken(accessToken)
+                        .accessTokenExpiresIn("15m")
+                        .refreshToken(refreshToken)
+                        .refreshTokenExpiresIn("30d")
                         .build())
                 .sessionInfo(AdminLoginResponse.SessionInfo.builder()
                         .loginTime(LocalDateTime.now().toString())
@@ -405,9 +448,9 @@ public class AdminAuthService {
                     .build();
         }
 
-        // Cooldown check (30 seconds)
-        if (admin.getLastOtpSentAt() != null &&
-                admin.getLastOtpSentAt().plusSeconds(30).isAfter(LocalDateTime.now())) {
+        // Cooldown check using OtpService
+        long cooldown = otpService.getCooldownSeconds(email, "login");
+        if (cooldown > 0) {
             return LoginOtpResponse.builder()
                     .success(false)
                     .message("Please wait before requesting a new OTP.")
@@ -415,16 +458,10 @@ public class AdminAuthService {
                     .build();
         }
 
-        // Generate OTP
+        // Generate OTP using OtpService
         String otp = generateOtp();
-        LocalDateTime expiry = LocalDateTime.now().plusMinutes(5);
-
-        admin.setOtp(otp);
-        admin.setOtpExpiry(expiry);
-        admin.setLastOtpSentAt(LocalDateTime.now());
-        admin.setOtpAttempts(3);
-        admin.setOtpBlocked(false);
-        adminRepository.save(admin);
+        OtpService.OtpSession otpSession = otpService.createSession(email, "login", otp, 5, 5);
+        otpService.markCooldown(email, "login", 30);
 
         try {
             emailService.sendOtp(admin.getEmail(), otp);
@@ -444,50 +481,50 @@ public class AdminAuthService {
                         .validForMinutes(5)
                         .otpType("login")
                         .email(encryptionService.encrypt(admin.getEmail()))
-                        .expiresAt(expiry.toString())
+                        .expiresAt(otpSession.expiresAt().toString())
                         .cooldownSeconds(30)
+                        .otpSessionId(otpSession.sessionId())
                         .build())
                 .timestamp(LocalDateTime.now().toString())
                 .build();
     }
 
     public AdminLoginResponse verifyLoginOtp(LoginOtpVerifyRequest request, HttpServletRequest httpRequest) {
-        Admin admin = adminRepository.findByEmail(request.getEmail())
+        String email = request.getEmail();
+        String otp = request.getOtp();
+        String otpSessionId = request.getOtpSessionId();
+
+        if (otpSessionId == null || otpSessionId.isBlank()) {
+            throw new BadCredentialsException("otpSessionId is required");
+        }
+
+        // Resolve email from session if not provided
+        String resolvedEmail = (email != null && !email.isBlank())
+            ? email.trim().toLowerCase()
+            : otpService.resolveSessionEmail(otpSessionId, "login")
+                .orElseThrow(() -> new BadCredentialsException(
+                    "Valid otpSessionId is required when email is not provided"
+                ));
+
+        Admin admin = adminRepository.findByEmail(resolvedEmail)
                 .orElseThrow(() -> new BadCredentialsException("Admin with this email does not exist"));
 
         if (!admin.isVerified()) {
             throw new BadCredentialsException("Email is not verified. Complete registration first.");
         }
 
-        // Check if OTP is blocked due to previous failed attempts
-        if (admin.isOtpBlocked()) {
-            throw new BadCredentialsException("OTP is blocked due to multiple wrong attempts. Request a new OTP.");
+        // Verify OTP using OtpService
+        OtpService.OtpVerifyResult result = otpService.verifySession(
+                otpSessionId,
+                resolvedEmail,
+                otp,
+                "login",
+                true
+        );
+
+        if (!result.valid()) {
+            throw new BadCredentialsException(result.reason());
         }
-
-        // Check OTP expiry
-        if (admin.getOtpExpiry() == null || admin.getOtpExpiry().isBefore(LocalDateTime.now())) {
-            throw new BadCredentialsException("OTP has expired. Request a new one.");
-        }
-
-        // Check OTP match
-        if (admin.getOtp() == null || !admin.getOtp().equals(request.getOtp())) {
-            int remainingAttempts = admin.getOtpAttempts() - 1;
-            admin.setOtpAttempts(remainingAttempts);
-
-            if (remainingAttempts <= 0) {
-                admin.setOtpBlocked(true); // block further OTP attempts
-            }
-
-            adminRepository.save(admin);
-
-            throw new BadCredentialsException("Invalid OTP. Remaining attempts: " + remainingAttempts);
-        }
-
-        // ✅ Correct OTP → clear it so it can't be replayed, reset attempts
-        admin.setOtp(null);
-        admin.setOtpAttempts(3);
-        admin.setOtpBlocked(false);
-        adminRepository.save(admin);
 
         auditService.logAction(admin.getId(), "ADMIN_OTP_LOGIN");
 
@@ -516,6 +553,281 @@ public class AdminAuthService {
                         .loginTime(LocalDateTime.now().toString())
                         .ipAddress(httpRequest.getRemoteAddr())
                         .device(httpRequest.getHeader("User-Agent"))
+                        .build())
+                .build();
+    }
+
+    public ForgotPasswordResponse forgotPassword(String email) {
+        if (email == null || email.isBlank()) {
+            return ForgotPasswordResponse.builder()
+                    .success(false)
+                    .message("Email is required")
+                    .timestamp(LocalDateTime.now().toString())
+                    .build();
+        }
+
+        Optional<Admin> adminOptional = adminRepository.findByEmail(email);
+        if (adminOptional.isEmpty()) {
+            return ForgotPasswordResponse.builder()
+                    .success(false)
+                    .message("Admin with this email does not exist")
+                    .timestamp(LocalDateTime.now().toString())
+                    .build();
+        }
+
+        Admin admin = adminOptional.get();
+
+        if (!admin.isVerified()) {
+            return ForgotPasswordResponse.builder()
+                    .success(false)
+                    .message("Email is not verified. Complete registration first.")
+                    .timestamp(LocalDateTime.now().toString())
+                    .build();
+        }
+
+        // Cooldown check using OtpService
+        long cooldown = otpService.getCooldownSeconds(email, "password_reset");
+        if (cooldown > 0) {
+            return ForgotPasswordResponse.builder()
+                    .success(false)
+                    .message("Please wait before requesting a new OTP.")
+                    .timestamp(LocalDateTime.now().toString())
+                    .build();
+        }
+
+        // Generate OTP using OtpService
+        String otp = generateOtp();
+        OtpService.OtpSession otpSession = otpService.createSession(email, "password_reset", otp, 5, 5);
+        otpService.markCooldown(email, "password_reset", 30);
+
+        try {
+            emailService.sendOtp(admin.getEmail(), otp);
+        } catch (RuntimeException ex) {
+            throw new ResponseStatusException(
+                    HttpStatus.SERVICE_UNAVAILABLE,
+                    "Unable to send OTP email right now. Please try again shortly."
+            );
+        }
+
+        log.info("Password reset OTP sent to admin: {}", admin.getEmail());
+
+        return ForgotPasswordResponse.builder()
+                .success(true)
+                .message("Password reset OTP sent successfully to registered email.")
+                .data(ForgotPasswordResponse.ForgotPasswordData.builder()
+                        .email(encryptionService.encrypt(admin.getEmail()))
+                        .otpType("password_reset")
+                        .validForMinutes(5)
+                        .expiresAt(otpSession.expiresAt().toString())
+                        .cooldownSeconds(30)
+                        .otpSessionId(otpSession.sessionId())
+                        .build())
+                .timestamp(LocalDateTime.now().toString())
+                .build();
+    }
+
+    public VerifyOtpResponse verifyPasswordOtp(VerifyOtpRequest request) {
+        String email = request.getEmail();
+        String otp = request.getOtp();
+        String otpSessionId = request.getOtpSessionId();
+
+        if (otpSessionId == null || otpSessionId.isBlank()) {
+            return VerifyOtpResponse.builder()
+                    .success(false)
+                    .message("otpSessionId is required")
+                    .timestamp(LocalDateTime.now().toString())
+                    .build();
+        }
+
+        // Resolve email from session if not provided
+        String resolvedEmail = (email != null && !email.isBlank())
+            ? email.trim().toLowerCase()
+            : otpService.resolveSessionEmail(otpSessionId, "password_reset")
+                .orElse(null);
+
+        if (resolvedEmail == null) {
+            return VerifyOtpResponse.builder()
+                    .success(false)
+                    .message("Valid otpSessionId is required when email is not provided")
+                    .timestamp(LocalDateTime.now().toString())
+                    .build();
+        }
+
+        Optional<Admin> adminOptional = adminRepository.findByEmail(resolvedEmail);
+        if (adminOptional.isEmpty()) {
+            return VerifyOtpResponse.builder()
+                    .success(false)
+                    .message("Admin with this email does not exist")
+                    .timestamp(LocalDateTime.now().toString())
+                    .build();
+        }
+
+        Admin admin = adminOptional.get();
+
+        if (!admin.isVerified()) {
+            return VerifyOtpResponse.builder()
+                    .success(false)
+                    .message("Email is not verified. Complete registration first.")
+                    .timestamp(LocalDateTime.now().toString())
+                    .build();
+        }
+
+        // Verify OTP using OtpService (don't consume on success - will be consumed on password reset)
+        OtpService.OtpVerifyResult result = otpService.verifySession(
+                otpSessionId,
+                resolvedEmail,
+                otp,
+                "password_reset",
+                false
+        );
+
+        if (!result.valid()) {
+            return VerifyOtpResponse.builder()
+                    .success(false)
+                    .message(result.reason())
+                    .timestamp(LocalDateTime.now().toString())
+                    .build();
+        }
+
+        String firstName = decryptSafely(admin.getFirstName(), "Admin");
+        String lastName = decryptSafely(admin.getLastName(), "");
+        String mobileNumber = decryptSafely(admin.getMobileNumber(), "");
+
+        return VerifyOtpResponse.builder()
+                .success(true)
+                .message("OTP verified successfully. You can now reset your password.")
+                .timestamp(LocalDateTime.now().toString())
+                .otpSessionId(otpSessionId)
+                .data(VerifyOtpResponse.AdminInfo.builder()
+                        .id(admin.getId())
+                        .email(admin.getEmail())
+                        .role(admin.getRole())
+                        .firstName(firstName)
+                        .lastName(lastName)
+                        .mobileNumber(mobileNumber)
+                        .alternateMobileNumber(admin.getAlternateMobileNumber())
+                        .build())
+                .build();
+    }
+
+    public PasswordResetResponse resetPassword(PasswordResetRequest request) {
+        String email = request.getEmail();
+        String otp = request.getOtp();
+        String otpSessionId = request.getOtpSessionId();
+        String newPassword = request.getNewPassword();
+        String confirmPassword = request.getConfirmPassword();
+
+        if (otpSessionId == null || otpSessionId.isBlank()) {
+            return PasswordResetResponse.builder()
+                    .success(false)
+                    .message("otpSessionId is required")
+                    .timestamp(LocalDateTime.now().toString())
+                    .build();
+        }
+
+        if (newPassword == null || newPassword.isBlank()) {
+            return PasswordResetResponse.builder()
+                    .success(false)
+                    .message("New password is required")
+                    .timestamp(LocalDateTime.now().toString())
+                    .build();
+        }
+
+        if (!newPassword.equals(confirmPassword)) {
+            return PasswordResetResponse.builder()
+                    .success(false)
+                    .message("Passwords do not match")
+                    .timestamp(LocalDateTime.now().toString())
+                    .build();
+        }
+
+        // Password strength check
+        String passwordRegex = "^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}$";
+        if (!newPassword.matches(passwordRegex)) {
+            return PasswordResetResponse.builder()
+                    .success(false)
+                    .message("Password must be at least 8 characters, include uppercase, lowercase, number, and special character")
+                    .timestamp(LocalDateTime.now().toString())
+                    .build();
+        }
+
+        // Resolve email from session if not provided
+        String resolvedEmail = (email != null && !email.isBlank())
+            ? email.trim().toLowerCase()
+            : otpService.resolveSessionEmail(otpSessionId, "password_reset")
+                .orElse(null);
+
+        if (resolvedEmail == null) {
+            return PasswordResetResponse.builder()
+                    .success(false)
+                    .message("Valid otpSessionId is required when email is not provided")
+                    .timestamp(LocalDateTime.now().toString())
+                    .build();
+        }
+
+        Optional<Admin> adminOptional = adminRepository.findByEmail(resolvedEmail);
+        if (adminOptional.isEmpty()) {
+            return PasswordResetResponse.builder()
+                    .success(false)
+                    .message("Admin with this email does not exist")
+                    .timestamp(LocalDateTime.now().toString())
+                    .build();
+        }
+
+        Admin admin = adminOptional.get();
+
+        // Verify OTP using OtpService (consume on success)
+        OtpService.OtpVerifyResult result = otpService.verifySession(
+                otpSessionId,
+                resolvedEmail,
+                otp,
+                "password_reset",
+                true
+        );
+
+        if (!result.valid()) {
+            return PasswordResetResponse.builder()
+                    .success(false)
+                    .message(result.reason())
+                    .timestamp(LocalDateTime.now().toString())
+                    .build();
+        }
+
+        // Update password
+        log.info("ADMIN PASSWORD RESET DEBUG - email={}, passwordLength={}",
+                resolvedEmail,
+                newPassword != null ? newPassword.length() : null);
+
+        String encodedPassword = passwordEncoder.encode(newPassword);
+        log.info("ADMIN PASSWORD RESET DEBUG - encoded hash length={}, prefix={}",
+                encodedPassword.length(),
+                encodedPassword.substring(0, 4));
+
+        admin.setPassword(encodedPassword);
+        adminRepository.save(admin);
+
+        // Verify password was saved correctly
+        Admin savedAdmin = adminRepository.findByEmail(resolvedEmail).orElseThrow();
+        boolean resetPasswordMatches =
+                passwordEncoder.matches(newPassword, savedAdmin.getPassword());
+        log.info("ADMIN PASSWORD RESET DEBUG - passwordMatchesAfterSave={}",
+                resetPasswordMatches);
+
+        auditService.logAction(admin.getId(), "ADMIN_PASSWORD_RESET");
+
+        String firstName = decryptSafely(admin.getFirstName(), "Admin");
+        String lastName = decryptSafely(admin.getLastName(), "");
+
+        return PasswordResetResponse.builder()
+                .success(true)
+                .message("Password reset successfully")
+                .timestamp(LocalDateTime.now().toString())
+                .data(PasswordResetResponse.AdminInfo.builder()
+                        .id(admin.getId())
+                        .email(admin.getEmail())
+                        .firstName(firstName)
+                        .lastName(lastName)
+                        .role(admin.getRole())
                         .build())
                 .build();
     }
@@ -652,102 +964,6 @@ public class AdminAuthService {
                         .validForMinutes(5)
                         .expiresAt(expiry.toString())
                         .cooldownSeconds(30)
-                        .build())
-                .timestamp(LocalDateTime.now().toString())
-                .build();
-    }
-
-    public PasswordResetResponse resetPassword(PasswordResetRequest request) {
-
-        Optional<Admin> adminOptional = adminRepository.findByEmail(request.getEmail());
-
-        if (adminOptional.isEmpty()) {
-            return PasswordResetResponse.builder()
-                    .success(false)
-                    .message("Admin with this email does not exist")
-                    .data(null)
-                    .timestamp(LocalDateTime.now().toString())
-                    .build();
-        }
-
-        Admin admin = adminOptional.get();
-
-        if (!admin.isVerified()) {
-            return PasswordResetResponse.builder()
-                    .success(false)
-                    .message("Email is not verified. Complete registration first.")
-                    .data(null)
-                    .timestamp(LocalDateTime.now().toString())
-                    .build();
-        }
-
-        if (admin.getOtp() == null || admin.getOtpExpiry() == null || admin.getOtpExpiry().isBefore(LocalDateTime.now())) {
-            return PasswordResetResponse.builder()
-                    .success(false)
-                    .message("OTP has expired. Request a new one.")
-                    .data(null)
-                    .timestamp(LocalDateTime.now().toString())
-                    .build();
-        }
-
-        if (!admin.getOtp().equals(request.getOtp())) {
-            int remaining = admin.getOtpAttempts() - 1;
-            admin.setOtpAttempts(remaining);
-
-            if (remaining <= 0) {
-                admin.setOtpBlocked(true);
-            }
-
-            adminRepository.save(admin);
-
-            return PasswordResetResponse.builder()
-                    .success(false)
-                    .message("Invalid OTP. Remaining attempts: " + remaining)
-                    .data(null)
-                    .timestamp(LocalDateTime.now().toString())
-                    .build();
-        }
-
-        if (!request.getNewPassword().equals(request.getConfirmPassword())) {
-            return PasswordResetResponse.builder()
-                    .success(false)
-                    .message("Passwords do not match")
-                    .data(null)
-                    .timestamp(LocalDateTime.now().toString())
-                    .build();
-        }
-
-        // Password strength check
-        String passwordRegex = "^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}$";
-        if (!request.getNewPassword().matches(passwordRegex)) {
-            return PasswordResetResponse.builder()
-                    .success(false)
-                    .message("Password must be at least 8 characters, include uppercase, lowercase, number, and special character")
-                    .data(null)
-                    .timestamp(LocalDateTime.now().toString())
-                    .build();
-        }
-
-        // ✅ All checks passed → reset password
-        admin.setPassword(passwordEncoder.encode(request.getNewPassword()));
-        admin.setOtp(request.getOtp());
-        admin.setOtpExpiry(LocalDateTime.now().plusMinutes(5));
-        admin.setOtpAttempts(3); // reset attempts
-        admin.setOtpBlocked(false);
-        admin.setLastOtpSentAt(LocalDateTime.now()); // ✅ add this
-        adminRepository.save(admin);
-
-        auditService.logAction(admin.getId(), "PASSWORD_RESET");
-
-        return PasswordResetResponse.builder()
-                .success(true)
-                .message("Password reset successfully")
-                .data(PasswordResetResponse.AdminInfo.builder()
-                        .id(admin.getId())
-                        .email(admin.getEmail())
-                        .firstName(encryptionService.encrypt(admin.getFirstName()))
-                        .lastName(encryptionService.encrypt(admin.getLastName()))
-                        .role(admin.getRole())
                         .build())
                 .timestamp(LocalDateTime.now().toString())
                 .build();

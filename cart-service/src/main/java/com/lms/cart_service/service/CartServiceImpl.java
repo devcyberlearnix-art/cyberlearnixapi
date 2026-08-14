@@ -2,6 +2,7 @@ package com.lms.cart_service.service;
 
 import com.lms.cart_service.client.CourseClient;
 import com.lms.cart_service.client.CouponClient;
+import com.lms.cart_service.client.OrderClient;
 import com.lms.cart_service.dto.*;
 import com.lms.cart_service.dto.InstructorApiResponse;
 import com.lms.cart_service.entity.CartItem;
@@ -26,6 +27,7 @@ public class CartServiceImpl implements CartService {
     private final CartRepository cartRepository;
     private final CourseClient courseClient;
     private final CouponClient couponClient;
+    private final OrderClient orderClient;
 
     @Override
     @Transactional
@@ -144,13 +146,26 @@ public class CartServiceImpl implements CartService {
     }
 
     @Override
-    public CheckoutResponse checkoutCart(String userId) {
+    public CheckoutResponse checkoutCart(String userId, String authorization) {
         CartResponse response = buildCartResponse(userId);
+        if (response.getItems().isEmpty()) {
+            throw new IllegalArgumentException("Cart is empty");
+        }
+
+        List<Long> courseIds = response.getItems().stream()
+                .map(com.lms.cart_service.dto.CartItem::getCourseId)
+                .toList();
+        OrderClient.OrderApiResponse orderResponse = orderClient.createOrder(
+                authorization, new OrderClient.OrderCreateRequest(courseIds, null));
+        if (orderResponse == null || !orderResponse.success() || orderResponse.data() == null) {
+            throw new IllegalStateException("Order service did not create the checkout order");
+        }
+
         return CheckoutResponse.builder()
-                .orderId(UUID.randomUUID().toString())
+                .orderId(orderResponse.data().orderId())
                 .paymentMethod("RAZORPAY")
-                .paymentStatus("PENDING")
-                .totalAmount(response.getTotalCartPrice())
+                .paymentStatus(orderResponse.data().status())
+                .totalAmount(orderResponse.data().totalAmount())
                 .build();
     }
 

@@ -1,5 +1,6 @@
 package com.lms.cart_service.config;
 
+import com.cyberlearnix.error.ApiSecurityErrorWriter;
 import com.lms.cart_service.security.JwtAuthenticationFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -8,6 +9,7 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.http.HttpMethod;
 
 @Configuration
 @EnableWebSecurity
@@ -18,8 +20,17 @@ public class SecurityConfig {
         http
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .exceptionHandling(errors -> errors
+                    .authenticationEntryPoint((request, response, exception) ->
+                        ApiSecurityErrorWriter.write(request, response, 401,
+                            "UNAUTHORIZED", "Authentication is required"))
+                    .accessDeniedHandler((request, response, exception) ->
+                        ApiSecurityErrorWriter.write(request, response, 403,
+                            "FORBIDDEN", "Insufficient permissions")))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html", "/actuator/**", "/api/v1/cart/**").permitAll()
+                    .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html", "/actuator/**").permitAll()
+                    .requestMatchers("/api/v1/cart/internal/**").permitAll()
+                    .requestMatchers("/api/v1/cart/**").hasRole("STUDENT")
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);

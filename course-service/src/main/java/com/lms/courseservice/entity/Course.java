@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.math.BigDecimal;
+import java.util.UUID;
 // Course id uses numeric DB primary key
 
 @Entity
@@ -36,7 +37,16 @@ public class Course {
 
     private String thumbnail;
 
-    private Long instructorId;
+    private UUID instructorId;
 
     private String status; // Draft, Published, Archived
+
+    @Builder.Default
+    private Boolean premium = false;
+
+    @Builder.Default
+    private Long searchCount = 0L;
+
+    @Builder.Default
+    private Long viewCount = 0L;
 }

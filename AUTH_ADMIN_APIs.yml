@@ -1,0 +1,399 @@
+# Authentication and Admin Service APIs
+
+api_gateway:
+  base_url: "http://localhost:8080"
+  description: "API Gateway for routing requests to microservices"
+  session_management:
+    base_path: "/api/sessions"
+    endpoints:
+      - method: "GET"
+        path: "/sessions"
+        description: "Get user sessions"
+        auth_required: true
+        auth_type: "X-User-Id, X-Session-Id headers"
+      - method: "DELETE"
+        path: "/sessions/{sessionId}"
+        description: "Deactivate specific session"
+        auth_required: true
+        auth_type: "X-User-Id, X-Session-Id headers"
+      - method: "POST"
+        path: "/sessions/deactivate-others"
+        description: "Deactivate other sessions"
+        auth_required: true
+        auth_type: "X-User-Id, X-Session-Id headers"
+      - method: "POST"
+        path: "/sessions/deactivate-all"
+        description: "Deactivate all sessions"
+        auth_required: true
+        auth_type: "X-User-Id header"
+
+user_service:
+  base_url: "http://localhost:8081"
+  base_path: "/api/v1"
+  description: "User management and authentication service"
+  controllers:
+    registration_controller:
+      endpoints:
+        - method: "POST"
+          path: "/auth/register"
+          description: "Register new user (sends OTP)"
+          auth_required: false
+          auth_type: "None"
+        - method: "POST"
+          path: "/auth/verify-email"
+          description: "Verify email with OTP"
+          auth_required: false
+          auth_type: "None"
+
+    unified_authentication_controller:
+      endpoints:
+        - method: "POST"
+          path: "/auth/login"
+          description: "Unified login (Student/Instructor/Admin)"
+          auth_required: false
+          auth_type: "None"
+        - method: "POST"
+          path: "/auth/refresh"
+          description: "Refresh access token"
+          auth_required: true
+          auth_type: "Bearer Token (Refresh)"
+        - method: "POST"
+          path: "/auth/logout"
+          description: "Logout user"
+          auth_required: true
+          auth_type: "Bearer Token"
+        - method: "POST"
+          path: "/auth/login/otp/request"
+          description: "Request login OTP"
+          auth_required: false
+          auth_type: "None"
+        - method: "POST"
+          path: "/auth/login/otp/verify"
+          description: "Verify login OTP"
+          auth_required: false
+          auth_type: "None"
+        - method: "POST"
+          path: "/auth/password/forgot"
+          description: "Forgot password (sends OTP)"
+          auth_required: false
+          auth_type: "None"
+        - method: "POST"
+          path: "/auth/password/verify-otp"
+          description: "Verify password reset OTP"
+          auth_required: false
+          auth_type: "None"
+        - method: "POST"
+          path: "/auth/password/reset"
+          description: "Reset password"
+          auth_required: false
+          auth_type: "Optional Bearer Token"
+        - method: "POST"
+          path: "/auth/change-password"
+          description: "Change password (authenticated)"
+          auth_required: true
+          auth_type: "Bearer Token"
+        - method: "POST"
+          path: "/auth/switch-role"
+          description: "Switch user role"
+          auth_required: true
+          auth_type: "Bearer Token"
+
+    session_controller:
+      endpoints:
+        - method: "GET"
+          path: "/users/me/sessions"
+          description: "List all user sessions"
+          auth_required: true
+          auth_type: "Bearer Token"
+        - method: "DELETE"
+          path: "/users/me/sessions/{id}"
+          description: "Logout specific device"
+          auth_required: true
+          auth_type: "Bearer Token"
+        - method: "DELETE"
+          path: "/users/me/sessions"
+          description: "Logout from all sessions"
+          auth_required: true
+          auth_type: "Bearer Token"
+
+    instructor_controller:
+      endpoints:
+        - method: "POST"
+          path: "/instructors/applications"
+          description: "Apply for instructor (multipart)"
+          auth_required: true
+          auth_type: "Bearer Token"
+        - method: "GET"
+          path: "/instructors/applications/me"
+          description: "Get application status"
+          auth_required: true
+          auth_type: "Bearer Token"
+
+    admin_instructor_controller:
+      endpoints:
+        - method: "GET"
+          path: "/admin/instructors"
+          description: "Get all approved instructors"
+          auth_required: true
+          auth_type: "@PreAuthorize: MAIN_ADMIN, SUB_ADMIN"
+        - method: "GET"
+          path: "/admin/instructors/applications"
+          description: "Get all instructor applications"
+          auth_required: true
+          auth_type: "@PreAuthorize: MAIN_ADMIN, SUB_ADMIN"
+        - method: "PUT"
+          path: "/admin/instructors/applications/{userId}/approve"
+          description: "Approve instructor application"
+          auth_required: true
+          auth_type: "@PreAuthorize: MAIN_ADMIN, SUB_ADMIN"
+        - method: "PUT"
+          path: "/admin/instructors/applications/{userId}/reject"
+          description: "Reject instructor application"
+          auth_required: true
+          auth_type: "@PreAuthorize: MAIN_ADMIN, SUB_ADMIN"
+
+admin_service:
+  base_url: "http://localhost:8082"
+  base_path: "/api/v1/admin"
+  description: "Admin management service"
+  controllers:
+    admin_controller:
+      endpoints:
+        - method: "POST"
+          path: "/admin/register"
+          description: "Register sub-admin"
+          auth_required: true
+          auth_type: "Main Admin Bearer Token"
+        - method: "POST"
+          path: "/admin/login"
+          description: "Admin password login"
+          auth_required: false
+          auth_type: "None"
+        - method: "POST"
+          path: "/admin/login/otp/request"
+          description: "Request admin login OTP"
+          auth_required: false
+          auth_type: "None"
+        - method: "POST"
+          path: "/admin/login/otp/verify"
+          description: "Verify admin login OTP"
+          auth_required: false
+          auth_type: "None"
+        - method: "POST"
+          path: "/admin/password/forgot"
+          description: "Admin forgot password"
+          auth_required: false
+          auth_type: "None"
+        - method: "POST"
+          path: "/admin/password/verify-otp"
+          description: "Verify admin password OTP"
+          auth_required: false
+          auth_type: "None"
+        - method: "POST"
+          path: "/admin/password/reset"
+          description: "Reset admin password"
+          auth_required: false
+          auth_type: "None"
+        - method: "PUT"
+          path: "/admin/me"
+          description: "Update admin profile"
+          auth_required: true
+          auth_type: "@AuthenticationPrincipal"
+        - method: "GET"
+          path: "/admin/me"
+          description: "Get admin profile"
+          auth_required: true
+          auth_type: "@AuthenticationPrincipal"
+
+    admin_course_controller:
+      endpoints:
+        - method: "GET"
+          path: "/admin/courses"
+          description: "Get all courses"
+          auth_required: true
+          auth_type: "Admin"
+        - method: "GET"
+          path: "/admin/courses/{courseId}"
+          description: "Get course by ID"
+          auth_required: true
+          auth_type: "Admin"
+        - method: "GET"
+          path: "/admin/content/{courseId}"
+          description: "Get course content"
+          auth_required: true
+          auth_type: "Admin"
+        - method: "PUT"
+          path: "/admin/courses/{courseId}/approve"
+          description: "Approve course"
+          auth_required: true
+          auth_type: "Admin"
+        - method: "PUT"
+          path: "/admin/courses/{courseId}/reject"
+          description: "Reject course"
+          auth_required: true
+          auth_type: "Admin"
+        - method: "DELETE"
+          path: "/admin/courses/{courseId}"
+          description: "Delete course"
+          auth_required: true
+          auth_type: "Admin"
+        - method: "POST"
+          path: "/admin/courses/{courseId}/sections"
+          description: "Create section"
+          auth_required: true
+          auth_type: "Admin"
+        - method: "DELETE"
+          path: "/admin/sections/{sectionId}"
+          description: "Delete section"
+          auth_required: true
+          auth_type: "Admin"
+        - method: "POST"
+          path: "/admin/sections/{sectionId}/lectures"
+          description: "Create lecture"
+          auth_required: true
+          auth_type: "Admin"
+        - method: "PUT"
+          path: "/admin/sections/{sectionId}/lectures/{lectureId}/approve"
+          description: "Approve lecture"
+          auth_required: true
+          auth_type: "Admin"
+        - method: "PUT"
+          path: "/admin/sections/{sectionId}/lectures/{lectureId}/reject"
+          description: "Reject lecture"
+          auth_required: true
+          auth_type: "Admin"
+        - method: "DELETE"
+          path: "/admin/sections/{sectionId}/lectures/{lectureId}"
+          description: "Delete lecture"
+          auth_required: true
+          auth_type: "Admin"
+
+    admin_user_controller:
+      endpoints:
+        - method: "GET"
+          path: "/admin/users"
+          description: "Get all users"
+          auth_required: true
+          auth_type: "Admin"
+        - method: "GET"
+          path: "/admin/users/{id}"
+          description: "Get user by ID"
+          auth_required: true
+          auth_type: "Admin"
+        - method: "PUT"
+          path: "/admin/users/{id}/status"
+          description: "Update user status"
+          auth_required: true
+          auth_type: "Admin"
+        - method: "DELETE"
+          path: "/admin/users/{id}"
+          description: "Delete user"
+          auth_required: true
+          auth_type: "Admin"
+        - method: "GET"
+          path: "/admin/instructors"
+          description: "Get all instructors"
+          auth_required: true
+          auth_type: "Admin"
+        - method: "GET"
+          path: "/admin/instructors/applications"
+          description: "Get instructor applications"
+          auth_required: true
+          auth_type: "Admin"
+        - method: "PUT"
+          path: "/admin/instructors/applications/{userId}/approve"
+          description: "Approve instructor"
+          auth_required: true
+          auth_type: "Admin"
+        - method: "DELETE"
+          path: "/admin/instructors/{id}"
+          description: "Delete instructor"
+          auth_required: true
+          auth_type: "Admin"
+
+    admin_order_controller:
+      endpoints:
+        - method: "GET"
+          path: "/admin/orders"
+          description: "Get all orders"
+          auth_required: true
+          auth_type: "Admin"
+        - method: "GET"
+          path: "/admin/orders/{id}"
+          description: "Get order by ID"
+          auth_required: true
+          auth_type: "Admin"
+        - method: "PUT"
+          path: "/admin/orders/{id}/status"
+          description: "Update order status"
+          auth_required: true
+          auth_type: "Admin"
+        - method: "POST"
+          path: "/admin/orders/{id}/refund"
+          description: "Process refund"
+          auth_required: true
+          auth_type: "Admin"
+
+    admin_payment_controller:
+      endpoints:
+        - method: "GET"
+          path: "/admin/payments"
+          description: "Get all payments"
+          auth_required: true
+          auth_type: "Admin"
+        - method: "GET"
+          path: "/admin/payments/{id}"
+          description: "Get payment by ID"
+          auth_required: true
+          auth_type: "Admin"
+
+    admin_report_controller:
+      endpoints:
+        - method: "GET"
+          path: "/admin/reports/users"
+          description: "Get users report"
+          auth_required: true
+          auth_type: "@AuthenticationPrincipal"
+        - method: "GET"
+          path: "/admin/reports/courses"
+          description: "Get courses report"
+          auth_required: true
+          auth_type: "@AuthenticationPrincipal"
+        - method: "GET"
+          path: "/admin/reports/revenue"
+          description: "Get revenue report"
+          auth_required: true
+          auth_type: "@AuthenticationPrincipal"
+        - method: "GET"
+          path: "/admin/reports/orders"
+          description: "Get orders report"
+          auth_required: true
+          auth_type: "@AuthenticationPrincipal"
+        - method: "PUT"
+          path: "/admin/settings/platform"
+          description: "Update platform settings"
+          auth_required: true
+          auth_type: "Admin"
+        - method: "PUT"
+          path: "/admin/settings/payment"
+          description: "Update payment settings"
+          auth_required: true
+          auth_type: "Admin"
+        - method: "PUT"
+          path: "/admin/settings/notifications"
+          description: "Update notification settings"
+          auth_required: true
+          auth_type: "Admin"
+
+    admin_review_controller:
+      endpoints:
+        - method: "GET"
+          path: "/admin/reviews"
+          description: "Get all reviews"
+          auth_required: true
+          auth_type: "Admin"
+        - method: "DELETE"
+          path: "/admin/reviews/{id}"
+          description: "Delete review"
+          auth_required: true
+          auth_type: "Admin"

@@ -10,4 +10,5 @@ import lombok.NoArgsConstructor;
 public class LoginOtpVerifyRequest {
     private String email;
     private String otp;
+    private String otpSessionId;
 }

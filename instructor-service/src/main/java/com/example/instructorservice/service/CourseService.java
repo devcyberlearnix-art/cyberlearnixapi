@@ -33,7 +33,7 @@ public class CourseService {
         private final InstructorRepository instructorRepository;
         private final CourseIntegrationService courseIntegrationService;
 
-        public CourseFullResponseDTO createCourse(UUID userId, CourseRequestDTO request) {
+        public CourseFullResponseDTO createCourse(UUID userId, CourseRequestDTO request, String authorization) {
 
                 Instructor instructor = instructorRepository.findByUserId(userId)
                                 .orElseGet(() -> {
@@ -77,9 +77,14 @@ public class CourseService {
 
                 // ✅ SYNC TO COURSE SERVICE (Port 8083)
                 try {
-                        courseIntegrationService.syncCourseCreation(course, request);
+                        Long courseServiceId = courseIntegrationService.syncCourseCreation(course, request, authorization);
+                        course.setCourseServiceId(courseServiceId);
+                        course.setSyncStatus("SYNCED");
+                        course = courseRepository.save(course);
                         System.out.println("✓ Course synced to Course Service with ID: " + course.getCourseServiceId());
                 } catch (Exception e) {
+                        course.setSyncStatus("FAILED");
+                        course = courseRepository.save(course);
                         System.err.println("✗ Failed to sync course to Course Service: " + e.getMessage());
                         // Course still created locally even if sync fails - instructor can retry later
                 }
@@ -293,8 +298,8 @@ public class CourseService {
         public List<CourseResponseDTO> getCoursesByInstructor(UUID instructorId) {
 
                 // 🔍 Validate instructor exists
-                Instructor instructor = instructorRepository.findById(instructorId)
-                                .orElseThrow(() -> new RuntimeException(
+                Instructor instructor = instructorRepository.findByUserId(instructorId)
+                                .orElseThrow(() -> new NotFoundException(
                                                 "Instructor not found with id: " + instructorId));
 
                 // 📦 Fetch courses
@@ -314,7 +319,7 @@ public class CourseService {
                                                 .price(course.getPrice())
                                                 .category(course.getCategory())
                                                 .status(course.getStatus().name()) // ✅ FIXED
-                                                .instructorId(course.getInstructor().getId()) // ✅ IMPROVED
+                                                .instructorId(course.getInstructor().getUserId())
                                                 .createdAt(course.getCreatedAt())
                                                 .build())
                                 .toList();
@@ -325,7 +330,7 @@ public class CourseService {
                 // 🔍 Fetch course directly with instructor validation
                 Course course = courseRepository
                                 .findByIdAndInstructorId(courseId, instructorId)
-                                .orElseThrow(() -> new RuntimeException(
+                                .orElseThrow(() -> new NotFoundException(
                                                 "Course not found with id: " + courseId +
                                                                 " for instructor: " + instructorId));
 
@@ -337,7 +342,7 @@ public class CourseService {
                                 .price(course.getPrice())
                                 .category(course.getCategory())
                                 .status(course.getStatus().name()) // ✅ FIXED
-                                .instructorId(course.getInstructor().getId())
+                                .instructorId(course.getInstructor().getUserId())
                                 .createdAt(course.getCreatedAt())
                                 .build();
         }
@@ -366,7 +371,7 @@ public class CourseService {
                 // 🔍 Fetch course + validate instructor
                 Course course = courseRepository
                                 .findByIdAndInstructorId(courseId, instructorId)
-                                .orElseThrow(() -> new RuntimeException(
+                                .orElseThrow(() -> new NotFoundException(
                                                 "Course not found with id: " + courseId +
                                                                 " for instructor: " + instructorId));
 
@@ -413,7 +418,7 @@ public class CourseService {
                                 .price(updated.getPrice())
                                 .category(updated.getCategory())
                                 .status(updated.getStatus().name())
-                                .instructorId(updated.getInstructor().getId())
+                                .instructorId(updated.getInstructor().getUserId())
                                 .createdAt(updated.getCreatedAt())
                                 .build();
         }
@@ -423,7 +428,7 @@ public class CourseService {
                 // 🔍 Fetch course + validate ownership
                 Course course = courseRepository
                                 .findByIdAndInstructorId(courseId, instructorId)
-                                .orElseThrow(() -> new RuntimeException(
+                                .orElseThrow(() -> new NotFoundException(
                                                 "Course not found with id: " + courseId +
                                                                 " for instructor: " + instructorId));
 
@@ -452,7 +457,7 @@ public class CourseService {
                                 .price(updated.getPrice())
                                 .category(updated.getCategory())
                                 .status(updated.getStatus().name()) // ARCHIVED
-                                .instructorId(updated.getInstructor().getId())
+                                .instructorId(updated.getInstructor().getUserId())
                                 .createdAt(updated.getCreatedAt())
                                 .build();
         }

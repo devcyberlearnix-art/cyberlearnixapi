@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
@@ -22,14 +23,21 @@ public class CourseIntegrationService {
     @Value("${course.service.url:http://localhost:8083}")
     private String courseServiceUrl;
 
-    public void syncCourseCreation(Course course, CourseRequestDTO request) {
+    public Long syncCourseCreation(Course course, CourseRequestDTO request, String authorization) {
         try {
             Map<String, Object> payload = buildCoursePayload(course, request);
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
+            headers.set(HttpHeaders.AUTHORIZATION, authorization);
             HttpEntity<Map<String, Object>> entity = new HttpEntity<>(payload, headers);
-            restTemplate.postForEntity(courseServiceUrl + "/api/v1/courses", entity, Map.class);
+            ResponseEntity<Map> response = restTemplate.postForEntity(
+                    courseServiceUrl + "/api/v1/courses", entity, Map.class);
+            Object id = response.getBody() != null ? response.getBody().get("id") : null;
+            if (!(id instanceof Number number)) {
+                throw new IllegalStateException("Course service response did not contain a numeric id");
+            }
             log.info("Synced course creation to course-service for courseId={}", course.getId());
+            return number.longValue();
         } catch (Exception ex) {
             log.warn("Unable to sync course creation to course-service for courseId={}", course.getId(), ex);
             throw ex;
@@ -50,7 +58,6 @@ public class CourseIntegrationService {
 
     private Map<String, Object> buildCoursePayload(Course course, CourseRequestDTO request) {
         Map<String, Object> payload = new LinkedHashMap<>();
-        payload.put("id", course.getCourseServiceId());
         payload.put("title", request.getTitle());
         payload.put("subtitle", request.getSubtitle());
         payload.put("description", request.getDescription());
@@ -59,7 +66,7 @@ public class CourseIntegrationService {
         payload.put("language", null);
         payload.put("price", request.getPrice());
         payload.put("thumbnail", request.getThumbnailUrl());
-        payload.put("instructorId", course.getInstructor() != null ? course.getInstructor().getId() : null);
+        payload.put("instructorId", course.getInstructor() != null ? course.getInstructor().getUserId() : null);
         payload.put("status", course.getStatus() != null ? course.getStatus().name() : "DRAFT");
         return payload;
     }

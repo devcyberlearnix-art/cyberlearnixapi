@@ -33,7 +33,7 @@ public class DashboardService {
     public DashboardResponseDTO getDashboard(UUID instructorId) {
 
         // Fetch all courses of instructor
-        List<Course> courses = courseRepository.findByInstructorId(instructorId);
+        List<Course> courses = courseRepository.findByInstructorUserId(instructorId);
 
         int totalCourses = courses.size();
         long publishedCount = courses.stream().filter(c -> c.getStatus() == Course.CourseStatus.PUBLISHED).count();
@@ -113,7 +113,7 @@ public class DashboardService {
 
     public InstructorEarningsResponse getInstructorEarnings(UUID instructorId) {
 
-        List<Course> courses = courseRepository.findByInstructorId(instructorId);
+        List<Course> courses = courseRepository.findByInstructorUserId(instructorId);
 
         double totalRevenue = 0.0;
         long totalEnrollments = 0;

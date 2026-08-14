@@ -1,5 +1,6 @@
 package com.lms.wishlist_service.config;
 
+import com.cyberlearnix.error.ApiSecurityErrorWriter;
 import com.lms.wishlist_service.security.JwtAuthenticationFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -16,8 +17,16 @@ public class SecurityConfig {
         http
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .exceptionHandling(errors -> errors
+                    .authenticationEntryPoint((request, response, exception) ->
+                        ApiSecurityErrorWriter.write(request, response, 401,
+                            "UNAUTHORIZED", "Authentication is required"))
+                    .accessDeniedHandler((request, response, exception) ->
+                        ApiSecurityErrorWriter.write(request, response, 403,
+                            "FORBIDDEN", "Insufficient permissions")))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html", "/actuator/**").permitAll()
+                        .requestMatchers("/api/v1/wishlist/**").hasRole("STUDENT")
                         .anyRequest().authenticated()
                 );
 

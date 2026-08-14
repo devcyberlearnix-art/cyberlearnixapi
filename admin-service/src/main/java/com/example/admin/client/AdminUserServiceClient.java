@@ -16,6 +16,7 @@ import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -44,19 +45,19 @@ public class AdminUserServiceClient {
         return headers;
     }
 
-    public List<UserDTO> getAllUsers() {
+    public Map<String, Object> getAllUsers(int page, int size) {
         try {
-            String url = userServiceUrl + "/api/v1/users";
+            String url = userServiceUrl + "/api/v1/users?page=" + page + "&size=" + size;
             ResponseEntity<Map> response = restTemplate.exchange(
                     url,
                     org.springframework.http.HttpMethod.GET,
                     new HttpEntity<>(createHeaders()),
                     Map.class
             );
-            return parseUserList(response.getBody());
+            return parsePaginatedUserList(response.getBody());
         } catch (RestClientException e) {
             System.err.println("✗ Failed to get users from User Service: " + e.getMessage());
-            return List.of();
+            return Map.of("users", List.of(), "totalUsers", 0, "currentPage", 0, "totalPages", 0);
         }
     }
 
@@ -105,14 +106,16 @@ public class AdminUserServiceClient {
         }
     }
 
-    public List<UserDTO> getAllInstructors() {
+        public List<UserDTO> getAllInstructors(String authorization) {
         try {
             String url = userServiceUrl + "/api/v1/admin/instructors";
-            ResponseEntity<Object[]> response = restTemplate.exchange(
+            HttpHeaders headers = new HttpHeaders();
+            headers.set(HttpHeaders.AUTHORIZATION, authorization);
+            ResponseEntity<Object> response = restTemplate.exchange(
                     url,
                     org.springframework.http.HttpMethod.GET,
-                    new HttpEntity<>(createHeaders()),
-                    Object[].class
+                new HttpEntity<>(headers),
+                Object.class
             );
             return parseUserList(response.getBody());
         } catch (RestClientException e) {
@@ -121,14 +124,16 @@ public class AdminUserServiceClient {
         }
     }
 
-    public List<InstructorApplicationDTO> getAllInstructorApplications() {
+        public List<InstructorApplicationDTO> getAllInstructorApplications(String authorization) {
         try {
             String url = userServiceUrl + "/api/v1/admin/instructors/applications";
-            ResponseEntity<Object[]> response = restTemplate.exchange(
+            HttpHeaders headers = new HttpHeaders();
+            headers.set(HttpHeaders.AUTHORIZATION, authorization);
+            ResponseEntity<Object> response = restTemplate.exchange(
                     url,
                     org.springframework.http.HttpMethod.GET,
-                    new HttpEntity<>(createHeaders()),
-                    Object[].class
+                new HttpEntity<>(headers),
+                Object.class
             );
             return parseApplicationList(response.getBody());
         } catch (RestClientException e) {
@@ -236,6 +241,48 @@ public class AdminUserServiceClient {
         return List.of();
     }
 
+    private Map<String, Object> parsePaginatedUserList(Object body) {
+        if (body == null) {
+            return Map.of("users", List.of(), "totalUsers", 0, "currentPage", 0, "totalPages", 0);
+        }
+        if (body instanceof Map<?, ?> map) {
+            Object data = map.get("data");
+            if (data instanceof Map<?, ?> dataMap) {
+                Object users = dataMap.get("users");
+                List<UserDTO> userList = new ArrayList<>();
+                
+                if (users instanceof List<?> list) {
+                    for (Object item : list) {
+                        userList.add(mapToUserDto(item));
+                    }
+                } else if (users instanceof Object[] arr) {
+                    for (Object item : arr) {
+                        userList.add(mapToUserDto(item));
+                    }
+                }
+                
+                Map<String, Object> result = new HashMap<>();
+                result.put("users", userList);
+                result.put("totalUsers", getNumber(dataMap.get("totalUsers")));
+                result.put("currentPage", getNumber(dataMap.get("currentPage")));
+                result.put("totalPages", getNumber(dataMap.get("totalPages")));
+                result.put("pageSize", getNumber(dataMap.get("pageSize")));
+                return result;
+            }
+        }
+        return Map.of("users", List.of(), "totalUsers", 0, "currentPage", 0, "totalPages", 0);
+    }
+
+    private int getNumber(Object value) {
+        if (value == null) return 0;
+        if (value instanceof Number number) return number.intValue();
+        try {
+            return Integer.parseInt(String.valueOf(value));
+        } catch (Exception e) {
+            return 0;
+        }
+    }
+
     private List<InstructorApplicationDTO> parseApplicationList(Object body) {
         if (body == null) {
             return List.of();
@@ -297,14 +344,19 @@ public class AdminUserServiceClient {
 
     private UserDTO mapFromMap(Map<?, ?> map) {
         UserDTO dto = new UserDTO();
-        dto.setId(getUuid(map.get("id")));
+        // Handle both 'id' and 'userId' field names
+        UUID id = getUuid(map.get("id"));
+        if (id == null) {
+            id = getUuid(map.get("userId"));
+        }
+        dto.setId(id);
         dto.setEmail(getString(map.get("email")));
         dto.setRole(getString(map.get("role")));
         dto.setStatus(getString(map.get("status")));
         dto.setCreatedAt(getString(map.get("createdAt")));
         dto.setFirstName(getString(map.get("firstName")));
         dto.setLastName(getString(map.get("lastName")));
-        dto.setMobileNumber(getString(map.get("mobileNumber")));
+        dto.setMobileNumber(getString(map.get("mobile")));
         dto.setProfilePhoto(getString(map.get("profilePhoto")));
         return dto;
     }

@@ -11,9 +11,13 @@ import com.lms.orderservice.client.dto.coupon.ValidateRequest;
 import com.lms.orderservice.client.dto.coupon.ValidationResponse;
 import com.lms.orderservice.entity.Order;
 import com.lms.orderservice.entity.OrderItem;
+import com.lms.orderservice.entity.OrderStatus;
 import com.lms.orderservice.repository.OrderItemRepository;
 import com.lms.orderservice.repository.OrderRepository;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 
 import com.lms.orderservice.dto.CreateOrderRequest;
@@ -31,6 +35,9 @@ public class OrderService {
     private final OrderItemRepository orderItemRepository;
     private final OrderRepository orderRepository;
     private final RestTemplate restTemplate = new RestTemplate();
+
+    @Value("${course.service.url:${COURSE_SERVICE_URL:http://localhost:8083}}")
+    private String courseServiceUrl;
 
     public OrderService(OrderRepository orderRepository,
             OrderItemRepository orderItemRepository,
@@ -132,7 +139,7 @@ public class OrderService {
         // 4. Create Order
         Order order = new Order();
         order.setUserId(userId);
-        order.setStatus("PENDING");
+        order.setStatus(OrderStatus.PENDING.name());
         order.setCreatedAt(LocalDateTime.now());
         order.setTotalAmount(finalTotal);
 
@@ -184,7 +191,7 @@ public class OrderService {
                 continue;
             }
             try {
-                String url = "http://localhost:8083/api/v1/courses/" + courseId;
+                String url = courseServiceUrl + "/api/v1/courses/" + courseId;
                 var response = restTemplate.getForEntity(url, Object.class);
                 if (!response.getStatusCode().is2xxSuccessful()) {
                     throw new RuntimeException("Course not found with id: " + courseId);
@@ -198,12 +205,15 @@ public class OrderService {
     // ✅ Get Order
     public Order getOrder(String orderId) {
         return orderRepository.findById(orderId)
-                .orElseThrow(() -> new RuntimeException("Order not found"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Order not found"));
     }
 
-    // ✅ Get All Orders
-    public List<Order> getAllOrders() {
-        return orderRepository.findAll();
+    public Order getOrderForUser(String orderId, String userId) {
+        Order order = getOrder(orderId);
+        if (!order.getUserId().equals(userId)) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Order not found");
+        }
+        return order;
     }
 
     // ✅ Get Orders by User
@@ -211,15 +221,15 @@ public class OrderService {
         return orderRepository.findByUserId(userId);
     }
 
+    public List<Order> getAllOrders() {
+        return orderRepository.findAll();
+    }
+
     // ✅ Cancel Order
-    public String cancelOrder(String orderId) {
-        Order order = getOrder(orderId);
+    public String cancelOrder(String orderId, String userId) {
+        Order order = getOrderForUser(orderId, userId);
 
-        if ("COMPLETED".equals(order.getStatus())) {
-            throw new RuntimeException("Cannot cancel completed order");
-        }
-
-        order.setStatus("CANCELLED");
+        transition(order, OrderStatus.CANCELLED);
         orderRepository.save(order);
 
         return "Order Cancelled";
@@ -228,7 +238,13 @@ public class OrderService {
     public Order updateStatus(String orderId, String status) {
 
         Order order = getOrder(orderId);
-        order.setStatus(status);
+        OrderStatus target;
+        try {
+            target = OrderStatus.valueOf(status.toUpperCase());
+        } catch (IllegalArgumentException exception) {
+            throw new IllegalArgumentException("Unsupported order status: " + status);
+        }
+        transition(order, target);
 
         return orderRepository.save(order);
     }
@@ -236,11 +252,11 @@ public class OrderService {
     public void completeOrderInternal(String userId, String courseId) {
         List<Order> orders = getOrdersByUser(userId);
         for (Order order : orders) {
-            if ("PENDING".equalsIgnoreCase(order.getStatus())) {
+            if (OrderStatus.PENDING.name().equalsIgnoreCase(order.getStatus())) {
                 List<OrderItem> items = orderItemRepository.findByOrderId(order.getOrderId());
                 for (OrderItem item : items) {
                     if (courseId.equals(item.getCourseId())) {
-                        order.setStatus("COMPLETED");
+                        transition(order, OrderStatus.COMPLETED);
                         orderRepository.save(order);
                         break;
                     }
@@ -249,20 +265,41 @@ public class OrderService {
         }
     }
 
-    public String refundOrder(String orderId) {
-        Order order = getOrder(orderId);
+    public String refundOrder(String orderId, String userId) {
+        Order order = getOrderForUser(orderId, userId);
 
-        if ("REFUNDED".equals(order.getStatus())) {
+        if (OrderStatus.REFUNDED.name().equals(order.getStatus())) {
             return "Order is already refunded";
         }
 
-        if (!"COMPLETED".equals(order.getStatus())) {
-            throw new RuntimeException("Only completed orders can be refunded. Current status: " + order.getStatus());
-        }
-
-        order.setStatus("REFUNDED");
+        transition(order, OrderStatus.REFUNDED);
         orderRepository.save(order);
 
         return "Refund processed";
+    }
+
+    private void transition(Order order, OrderStatus target) {
+        OrderStatus current;
+        try {
+            current = OrderStatus.valueOf(order.getStatus().toUpperCase());
+        } catch (IllegalArgumentException exception) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "Order has unsupported current status: " + order.getStatus());
+        }
+
+        boolean allowed = switch (current) {
+            case PENDING -> target == OrderStatus.PAID
+                    || target == OrderStatus.COMPLETED
+                    || target == OrderStatus.CANCELLED
+                    || target == OrderStatus.FAILED;
+            case PAID -> target == OrderStatus.COMPLETED || target == OrderStatus.REFUNDED;
+            case COMPLETED -> target == OrderStatus.REFUNDED;
+            case FAILED, CANCELLED, REFUNDED -> false;
+        };
+        if (!allowed) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "Order cannot transition from " + current + " to " + target);
+        }
+        order.setStatus(target.name());
     }
 }

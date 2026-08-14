@@ -1,10 +1,4 @@
-# Stage 1: Build
-FROM gradle:8.14.3-jdk21-alpine AS build
-WORKDIR /app
-COPY . .
-RUN gradle :review-service:clean :review-service:build -x test --no-daemon
-
-# Stage 2: Runtime
+# Runtime - Use pre-built JAR
 FROM eclipse-temurin:21-jre-alpine
 
 RUN apk add --no-cache tzdata && \
@@ -13,7 +7,7 @@ RUN apk add --no-cache tzdata && \
 
 WORKDIR /app
 
-COPY --from=build /app/review-service/build/libs/review-service-1.0.0.jar app.jar
+COPY review-service/build/libs/*.jar app.jar
 
 EXPOSE 8089
 

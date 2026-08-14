@@ -19,5 +19,6 @@ public class LoginOtpResponse {
         private String email;
         private String expiresAt;
         private int cooldownSeconds;
+        private String otpSessionId;
     }
 }

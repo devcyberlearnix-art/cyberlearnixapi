@@ -1,5 +1,6 @@
 package com.example.instructorservice.config;
 
+import com.cyberlearnix.error.ApiSecurityErrorWriter;
 import com.example.instructorservice.security.JwtFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
@@ -20,6 +21,13 @@ public class SecurityConfig {
 
         http
                 .csrf(csrf -> csrf.disable())
+            .exceptionHandling(errors -> errors
+                .authenticationEntryPoint((request, response, exception) ->
+                    ApiSecurityErrorWriter.write(request, response, 401,
+                        "UNAUTHORIZED", "Authentication is required"))
+                .accessDeniedHandler((request, response, exception) ->
+                    ApiSecurityErrorWriter.write(request, response, 403,
+                        "FORBIDDEN", "Insufficient permissions")))
                 .authorizeHttpRequests(auth -> auth
 
                         .requestMatchers("/api/v1/auth/**").permitAll()
