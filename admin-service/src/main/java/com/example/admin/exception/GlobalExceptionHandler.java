@@ -43,6 +43,26 @@ public class GlobalExceptionHandler {
                 ));
     }
 
+    @ExceptionHandler(AdminEmailChangeException.class)
+    public ResponseEntity<Map<String, Object>> handleAdminEmailChangeException(AdminEmailChangeException ex) {
+        return ResponseEntity.status(ex.getHttpStatus())
+                .body(Map.of(
+                        "success", false,
+                        "message", ex.getMessage(),
+                        "timestamp", LocalDateTime.now().toString()
+                ));
+    }
+
+    @ExceptionHandler(AdminPasswordChangeException.class)
+    public ResponseEntity<Map<String, Object>> handleAdminPasswordChangeException(AdminPasswordChangeException ex) {
+        return ResponseEntity.status(ex.getStatus())
+                .body(Map.of(
+                        "success", false,
+                        "message", ex.getMessage(),
+                        "timestamp", LocalDateTime.now().toString()
+                ));
+    }
+
     @ExceptionHandler(RuntimeException.class)
     public ResponseEntity<Map<String, Object>> handleRuntimeException(RuntimeException ex) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)

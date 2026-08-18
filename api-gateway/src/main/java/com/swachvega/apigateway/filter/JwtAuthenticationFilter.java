@@ -6,6 +6,8 @@ import com.swachvega.apigateway.security.SimpleJwtTokenProvider;
 
 import io.jsonwebtoken.JwtException;
 
+import org.springframework.data.redis.core.ReactiveRedisTemplate;
+
 import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
@@ -41,6 +43,8 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
 
 
     private final SimpleJwtTokenProvider jwtTokenProvider;
+
+    private final ReactiveRedisTemplate<String, Object> redisTemplate;
 
 
 
@@ -143,9 +147,11 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
 
 
 
-    public JwtAuthenticationFilter(SimpleJwtTokenProvider jwtTokenProvider) {
+    public JwtAuthenticationFilter(SimpleJwtTokenProvider jwtTokenProvider, ReactiveRedisTemplate<String, Object> redisTemplate) {
 
         this.jwtTokenProvider = jwtTokenProvider;
+
+        this.redisTemplate = redisTemplate;
 
     }
 
@@ -217,21 +223,37 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
 
         // Validate token
 
-        return jwtTokenProvider.validateAccessToken(token)
+        String blacklistKey = "blacklist:token:" + token;
 
-                .doOnNext(claims -> log.info("Token validated successfully for user: {} on path: {}", claims.get("sub"),
+        return redisTemplate.hasKey(blacklistKey)
 
-                        path))
+                .flatMap(isBlacklisted -> {
 
-                .flatMap(claims -> {
+                    if (Boolean.TRUE.equals(isBlacklisted)) {
 
-                    // Add user info to request headers and delegate to downstream service
+                        log.warn("Token is blacklisted (logged out): {}", token.substring(0, Math.min(10, token.length())) + "...");
 
-                    ServerWebExchange modifiedExchange = addUserHeaders(exchange, claims);
+                        return unauthorizedResponse(exchange, "Token has been logged out");
 
-                    log.info("Proceeding to downstream service for path: {}", path);
+                    }
 
-                    return chain.filter(modifiedExchange);
+                    return jwtTokenProvider.validateAccessToken(token)
+
+                            .doOnNext(claims -> log.info("Token validated successfully for user: {} on path: {}", claims.get("sub"),
+
+                                    path))
+
+                            .flatMap(claims -> {
+
+                                // Add user info to request headers and delegate to downstream service
+
+                                ServerWebExchange modifiedExchange = addUserHeaders(exchange, claims);
+
+                                log.info("Proceeding to downstream service for path: {}", path);
+
+                                return chain.filter(modifiedExchange);
+
+                            });
 
                 })
 

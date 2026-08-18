@@ -87,6 +87,13 @@ public class Admin {
     // Track last OTP sent time to control resend
     @Column
     private LocalDateTime lastOtpSentAt;
+
+    @Builder.Default
+    private Integer failedPasswordAttempts = 0;
+
+    @Column
+    private LocalDateTime lockedUntil;
+
     @CreationTimestamp
     @Column(updatable = false, nullable = false)
     private LocalDateTime createdAt;

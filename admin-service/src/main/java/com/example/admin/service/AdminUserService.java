@@ -1,36 +1,27 @@
 package com.example.admin.service;
 
-
-
+import com.example.admin.client.AdminCourseServiceClient;
 import com.example.admin.client.AdminUserServiceClient;
-
 import com.example.admin.dto.*;
-
+import com.example.admin.entity.Admin;
+import com.example.admin.entity.AdminApprovalStatus;
+import com.example.admin.repository.AdminRepository;
 import lombok.RequiredArgsConstructor;
-
 import org.springframework.stereotype.Service;
 
-
-
 import java.time.LocalDateTime;
-
 import java.util.List;
-
 import java.util.Map;
-
+import java.util.Optional;
 import java.util.UUID;
 
-
-
 @Service
-
 @RequiredArgsConstructor
-
 public class AdminUserService {
 
-
-
     private final AdminUserServiceClient userClient;
+    private final AdminCourseServiceClient courseClient;
+    private final AdminRepository adminRepository;
 
 
 
@@ -50,6 +41,8 @@ public class AdminUserService {
                         .email(user.getEmail())
 
                         .role(user.getRole())
+
+                        .status(user.getStatus())
 
                         .createdAt(user.getCreatedAt())
 
@@ -120,41 +113,62 @@ public class AdminUserService {
     }
 
     public AdminSingleUserResponse updateUserStatus(UUID id, UpdateUserStatusRequest request) {
+        // 1. First, check if the user is an Admin stored in admin-service DB
+        Optional<Admin> adminOpt = adminRepository.findById(id);
+        if (adminOpt.isPresent()) {
+            Admin admin = adminOpt.get();
+            String status = request.getStatus().toUpperCase();
+            switch (status) {
+                case "ACTIVE", "APPROVED" -> admin.setApprovalStatus(AdminApprovalStatus.APPROVED);
+                case "INACTIVE", "SUSPENDED", "REJECTED" -> admin.setApprovalStatus(AdminApprovalStatus.REJECTED);
+                default -> admin.setApprovalStatus(AdminApprovalStatus.PENDING);
+            }
+            adminRepository.save(admin);
 
-        AdminUserServiceClient.UserDTO user = userClient.updateUserStatus(id, request.getStatus());
-
-        
-
-        if (user == null) {
+            UserProfileResponse profile = new UserProfileResponse();
+            profile.setUserId(admin.getId());
+            profile.setEmail(admin.getEmail());
+            profile.setFirstName(admin.getFirstName());
+            profile.setLastName(admin.getLastName());
+            profile.setMobile(admin.getMobileNumber());
+            profile.setRole(admin.getRole());
+            profile.setStatus(admin.getApprovalStatus().name());
+            profile.setCreatedAt(admin.getCreatedAt() != null ? admin.getCreatedAt().toString() : null);
+            profile.setEnrollments(List.of());
+            profile.setEnrollmentCount(0);
 
             return AdminSingleUserResponse.builder()
-
-                    .success(false)
-
-                    .message("Error updating user status")
-
+                    .success(true)
+                    .message("Admin status updated successfully")
+                    .data(profile)
                     .timestamp(LocalDateTime.now().toString())
-
                     .build();
-
         }
 
-
-
-        UserProfileResponse profile = convertToProfileResponse(user);
-
-        return AdminSingleUserResponse.builder()
-
-                .success(true)
-
-                .message("User status updated successfully")
-
-                .data(profile)
-
-                .timestamp(LocalDateTime.now().toString())
-
-                .build();
-
+        // 2. Otherwise, update via user-service (regular users: students, instructors)
+        try {
+            AdminUserServiceClient.UserDTO user = userClient.updateUserStatus(id, request.getStatus());
+            if (user == null) {
+                return AdminSingleUserResponse.builder()
+                        .success(false)
+                        .message("Error updating user status: User not found")
+                        .timestamp(LocalDateTime.now().toString())
+                        .build();
+            }
+            UserProfileResponse profile = convertToProfileResponse(user);
+            return AdminSingleUserResponse.builder()
+                    .success(true)
+                    .message("User status updated successfully")
+                    .data(profile)
+                    .timestamp(LocalDateTime.now().toString())
+                    .build();
+        } catch (Exception e) {
+            return AdminSingleUserResponse.builder()
+                    .success(false)
+                    .message("Error updating user status: " + e.getMessage())
+                    .timestamp(LocalDateTime.now().toString())
+                    .build();
+        }
     }
 
     public AdminDeleteUserResponse deleteUser(UUID id) {
@@ -506,30 +520,34 @@ public class AdminUserService {
 
 
     private UserProfileResponse convertToProfileResponse(AdminUserServiceClient.UserDTO user) {
-
+        // Initialize response object
         UserProfileResponse profile = new UserProfileResponse();
 
+        // Populate basic user fields
         profile.setUserId(user.getId());
-
         profile.setEmail(user.getEmail());
-
         profile.setRole(user.getRole());
-
         profile.setStatus(user.getStatus());
-
         profile.setCreatedAt(user.getCreatedAt());
-
         profile.setFirstName(user.getFirstName());
-
         profile.setLastName(user.getLastName());
-
         profile.setMobile(user.getMobileNumber());
-
         profile.setProfilePhoto(user.getProfilePhoto());
 
-        return profile;
+        // Fetch enrollment details for the user
+        java.util.List<com.example.admin.dto.EnrollmentInfoDTO> enrollments =
+                courseClient.getEnrollmentsByUserId(user.getId());
+        profile.setEnrollments(enrollments);
+        profile.setEnrollmentCount(enrollments != null ? enrollments.size() : 0);
 
+        return profile;
     }
+
+
+
+
+
+
 
 
 

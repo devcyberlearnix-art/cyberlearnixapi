@@ -182,6 +182,15 @@ public class JwtService {
         }
     }
 
+    public java.util.Date extractIssuedAt(String token) {
+        try {
+            return sharedJwtValidator.extractAllClaims(token).getIssuedAt();
+        } catch (Exception e) {
+            log.error("Failed to extract issuedAt from token", e);
+            return null;
+        }
+    }
+
     // ================= TOKEN VALIDATION (using shared validator) =================
     public boolean validateToken(String token) {
         return sharedJwtValidator.isTokenValid(token);

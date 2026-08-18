@@ -1076,53 +1076,23 @@ public class UserService {
     }
 
     public UserProfileResponse updateUserStatus(UUID id, String status) {
-
-
-
         User user = userRepository.findById(id)
-
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-
-
-        if ("REJECTED".equalsIgnoreCase(status)) {
-
-            user.setApplicationStatus(User.ApplicationStatus.REJECTED);
-
-            user.setIsInstructorApproved(false);
-
-            syncInstructorApplication(id, com.user.register.entity.InstructorApplication.ApplicationStatus.REJECTED);
-
-        } else if ("ACTIVE".equalsIgnoreCase(status)) {
-
-            user.setApplicationStatus(User.ApplicationStatus.APPROVED);
-
-            user.setIsInstructorApproved(true);
-
-            user.setRole(User.Role.INSTRUCTOR);
-
-            syncInstructorApplication(id, com.user.register.entity.InstructorApplication.ApplicationStatus.APPROVED);
-
+        try {
+            String enumStatus = status.toUpperCase();
+            if ("INACTIVE".equals(enumStatus)) {
+                enumStatus = "SUSPENDED"; // Map INACTIVE to SUSPENDED
+            }
+            user.setStatus(User.Status.valueOf(enumStatus));
+        } catch (IllegalArgumentException e) {
+            throw new RuntimeException("Invalid status: " + status);
         }
-
-        // ✅ fallback (normal user status)
-
-        else {
-
-            user.setStatus(User.Status.valueOf(status.toUpperCase()));
-
-        }
-
-
 
         user.setUpdatedAt(LocalDateTime.now());
-
         userRepository.save(user);
 
-
-
         return getUserById(id);
-
     }
 
     @Transactional

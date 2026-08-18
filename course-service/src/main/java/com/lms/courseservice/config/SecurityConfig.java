@@ -44,6 +44,8 @@ public class SecurityConfig {
                         // ============== INTERNAL ENDPOINTS (Service-to-Service) ==============
                         // Internal enrollment (from payment service)
                         .requestMatchers(HttpMethod.POST, "/api/v1/enrollments/internal/enroll").permitAll()
+                        // Enrollment lookup by user (from admin service)
+                        .requestMatchers(HttpMethod.GET, "/api/v1/enrollments/users/*").permitAll()
                         // Admin service operations (with service token)
                         .requestMatchers(HttpMethod.PUT, "/api/v1/courses/*").permitAll()
                         .requestMatchers(HttpMethod.PATCH, "/api/v1/courses/*").permitAll()

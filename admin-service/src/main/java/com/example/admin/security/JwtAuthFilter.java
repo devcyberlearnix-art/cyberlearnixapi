@@ -12,6 +12,7 @@ import jakarta.servlet.http.HttpServletResponse;
 
 import lombok.RequiredArgsConstructor;
 
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.MediaType;
 
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -39,6 +40,10 @@ public class JwtAuthFilter implements Filter {
 
 
     private final JwtService jwtService;
+
+    private final StringRedisTemplate redisTemplate;
+
+    private static final String TOKEN_BLACKLIST_PREFIX = "ADMIN:JWT:BLACKLIST:";
 
 
 
@@ -235,11 +240,38 @@ public class JwtAuthFilter implements Filter {
 
         }
 
-
+        // ── Reject blacklisted tokens (e.g. after email change) ───────────────
+        try {
+            Boolean isBlacklisted = redisTemplate.hasKey(TOKEN_BLACKLIST_PREFIX + token);
+            if (Boolean.TRUE.equals(isBlacklisted)) {
+                SecurityContextHolder.clearContext();
+                return false;
+            }
+        } catch (Exception ignored) {
+            // Redis unavailable — fail open to avoid blocking valid requests
+        }
 
         try {
 
             UUID adminId = jwtService.extractAdminId(token);
+
+            // Check if password was changed after token issuance
+            try {
+                String lastChangeStr = redisTemplate.opsForValue().get("ADMIN:PASSWORD_CHANGE_TIME:" + adminId);
+                if (lastChangeStr != null) {
+                    long lastChangeTime = Long.parseLong(lastChangeStr);
+                    java.util.Date issuedAt = jwtService.extractIssuedAt(token);
+                    if (issuedAt != null && issuedAt.getTime() < lastChangeTime) {
+                        System.out.println("[JwtAuthFilter] Rejecting token for adminId=" + adminId
+                                + ": token issued at " + issuedAt.getTime()
+                                + " is older than last password change at " + lastChangeTime);
+                        SecurityContextHolder.clearContext();
+                        return false;
+                    }
+                }
+            } catch (Exception e) {
+                System.err.println("[JwtAuthFilter] Error checking admin password change timestamp in Redis: " + e.getMessage());
+            }
 
             String role = jwtService.extractRole(token);
 

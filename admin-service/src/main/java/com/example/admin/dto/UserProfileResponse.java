@@ -1,12 +1,12 @@
 package com.example.admin.dto;
 
 import lombok.Data;
-
+import java.util.List;
 import java.util.UUID;
 
 @Data
 public class UserProfileResponse {
-    private UUID userId;;
+    private UUID userId;
     private String firstName;
     private String lastName;
     private String email;
@@ -21,8 +21,13 @@ public class UserProfileResponse {
     private String skills;
     private String fieldOfStudy;
     private String highestQualification;
+    private int enrollmentCount;
     private String role;
+    private List<EnrollmentInfoDTO> enrollments;
     private String status;
     private String createdAt;
     private String updatedAt;
+    public void setRole(String role) {
+        this.role = role;
+    }
 }

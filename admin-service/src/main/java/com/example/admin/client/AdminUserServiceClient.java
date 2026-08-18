@@ -88,10 +88,29 @@ public class AdminUserServiceClient {
                     Map.class
             );
             return mapToUserDto(response.getBody());
+        } catch (org.springframework.web.client.HttpStatusCodeException e) {
+            String body = e.getResponseBodyAsString();
+            String message = extractMessageFromJson(body);
+            if (message == null) {
+                message = e.getStatusText();
+            }
+            throw new RuntimeException(message);
         } catch (RestClientException e) {
             System.err.println("✗ Failed to update user status: " + e.getMessage());
-            return null;
+            throw new RuntimeException("Failed to connect to user service: " + e.getMessage());
         }
+    }
+
+    private String extractMessageFromJson(String json) {
+        if (json == null) return null;
+        try {
+            com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+            Map<?, ?> map = mapper.readValue(json, Map.class);
+            if (map.containsKey("message")) {
+                return String.valueOf(map.get("message"));
+            }
+        } catch (Exception ignored) {}
+        return null;
     }
 
     public boolean deleteUser(UUID id) {
