@@ -913,6 +913,96 @@ public class AdminAuthService {
                 .build();
     }
 
+    public LoginOtpResponse resendLoginOtp(ResendOtpRequest request) {
+        String otpSessionId = request.getOtpSessionId();
+
+        if (otpSessionId == null || otpSessionId.isBlank()) {
+            return LoginOtpResponse.builder()
+                    .success(false)
+                    .message("otpSessionId is required")
+                    .timestamp(LocalDateTime.now().toString())
+                    .build();
+        }
+
+        // Resolve email from S1 using OtpService
+        Optional<String> emailOptional = otpService.resolveSessionEmail(otpSessionId, "login");
+        if (emailOptional.isEmpty()) {
+            return LoginOtpResponse.builder()
+                    .success(false)
+                    .message("Invalid or expired OTP session")
+                    .timestamp(LocalDateTime.now().toString())
+                    .build();
+        }
+
+        String email = emailOptional.get();
+
+        // Find the admin using resolved email
+        Optional<Admin> adminOptional = adminRepository.findByEmail(email);
+        if (adminOptional.isEmpty()) {
+            return LoginOtpResponse.builder()
+                    .success(false)
+                    .message("Admin with this email does not exist")
+                    .timestamp(LocalDateTime.now().toString())
+                    .build();
+        }
+
+        Admin admin = adminOptional.get();
+
+        // Validate admin status/verification
+        if (!admin.isVerified()) {
+            return LoginOtpResponse.builder()
+                    .success(false)
+                    .message("Email is not verified. Complete registration first.")
+                    .timestamp(LocalDateTime.now().toString())
+                    .build();
+        }
+
+        // Check existing cooldown
+        long cooldown = otpService.getCooldownSeconds(email, "login");
+        if (cooldown > 0) {
+            return LoginOtpResponse.builder()
+                    .success(false)
+                    .message("Please wait " + cooldown + " seconds before requesting a new OTP.")
+                    .timestamp(LocalDateTime.now().toString())
+                    .build();
+        }
+
+        // Generate new OTP
+        String newOtp = generateOtp();
+
+        // Send email FIRST
+        try {
+            emailService.sendOtp(admin.getEmail(), newOtp);
+        } catch (RuntimeException ex) {
+            // Email failed: keep S1, do not create S2, do not delete S1, do not apply new cooldown
+            throw new ResponseStatusException(
+                    HttpStatus.SERVICE_UNAVAILABLE,
+                    "Unable to send OTP email right now. Please try again shortly."
+            );
+        }
+
+        // Email succeeded: create S2, delete S1, apply cooldown
+        OtpService.OtpSession newOtpSession = otpService.createSession(email, "login", newOtp, 5, 5);
+        otpService.deleteSession(otpSessionId); // Delete S1
+        otpService.markCooldown(email, "login", 30);
+
+        log.info("Login OTP resent to admin: {}", admin.getEmail());
+
+        return LoginOtpResponse.builder()
+                .success(true)
+                .message("Login OTP resent successfully to registered email.")
+                .data(LoginOtpResponse.OtpData.builder()
+                        .validForMinutes(5)
+                        .otpType("login")
+                        .email(encryptionService.encrypt(admin.getEmail()))
+                        .expiresAt(newOtpSession.expiresAt().toString())
+                        .cooldownSeconds(30)
+                        .otpSessionId(newOtpSession.sessionId())
+                        .build())
+                .timestamp(LocalDateTime.now().toString())
+                .build();
+    }
+
     public ForgotPasswordResponse sendResetOtp(String email) {
         Optional<Admin> adminOptional = adminRepository.findByEmail(email);
 
@@ -964,6 +1054,96 @@ public class AdminAuthService {
                         .validForMinutes(5)
                         .expiresAt(expiry.toString())
                         .cooldownSeconds(30)
+                        .build())
+                .timestamp(LocalDateTime.now().toString())
+                .build();
+    }
+
+    public ForgotPasswordResponse resendPasswordOtp(ResendOtpRequest request) {
+        String otpSessionId = request.getOtpSessionId();
+
+        if (otpSessionId == null || otpSessionId.isBlank()) {
+            return ForgotPasswordResponse.builder()
+                    .success(false)
+                    .message("otpSessionId is required")
+                    .timestamp(LocalDateTime.now().toString())
+                    .build();
+        }
+
+        // Resolve email from S1 using OtpService
+        Optional<String> emailOptional = otpService.resolveSessionEmail(otpSessionId, "password_reset");
+        if (emailOptional.isEmpty()) {
+            return ForgotPasswordResponse.builder()
+                    .success(false)
+                    .message("Invalid or expired OTP session")
+                    .timestamp(LocalDateTime.now().toString())
+                    .build();
+        }
+
+        String email = emailOptional.get();
+
+        // Find the admin using resolved email
+        Optional<Admin> adminOptional = adminRepository.findByEmail(email);
+        if (adminOptional.isEmpty()) {
+            return ForgotPasswordResponse.builder()
+                    .success(false)
+                    .message("Admin with this email does not exist")
+                    .timestamp(LocalDateTime.now().toString())
+                    .build();
+        }
+
+        Admin admin = adminOptional.get();
+
+        // Validate admin status/verification
+        if (!admin.isVerified()) {
+            return ForgotPasswordResponse.builder()
+                    .success(false)
+                    .message("Email is not verified. Complete registration first.")
+                    .timestamp(LocalDateTime.now().toString())
+                    .build();
+        }
+
+        // Check existing cooldown
+        long cooldown = otpService.getCooldownSeconds(email, "password_reset");
+        if (cooldown > 0) {
+            return ForgotPasswordResponse.builder()
+                    .success(false)
+                    .message("Please wait " + cooldown + " seconds before requesting a new OTP.")
+                    .timestamp(LocalDateTime.now().toString())
+                    .build();
+        }
+
+        // Generate new OTP
+        String newOtp = generateOtp();
+
+        // Send email FIRST
+        try {
+            emailService.sendOtp(admin.getEmail(), newOtp);
+        } catch (RuntimeException ex) {
+            // Email failed: keep S1, do not create S2, do not delete S1, do not apply new cooldown
+            throw new ResponseStatusException(
+                    HttpStatus.SERVICE_UNAVAILABLE,
+                    "Unable to send OTP email right now. Please try again shortly."
+            );
+        }
+
+        // Email succeeded: create S2, delete S1, apply cooldown
+        OtpService.OtpSession newOtpSession = otpService.createSession(email, "password_reset", newOtp, 5, 5);
+        otpService.deleteSession(otpSessionId); // Delete S1
+        otpService.markCooldown(email, "password_reset", 30);
+
+        log.info("Password reset OTP resent to admin: {}", admin.getEmail());
+
+        return ForgotPasswordResponse.builder()
+                .success(true)
+                .message("Password reset OTP resent successfully to registered email.")
+                .data(ForgotPasswordResponse.ForgotPasswordData.builder()
+                        .email(encryptionService.encrypt(admin.getEmail()))
+                        .otpType("password_reset")
+                        .validForMinutes(5)
+                        .expiresAt(newOtpSession.expiresAt().toString())
+                        .cooldownSeconds(30)
+                        .otpSessionId(newOtpSession.sessionId())
                         .build())
                 .timestamp(LocalDateTime.now().toString())
                 .build();

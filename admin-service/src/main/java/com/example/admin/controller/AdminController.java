@@ -74,6 +74,14 @@ public class AdminController {
     }
 
     /**
+     * Admin login OTP resend. Resends a new OTP for login using existing session.
+     */
+    @PostMapping("/login/otp/resend")
+    public ResponseEntity<LoginOtpResponse> resendLoginOtp(@RequestBody ResendOtpRequest request) {
+        return ResponseEntity.ok(adminAuthService.resendLoginOtp(request));
+    }
+
+    /**
      * Admin forgot password OTP request. Called by User Service's /api/v1/auth/password/forgot fallback.
      */
     @PostMapping("/password/forgot")
@@ -87,6 +95,14 @@ public class AdminController {
     @PostMapping("/password/verify-otp")
     public ResponseEntity<VerifyOtpResponse> verifyPasswordOtp(@RequestBody VerifyOtpRequest request) {
         return ResponseEntity.ok(adminAuthService.verifyPasswordOtp(request));
+    }
+
+    /**
+     * Admin password reset OTP resend. Resends a new OTP for password reset using existing session.
+     */
+    @PostMapping("/password/otp/resend")
+    public ResponseEntity<ForgotPasswordResponse> resendPasswordOtp(@RequestBody ResendOtpRequest request) {
+        return ResponseEntity.ok(adminAuthService.resendPasswordOtp(request));
     }
 
     /**

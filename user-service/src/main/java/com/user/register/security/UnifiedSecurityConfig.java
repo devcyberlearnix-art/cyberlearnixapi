@@ -84,6 +84,8 @@ public class UnifiedSecurityConfig {
 
                         .requestMatchers("/api/v1/auth/password/**").permitAll()
 
+                        .requestMatchers("/api/v1/auth/otp/**").permitAll()
+
                         .requestMatchers("/api/v1/auth/refresh").permitAll()
 
                         .requestMatchers("/api/v1/auth/logout").permitAll()

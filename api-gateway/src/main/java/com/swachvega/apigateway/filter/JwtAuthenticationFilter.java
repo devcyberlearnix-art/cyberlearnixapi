@@ -58,6 +58,8 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
             "/api/v1/auth/login",
 
             "/api/v1/auth/login/**",
+            "/api/v1/auth/login/otp/resend",
+            "/api/v1/auth/password/otp/resend",
 
             "/api/v1/auth/register",
 
@@ -76,6 +78,8 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
             "/api/v1/auth/password/reset",
 
             "/api/v1/auth/upload/profile-photo",
+
+            "/api/v1/auth/otp/resend",
 
             "/api/v1/users/login/social",
 

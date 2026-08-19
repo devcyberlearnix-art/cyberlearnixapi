@@ -28,7 +28,9 @@ public class SecurityConfig {
                         // ============== PUBLIC ENDPOINTS (No Auth Required) ==============
                         // GET all courses
                         .requestMatchers(HttpMethod.GET, "/api/v1/courses").permitAll()
-                        // GET specific course
+                        // GET trending courses (public landing page) - specific pattern first
+                        .requestMatchers(HttpMethod.GET, "/api/v1/courses/trending").permitAll()
+                        // GET specific course and course list (wildcard matches /list, /{id})
                         .requestMatchers(HttpMethod.GET, "/api/v1/courses/*").permitAll()
                         // GET course sections
                         .requestMatchers(HttpMethod.GET, "/api/v1/courses/*/sections").permitAll()
@@ -36,8 +38,6 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/v1/sections/*/lectures").permitAll()
                         // GET course preview
                         .requestMatchers(HttpMethod.GET, "/api/v1/courses/*/preview").permitAll()
-                        // GET course students (for admin dashboard)
-                        .requestMatchers(HttpMethod.GET, "/api/v1/courses/*/students").permitAll()
                         // Track anonymous home/search engagement for featured ranking
                         .requestMatchers(HttpMethod.POST, "/api/v1/courses/*/impressions").permitAll()
 
@@ -45,8 +45,6 @@ public class SecurityConfig {
                         // Internal enrollment (from payment service)
                         .requestMatchers(HttpMethod.POST, "/api/v1/enrollments/internal/enroll").permitAll()
                         // Admin service operations (with service token)
-                        .requestMatchers(HttpMethod.PUT, "/api/v1/courses/*").permitAll()
-                        .requestMatchers(HttpMethod.PATCH, "/api/v1/courses/*").permitAll()
                         .requestMatchers(HttpMethod.PATCH, "/api/v1/courses/*/status").permitAll()
 
                         // ============== AUTHENTICATED ENDPOINTS ==============
@@ -59,6 +57,9 @@ public class SecurityConfig {
                         .hasAnyRole("STUDENT", "USER", "INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN", "ADMIN")
 
                         // ============== INSTRUCTOR/ADMIN ENDPOINTS ==============
+                        // GET course students (instructor/admin dashboard)
+                        .requestMatchers(HttpMethod.GET, "/api/v1/courses/*/students")
+                        .hasAnyRole("INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN", "ADMIN")
                         // Create course
                         .requestMatchers(HttpMethod.POST, "/api/v1/courses", "/api/v1/courses/")
                         .hasAnyRole("INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN", "ADMIN")

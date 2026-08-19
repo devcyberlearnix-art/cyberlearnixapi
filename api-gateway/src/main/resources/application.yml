@@ -300,28 +300,20 @@ spring:
 
         # ── User Service ────────────────────────────────────────
 
-
-
         - id: userservice-auth
-
-
-
           uri: ${USER_SERVICE_URL:http://localhost:8091}
-
-
-
           predicates:
-
-
-
             - Path=/api/v1/auth/**
-
-
-
           filters:
+            - StripPrefix=0
 
-
-
+        # ── Common OTP Resend ───────────────────────────────────
+        # Explicit route for common OTP resend to ensure proper routing
+        - id: userservice-otp-resend
+          uri: ${USER_SERVICE_URL:http://localhost:8091}
+          predicates:
+            - Path=/api/v1/auth/otp/resend
+          filters:
             - StripPrefix=0
 
 

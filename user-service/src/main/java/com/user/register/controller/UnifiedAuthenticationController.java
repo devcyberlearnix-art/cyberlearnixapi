@@ -102,6 +102,16 @@ public class UnifiedAuthenticationController {
     }
 
     /**
+     * Resend Login OTP
+     * POST /api/v1/auth/login/otp/resend
+     */
+    @PostMapping("/login/otp/resend")
+    public ResponseEntity<Map<String, Object>> resendLoginOtp(
+            @Valid @RequestBody ResendOtpRequest request) {
+        return unifiedAuthenticationService.resendLoginOtp(request);
+    }
+
+    /**
      * Forgot Password
      * POST /api/v1/auth/password/forgot
      */
@@ -119,6 +129,16 @@ public class UnifiedAuthenticationController {
     public ResponseEntity<Map<String, Object>> verifyPasswordOtp(
             @RequestBody VerifyOtpRequest request) {
         return unifiedAuthenticationService.verifyPasswordOtp(request);
+    }
+
+    /**
+     * Resend Password Reset OTP
+     * POST /api/v1/auth/password/otp/resend
+     */
+    @PostMapping("/password/otp/resend")
+    public ResponseEntity<Map<String, Object>> resendPasswordOtp(
+            @Valid @RequestBody ResendOtpRequest request) {
+        return unifiedAuthenticationService.resendPasswordOtp(request);
     }
 
     /**
@@ -219,5 +239,16 @@ public class UnifiedAuthenticationController {
 
         // Delegate to service
         return unifiedAuthenticationService.switchRole(request, email);
+    }
+
+    /**
+     * Common OTP Resend Endpoint
+     * POST /api/v1/auth/otp/resend
+     * Supports: User registration, User login, User password reset, Admin login, Admin password reset
+     */
+    @PostMapping("/otp/resend")
+    public ResponseEntity<Map<String, Object>> resendOtpCommon(
+            @Valid @RequestBody ResendOtpRequest request) {
+        return unifiedAuthenticationService.resendOtpCommon(request);
     }
 }

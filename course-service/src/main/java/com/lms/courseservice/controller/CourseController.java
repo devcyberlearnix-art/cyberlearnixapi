@@ -3,6 +3,7 @@ package com.lms.courseservice.controller;
 import com.lms.courseservice.dto.ApiResponse;
 
 import com.lms.courseservice.dto.CourseInfo;
+import com.lms.courseservice.dto.CourseListResponse;
 import com.lms.courseservice.dto.DeleteCourseResponse;
 import com.lms.courseservice.dto.EnrollCourseResponse;
 import com.lms.courseservice.dto.EnrollmentInfo;
@@ -10,14 +11,16 @@ import com.lms.courseservice.dto.EnrolledStudentInfo;
 import com.lms.courseservice.dto.EnrolledStudentsResponse;
 
 import com.lms.courseservice.dto.FeaturedCourseResponse;
-
+import com.lms.courseservice.dto.TrendingCoursesResponse;
+import com.lms.courseservice.dto.TrendingResponseData;
 import com.lms.courseservice.entity.Course;
 import com.lms.courseservice.security.JwtUtil;
 import com.lms.courseservice.service.CourseService;
 import lombok.RequiredArgsConstructor;
-import java.math.BigDecimal;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -47,6 +50,39 @@ public class CourseController {
         return courseService.getAllCourses();
     }
 
+    /**
+     * Get Course List with Filters (Public - Phase 1)
+     * Returns published courses with optional filtering
+     */
+    @GetMapping("/list")
+    public ResponseEntity<CourseListResponse> getCourseList(
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) String category,
+            @RequestParam(required = false) String level,
+            @RequestParam(required = false) String language,
+            @RequestParam(required = false) BigDecimal minPrice,
+            @RequestParam(required = false) BigDecimal maxPrice,
+            @RequestParam(required = false) Boolean premium,
+            @RequestParam(required = false) Boolean free,
+            @RequestParam(required = false) Boolean paid,
+            @RequestParam(required = false) String sort,
+            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false) Integer size) {
+        try {
+            CourseListResponse response = courseService.getCourseList(
+                search, category, level, language, minPrice, maxPrice, premium, free, paid, sort, page, size);
+            return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException e) {
+            CourseListResponse errorResponse = CourseListResponse.builder()
+                .success(false)
+                .message(e.getMessage())
+                .data(null)
+                .timestamp(java.time.Instant.now().toString())
+                .build();
+            return ResponseEntity.badRequest().body(errorResponse);
+        }
+    }
+
     @GetMapping("/stats")
     public Map<String, Object> getCourseStats() {
         return courseService.getCourseStats();
@@ -55,6 +91,30 @@ public class CourseController {
     @GetMapping("/featured")
     public List<FeaturedCourseResponse> getFeaturedCourses(@RequestParam(defaultValue = "6") int limit) {
         return courseService.getFeaturedCourses(limit);
+    }
+
+    /**
+     * Get Trending Courses (Public - No Authentication Required)
+     * Returns paginated trending courses sorted by calculated trending score
+     */
+    @GetMapping("/trending")
+    public ResponseEntity<TrendingCoursesResponse> getTrendingCourses(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) String category,
+            @RequestParam(required = false) String level) {
+        try {
+            TrendingCoursesResponse response = courseService.getTrendingCourses(page, size, category, level);
+            return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException e) {
+            TrendingCoursesResponse errorResponse = TrendingCoursesResponse.builder()
+                .success(false)
+                .message(e.getMessage())
+                .data(null)
+                .timestamp(java.time.Instant.now().toString())
+                .build();
+            return ResponseEntity.badRequest().body(errorResponse);
+        }
     }
 
     @PostMapping("/{courseId}/impressions")

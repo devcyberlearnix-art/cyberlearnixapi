@@ -2920,6 +2920,215 @@ public class UnifiedAuthenticationService {
 
 
 
+    public ResponseEntity<Map<String, Object>> resendLoginOtp(ResendOtpRequest request) {
+        String otpSessionId = request.getOtpSessionId();
+
+        if (otpSessionId == null || otpSessionId.isBlank()) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", "otpSessionId is required");
+            response.put("timestamp", LocalDateTime.now());
+            return ResponseEntity.badRequest().body(response);
+        }
+
+        // Resolve email from session using OtpService
+        Optional<String> emailOptional = otpService.resolveSessionEmail(otpSessionId, "login");
+        if (emailOptional.isEmpty()) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", "Invalid or expired OTP session");
+            response.put("timestamp", LocalDateTime.now());
+            return ResponseEntity.badRequest().body(response);
+        }
+
+        String email = emailOptional.get();
+
+        // Check if user exists in user-service
+        Optional<User> userOptional = userRepository.findByEmail(email);
+
+        if (userOptional.isPresent()) {
+            // Handle user OTP resend locally
+            User user = userOptional.get();
+
+            // Check existing cooldown
+            long cooldown = otpService.getCooldownSeconds(email, "login");
+            if (cooldown > 0) {
+                Map<String, Object> response = new HashMap<>();
+                response.put("success", false);
+                response.put("message", "Please wait " + cooldown + " seconds before requesting a new OTP.");
+                response.put("timestamp", LocalDateTime.now());
+                return ResponseEntity.badRequest().body(response);
+            }
+
+            // Generate new OTP
+            String newOtp = generateOTP();
+
+            // Send email FIRST
+            try {
+                emailService.sendOtpEmail(email, newOtp);
+            } catch (Exception ex) {
+                Map<String, Object> response = new HashMap<>();
+                response.put("success", false);
+                response.put("message", "Unable to send OTP email right now. Please try again shortly.");
+                response.put("timestamp", LocalDateTime.now());
+                return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(response);
+            }
+
+            // Email succeeded: create new session, delete old session, apply cooldown
+            OtpService.OtpSession newOtpSession = otpService.createSession(email, "login", newOtp, 5, 5);
+            otpService.deleteSession(otpSessionId);
+            otpService.markCooldown(email, "login", 30);
+
+            log.info("Login OTP resent to user: {}", email);
+
+            Map<String, Object> responseData = new HashMap<>();
+            responseData.put("validForMinutes", 5);
+            responseData.put("otpType", "login");
+            responseData.put("email", email);
+            responseData.put("expiresAt", newOtpSession.expiresAt().toString());
+            responseData.put("cooldownSeconds", 30);
+            responseData.put("otpSessionId", newOtpSession.sessionId());
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("message", "Login OTP resent successfully to registered email.");
+            response.put("data", responseData);
+            response.put("timestamp", LocalDateTime.now());
+            return ResponseEntity.ok(response);
+
+        } else {
+            // Forward to admin service for admin accounts
+            try {
+                Map<String, Object> adminRequest = new HashMap<>();
+                adminRequest.put("otpSessionId", otpSessionId);
+
+                String adminUrl = adminServiceUrl + "/api/v1/admin/login/otp/resend";
+                ResponseEntity<Map> adminResponse = restTemplate.postForEntity(adminUrl, adminRequest, Map.class);
+
+                if (adminResponse.getStatusCode() == HttpStatus.OK && adminResponse.getBody() != null) {
+                    return ResponseEntity.ok(adminResponse.getBody());
+                } else {
+                    Map<String, Object> response = new HashMap<>();
+                    response.put("success", false);
+                    response.put("message", "Failed to resend OTP");
+                    response.put("timestamp", LocalDateTime.now());
+                    return ResponseEntity.status(adminResponse.getStatusCode()).body(response);
+                }
+            } catch (Exception e) {
+                log.error("Admin OTP resend failed for email: {}", email, e);
+                Map<String, Object> response = new HashMap<>();
+                response.put("success", false);
+                response.put("message", "Failed to resend OTP. Please try again.");
+                response.put("timestamp", LocalDateTime.now());
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+            }
+        }
+    }
+
+    public ResponseEntity<Map<String, Object>> resendPasswordOtp(ResendOtpRequest request) {
+        String otpSessionId = request.getOtpSessionId();
+
+        if (otpSessionId == null || otpSessionId.isBlank()) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", "otpSessionId is required");
+            response.put("timestamp", LocalDateTime.now());
+            return ResponseEntity.badRequest().body(response);
+        }
+
+        // Resolve email from session using OtpService
+        Optional<String> emailOptional = otpService.resolveSessionEmail(otpSessionId, "password_reset");
+        if (emailOptional.isEmpty()) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", "Invalid or expired OTP session");
+            response.put("timestamp", LocalDateTime.now());
+            return ResponseEntity.badRequest().body(response);
+        }
+
+        String email = emailOptional.get();
+
+        // Check if user exists in user-service
+        Optional<User> userOptional = userRepository.findByEmail(email);
+
+        if (userOptional.isPresent()) {
+            // Handle user OTP resend locally
+            User user = userOptional.get();
+
+            // Check existing cooldown
+            long cooldown = otpService.getCooldownSeconds(email, "password_reset");
+            if (cooldown > 0) {
+                Map<String, Object> response = new HashMap<>();
+                response.put("success", false);
+                response.put("message", "Please wait " + cooldown + " seconds before requesting a new OTP.");
+                response.put("timestamp", LocalDateTime.now());
+                return ResponseEntity.badRequest().body(response);
+            }
+
+            // Generate new OTP
+            String newOtp = generateOTP();
+
+            // Send email FIRST
+            try {
+                emailService.sendOtpEmail(email, newOtp);
+            } catch (Exception ex) {
+                Map<String, Object> response = new HashMap<>();
+                response.put("success", false);
+                response.put("message", "Unable to send OTP email right now. Please try again shortly.");
+                response.put("timestamp", LocalDateTime.now());
+                return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(response);
+            }
+
+            // Email succeeded: create new session, delete old session, apply cooldown
+            OtpService.OtpSession newOtpSession = otpService.createSession(email, "password_reset", newOtp, 5, 5);
+            otpService.deleteSession(otpSessionId);
+            otpService.markCooldown(email, "password_reset", 30);
+
+            log.info("Password reset OTP resent to user: {}", email);
+
+            Map<String, Object> responseData = new HashMap<>();
+            responseData.put("validForMinutes", 5);
+            responseData.put("otpType", "password_reset");
+            responseData.put("email", email);
+            responseData.put("expiresAt", newOtpSession.expiresAt().toString());
+            responseData.put("cooldownSeconds", 30);
+            responseData.put("otpSessionId", newOtpSession.sessionId());
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("message", "Password reset OTP resent successfully to registered email.");
+            response.put("data", responseData);
+            response.put("timestamp", LocalDateTime.now());
+            return ResponseEntity.ok(response);
+
+        } else {
+            // Forward to admin service for admin accounts
+            try {
+                Map<String, Object> adminRequest = new HashMap<>();
+                adminRequest.put("otpSessionId", otpSessionId);
+
+                String adminUrl = adminServiceUrl + "/api/v1/admin/password/otp/resend";
+                ResponseEntity<Map> adminResponse = restTemplate.postForEntity(adminUrl, adminRequest, Map.class);
+
+                if (adminResponse.getStatusCode() == HttpStatus.OK && adminResponse.getBody() != null) {
+                    return ResponseEntity.ok(adminResponse.getBody());
+                } else {
+                    Map<String, Object> response = new HashMap<>();
+                    response.put("success", false);
+                    response.put("message", "Failed to resend OTP");
+                    response.put("timestamp", LocalDateTime.now());
+                    return ResponseEntity.status(adminResponse.getStatusCode()).body(response);
+                }
+            } catch (Exception e) {
+                log.error("Admin password OTP resend failed for email: {}", email, e);
+                Map<String, Object> response = new HashMap<>();
+                response.put("success", false);
+                response.put("message", "Failed to resend OTP. Please try again.");
+                response.put("timestamp", LocalDateTime.now());
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+            }
+        }
+    }
 
     private String generateOTP() {
 
@@ -2933,6 +3142,162 @@ public class UnifiedAuthenticationService {
 
 
 
+    }
+
+    public ResponseEntity<Map<String, Object>> resendOtpCommon(ResendOtpRequest request) {
+        String otpSessionId = request.getOtpSessionId();
+
+        if (otpSessionId == null || otpSessionId.isBlank()) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", "otpSessionId is required");
+            response.put("timestamp", LocalDateTime.now());
+            return ResponseEntity.badRequest().body(response);
+        }
+
+        // Resolve session info (email, otpType, accountType) from Redis
+        OtpService.SessionInfo sessionInfo = otpService.resolveSessionInfo(otpSessionId)
+                .orElse(null);
+
+        if (sessionInfo == null) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", "Invalid or expired OTP session");
+            response.put("timestamp", LocalDateTime.now());
+            return ResponseEntity.badRequest().body(response);
+        }
+
+        String email = sessionInfo.email();
+        String otpType = sessionInfo.otpType();
+        String accountType = sessionInfo.accountType();
+
+        log.info("Common OTP resend - email: {}, otpType: {}, accountType: {}", email, otpType, accountType);
+
+        // Handle based on account type and OTP type
+        if ("USER".equals(accountType)) {
+            return handleUserOtpResend(otpSessionId, email, otpType);
+        } else if ("ADMIN".equals(accountType)) {
+            return handleAdminOtpResend(otpSessionId, email, otpType);
+        } else {
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", "Unknown account type");
+            response.put("timestamp", LocalDateTime.now());
+            return ResponseEntity.badRequest().body(response);
+        }
+    }
+
+    private ResponseEntity<Map<String, Object>> handleUserOtpResend(String otpSessionId, String email, String otpType) {
+        // Check if user exists
+        Optional<User> userOptional = userRepository.findByEmail(email);
+        if (userOptional.isEmpty()) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", "User not found");
+            response.put("timestamp", LocalDateTime.now());
+            return ResponseEntity.badRequest().body(response);
+        }
+
+        User user = userOptional.get();
+
+        // Validate account status based on OTP type
+        if ("registration".equals(otpType)) {
+            if (user.getStatus() != User.Status.PENDING_VERIFICATION) {
+                Map<String, Object> response = new HashMap<>();
+                response.put("success", false);
+                response.put("message", "Email is already verified");
+                response.put("timestamp", LocalDateTime.now());
+                return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
+            }
+        }
+
+        // Check existing cooldown
+        long cooldown = otpService.getCooldownSeconds(email, otpType);
+        if (cooldown > 0) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", "Please wait " + cooldown + " seconds before requesting a new OTP.");
+            response.put("timestamp", LocalDateTime.now());
+            return ResponseEntity.badRequest().body(response);
+        }
+
+        // Generate new OTP
+        String newOtp = generateOTP();
+
+        // Send email FIRST
+        try {
+            emailService.sendOtpEmail(email, newOtp);
+        } catch (Exception ex) {
+            log.error("Failed to resend OTP email to: {}", email, ex);
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", "Unable to send OTP email right now. Please try again shortly.");
+            response.put("timestamp", LocalDateTime.now());
+            return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(response);
+        }
+
+        // Email succeeded: create new session, delete old session, apply cooldown
+        OtpService.OtpSession newOtpSession = otpService.createSession(email, otpType, newOtp, 5, 5);
+        otpService.deleteSession(otpSessionId);
+        otpService.markCooldown(email, otpType, 30);
+
+        log.info("{} OTP resent to user: {}", otpType, email);
+
+        Map<String, Object> responseData = new HashMap<>();
+        responseData.put("validForMinutes", 5);
+        responseData.put("otpType", otpType);
+        responseData.put("email", email);
+        responseData.put("expiresAt", newOtpSession.expiresAt().toString());
+        responseData.put("cooldownSeconds", 30);
+        responseData.put("otpSessionId", newOtpSession.sessionId());
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("success", true);
+        response.put("message", otpType.substring(0, 1).toUpperCase() + otpType.substring(1).replace("_", " ") + " OTP resent successfully to registered email.");
+        response.put("data", responseData);
+        response.put("timestamp", LocalDateTime.now());
+        return ResponseEntity.ok(response);
+    }
+
+    private ResponseEntity<Map<String, Object>> handleAdminOtpResend(String otpSessionId, String email, String otpType) {
+        // Forward to admin service
+        try {
+            Map<String, Object> adminRequest = new HashMap<>();
+            adminRequest.put("otpSessionId", otpSessionId);
+
+            String adminEndpoint;
+            if ("login".equals(otpType)) {
+                adminEndpoint = "/api/v1/admin/login/otp/resend";
+            } else if ("password_reset".equals(otpType)) {
+                adminEndpoint = "/api/v1/admin/password/otp/resend";
+            } else {
+                Map<String, Object> response = new HashMap<>();
+                response.put("success", false);
+                response.put("message", "Unsupported OTP type for admin");
+                response.put("timestamp", LocalDateTime.now());
+                return ResponseEntity.badRequest().body(response);
+            }
+
+            String adminUrl = adminServiceUrl + adminEndpoint;
+            ResponseEntity<Map> adminResponse = restTemplate.postForEntity(adminUrl, adminRequest, Map.class);
+
+            if (adminResponse.getStatusCode() == HttpStatus.OK && adminResponse.getBody() != null) {
+                return ResponseEntity.ok(adminResponse.getBody());
+            } else {
+                Map<String, Object> response = new HashMap<>();
+                response.put("success", false);
+                response.put("message", "Failed to resend OTP");
+                response.put("timestamp", LocalDateTime.now());
+                return ResponseEntity.status(adminResponse.getStatusCode()).body(response);
+            }
+        } catch (Exception e) {
+            log.error("Admin OTP resend failed for email: {}", email, e);
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", "Failed to resend OTP. Please try again.");
+            response.put("timestamp", LocalDateTime.now());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+        }
     }
 
 

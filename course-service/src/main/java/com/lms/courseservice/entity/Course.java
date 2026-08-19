@@ -9,8 +9,7 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "courses")
-@Getter
-@Setter
+@Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder

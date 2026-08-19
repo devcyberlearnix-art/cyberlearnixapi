@@ -90,6 +90,28 @@ public class JwtAuthFilter implements Filter {
         if (requestURI.equals("/api/v1/admin/password/reset") && "POST".equalsIgnoreCase(method)) {
             return true;
         }
+        if (requestURI.equals("/api/v1/admin/password/otp/resend") && "POST".equalsIgnoreCase(method)) {
+            return true;
+        }
+
+        // Login OTP endpoints (public - no auth required)
+        if (requestURI.equals("/api/v1/admin/login/otp/request") && "POST".equalsIgnoreCase(method)) {
+            return true;
+        }
+        if (requestURI.equals("/api/v1/admin/login/otp/verify") && "POST".equalsIgnoreCase(method)) {
+            return true;
+        }
+        if (requestURI.equals("/api/v1/admin/login/otp/resend") && "POST".equalsIgnoreCase(method)) {
+            return true;
+        }
+
+        // Admin registration and login endpoints (public - no auth required)
+        if (requestURI.equals("/api/v1/admin/register") && "POST".equalsIgnoreCase(method)) {
+            return true;
+        }
+        if (requestURI.equals("/api/v1/admin/login") && "POST".equalsIgnoreCase(method)) {
+            return true;
+        }
 
         // Course endpoints (public/internal)
 

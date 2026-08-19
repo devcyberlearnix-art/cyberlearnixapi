@@ -6,30 +6,24 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
-import java.util.UUID;
 
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class FeaturedCourseResponse {
+public class TrendingCourseResponse {
     private Long id;
     private String title;
     private String subtitle;
-    private String description;
+    private String thumbnail;
     private String category;
     private String level;
     private String language;
+    private Boolean premium;
     private BigDecimal price;
-    private String thumbnail;
-    private UUID instructorId;
-    private String status;
-    private boolean premium;
-    private long students;
-    private double rating;
-    private long totalReviews;
-    private long searchCount;
-    private long viewCount;
-    private double featuredScore;
-    private String tag;
+    private Double rating;
+    private Long enrollmentCount;
+    private Long searchCount;
+    private Long viewCount;
+    private Double trendingScore;
 }

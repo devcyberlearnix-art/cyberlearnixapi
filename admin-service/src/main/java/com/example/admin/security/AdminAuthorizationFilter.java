@@ -25,10 +25,12 @@ public class AdminAuthorizationFilter extends OncePerRequestFilter {
                 || path.equals("/api/v1/admin/login")
                 || path.equals("/api/v1/admin/login/otp/request")
                 || path.equals("/api/v1/admin/login/otp/verify")
+                || path.equals("/api/v1/admin/login/otp/resend")
                 // Allow password recovery endpoints without admin JWT
                 || path.equals("/api/v1/admin/password/forgot")
                 || path.equals("/api/v1/admin/password/verify-otp")
                 || path.equals("/api/v1/admin/password/reset")
+                || path.equals("/api/v1/admin/password/otp/resend")
                 // Allow internal/service-crafted content endpoints without admin JWT
                 || path.startsWith("/api/v1/admin/sections")
                 || path.matches("/api/v1/admin/courses/\\d+/sections")
