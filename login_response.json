@@ -1,1 +1,0 @@
-{"success":true,"message":"Login OTP sent successfully to registered email.","timestamp":"2026-08-14T01:06:40.402874","data":{"validForMinutes":5,"otpType":"login","email":"BjuQuvr5FJVmFP60+KZ7QAUXFRADIHV99RKyHa3AG24=","expiresAt":"2026-08-14T01:11:33.761244200","cooldownSeconds":30,"otpSessionId":"e3b201aa-723f-4cba-b6e4-0f434a2c14b9"}}
