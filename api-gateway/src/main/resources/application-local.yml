@@ -528,22 +528,6 @@ spring:
 
 
 
-        - id: userservice-admin-instructors
-
-
-
-          uri: http://localhost:8091
-
-
-
-          predicates:
-
-
-
-            - Path=/api/v1/admin/instructors/**
-
-
-
         - id: adminservice
 
 

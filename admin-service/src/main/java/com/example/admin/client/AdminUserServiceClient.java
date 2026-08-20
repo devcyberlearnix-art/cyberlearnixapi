@@ -375,8 +375,25 @@ public class AdminUserServiceClient {
         dto.setCreatedAt(getString(map.get("createdAt")));
         dto.setFirstName(getString(map.get("firstName")));
         dto.setLastName(getString(map.get("lastName")));
-        dto.setMobileNumber(getString(map.get("mobile")));
+        dto.setMobileNumber(getString(map.get("mobileNumber") != null ? map.get("mobileNumber") : map.get("mobile")));
         dto.setProfilePhoto(getString(map.get("profilePhoto")));
+        dto.setBio(getString(map.get("bio")));
+        dto.setSpecialization(getString(map.get("specialization")));
+        dto.setSkills(getString(map.get("skills")));
+        dto.setHighestQualification(getString(map.get("highestQualification")));
+        dto.setOrganization(getString(map.get("organization")));
+        dto.setFieldOfStudy(getString(map.get("fieldOfStudy")));
+        dto.setCity(getString(map.get("city")));
+        dto.setState(getString(map.get("state")));
+        dto.setCountry(getString(map.get("country")));
+        dto.setPreferredLanguage(getString(map.get("preferredLanguage")));
+        dto.setAppliedRole(getString(map.get("appliedRole")));
+        Object isAppr = map.get("isInstructorApproved");
+        if (isAppr instanceof Boolean b) {
+            dto.setIsInstructorApproved(b);
+        } else if (isAppr != null) {
+            dto.setIsInstructorApproved(Boolean.parseBoolean(String.valueOf(isAppr)));
+        }
         return dto;
     }
 
@@ -438,6 +455,22 @@ public class AdminUserServiceClient {
         private String lastName;
         private String mobileNumber;
         private String profilePhoto;
+        private String bio;
+        private String specialization;
+        private String skills;
+        private String highestQualification;
+        private String organization;
+        private String fieldOfStudy;
+        private String city;
+        private String state;
+        private String country;
+        private String preferredLanguage;
+        private String appliedRole;
+        private Boolean isInstructorApproved;
+
+        public String getMobile() {
+            return mobileNumber;
+        }
     }
 
     @Data

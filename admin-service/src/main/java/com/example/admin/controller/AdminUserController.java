@@ -94,6 +94,19 @@ public class AdminUserController {
                 .body(response);
     }
 
+    @GetMapping("/instructors/{id}")
+    public ResponseEntity<com.example.admin.dto.AdminInstructorDetailResponse> getInstructorById(
+            @PathVariable String id,
+            @RequestHeader(value = "Authorization", required = false) String authorization) {
+
+        com.example.admin.dto.AdminInstructorDetailResponse response =
+                adminUserService.getInstructorDetailedById(id, authorization);
+
+        return ResponseEntity
+                .status(response.isSuccess() ? HttpStatus.OK : HttpStatus.NOT_FOUND)
+                .body(response);
+    }
+
     @GetMapping("/instructors/applications")
     public ResponseEntity<AdminInstructorApplicationsResponse> getAllInstructorApplicationsDetailed(
             @RequestHeader("Authorization") String authorization) {
