@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.*;
 public class AdminController {
 
     private final AdminAuthService adminAuthService;
+    private final com.example.admin.rateLimit.AdminProfileRateLimiter adminProfileRateLimiter;
 
     /**
      * Register Sub Admin for one service. Main Admin Bearer token required.
@@ -113,32 +114,41 @@ public class AdminController {
         return ResponseEntity.ok(adminAuthService.resetPassword(request));
     }
 
-    @PutMapping("/me")
-    public ResponseEntity<?> updateProfile(
-                @RequestBody UpdateAdminProfileRequest request,
+    /**
+     * Update authenticated admin's own profile (PUT and PATCH supported).
+     */
+    @RequestMapping(value = {"/profile", "/me"}, method = {RequestMethod.PUT, RequestMethod.PATCH})
+    public ResponseEntity<AdminProfileResponse> updateProfile(
+                @jakarta.validation.Valid @RequestBody UpdateAdminProfileRequest request,
                 @AuthenticationPrincipal AdminPrincipal adminPrincipal,
                 HttpServletRequest httpRequest) {
 
-        try {
-            AdminProfileResponse response =
-                        adminAuthService.updateProfile(adminPrincipal.getAdminId(), request, httpRequest);
-
-            return ResponseEntity.ok(response);
-
-        } catch (Exception e) {
-
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                        .body("Something went wrong: " + e.getMessage());
-
+        if (adminPrincipal == null || adminPrincipal.getAdminId() == null) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    HttpStatus.UNAUTHORIZED, "Authentication token missing or invalid");
         }
 
+        adminProfileRateLimiter.checkLimit(adminPrincipal.getAdminId());
+
+        AdminProfileResponse response =
+                adminAuthService.updateProfile(adminPrincipal.getAdminId(), request, httpRequest);
+
+        return ResponseEntity.ok(response);
     }
 
-    @GetMapping("/me")
-    public AdminProfileResponse getProfile(
+    /**
+     * Get authenticated admin's own profile.
+     */
+    @GetMapping({"/profile", "/me"})
+    public ResponseEntity<AdminProfileResponse> getProfile(
                 @AuthenticationPrincipal AdminPrincipal adminPrincipal,
                 HttpServletRequest httpRequest) {
 
-        return adminAuthService.getProfile(adminPrincipal.getAdminId(), httpRequest);
+        if (adminPrincipal == null || adminPrincipal.getAdminId() == null) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    HttpStatus.UNAUTHORIZED, "Authentication token missing or invalid");
+        }
+
+        return ResponseEntity.ok(adminAuthService.getProfile(adminPrincipal.getAdminId(), httpRequest));
     }
 }

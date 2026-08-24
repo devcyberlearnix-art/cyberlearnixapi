@@ -290,6 +290,8 @@ public class CourseService {
         Enrollment enrollment = new Enrollment();
         enrollment.setCourseId(courseId);
         enrollment.setStudentId(userId);
+        enrollment.setEnrolledAt(java.time.LocalDateTime.now());
+        enrollment.setStatus("ACTIVE");
 
         enrollmentRepository.save(enrollment);
     }

@@ -17,6 +17,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import java.util.List;
 
 @Component
@@ -26,6 +27,9 @@ public class UnifiedJwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final UnifiedJwtService unifiedJwtService;
     private final TokenBlacklistService tokenBlacklistService;
+    private final StringRedisTemplate redisTemplate;
+
+    private static final String USER_PWD_CHANGE_PREFIX = "USER:PASSWORD_CHANGE_TIME:";
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
@@ -76,18 +80,40 @@ public class UnifiedJwtAuthenticationFilter extends OncePerRequestFilter {
                     
                     if (!isBlacklisted && unifiedJwtService != null && unifiedJwtService.validateToken(jwt) && !unifiedJwtService.isTokenExpired(jwt)) {
                         String userId = unifiedJwtService.extractUserId(jwt);
-                        String email = unifiedJwtService.extractEmail(jwt);
-                        String role = unifiedJwtService.extractRole(jwt);
-                        String adminType = unifiedJwtService.extractAdminType(jwt);
-                        String assignedService = unifiedJwtService.extractAssignedService(jwt);
-
-                        log.debug("Extracted from JWT - userId: {}, email: {}, role: {}", userId, email, role);
-
-                        // Build authorities
-                        List<SimpleGrantedAuthority> authorities = new ArrayList<>();
-                        if (role != null) {
-                            authorities.add(new SimpleGrantedAuthority("ROLE_" + role));
+                        
+                        // Check if password was changed after token issuance
+                        boolean isTokenInvalidated = false;
+                        try {
+                            String lastChangeStr = redisTemplate.opsForValue().get(USER_PWD_CHANGE_PREFIX + userId);
+                            if (lastChangeStr != null) {
+                                long lastChangeTime = Long.parseLong(lastChangeStr);
+                                java.util.Date issuedAt = unifiedJwtService.extractIssuedAt(jwt);
+                                if (issuedAt != null && issuedAt.getTime() < lastChangeTime) {
+                                    log.info("Rejecting token for userId={}: token issued at {} is older than last password change at {}", 
+                                            userId, issuedAt.getTime(), lastChangeTime);
+                                    isTokenInvalidated = true;
+                                }
+                            }
+                        } catch (Exception e) {
+                            log.warn("Error checking password change timestamp in Redis: {}", e.getMessage());
                         }
+
+                        if (isTokenInvalidated) {
+                            log.warn("JWT validation failed: token invalidated due to password change for request: {}", request.getRequestURI());
+                        } else {
+                            String email = unifiedJwtService.extractEmail(jwt);
+                            String role = unifiedJwtService.extractRole(jwt);
+                            String adminType = unifiedJwtService.extractAdminType(jwt);
+                            String assignedService = unifiedJwtService.extractAssignedService(jwt);
+
+                            log.debug("Extracted from JWT - userId: {}, email: {}, role: {}", userId, email, role);
+
+                            // Build authorities
+                            List<SimpleGrantedAuthority> authorities = new ArrayList<>();
+                            if (role != null) {
+                                authorities.add(new SimpleGrantedAuthority("ROLE_" + role));
+                            }
+
 
                         // Add admin type as authority if applicable
                         if (adminType != null && !adminType.equals("NONE")) {
@@ -110,6 +136,7 @@ public class UnifiedJwtAuthenticationFilter extends OncePerRequestFilter {
                         SecurityContextHolder.getContext().setAuthentication(authentication);
 
                         log.info("Set authentication for user: {} with role: {}", email, role);
+                        }
                     } else {
                         log.warn("JWT validation failed or token blacklisted for request: {}", request.getRequestURI());
                     }

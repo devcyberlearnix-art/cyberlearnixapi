@@ -62,6 +62,7 @@ public class SecurityConfig {
                         ).permitAll()
 
                         // All other admin endpoints require authentication
+                        // Includes: /api/v1/admin/email/change-request, /verify-old, /verify-new
                         .requestMatchers("/api/v1/admin/**").authenticated()
 
                         .anyRequest().denyAll())

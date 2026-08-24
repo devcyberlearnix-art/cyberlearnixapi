@@ -24,6 +24,7 @@ public class AuditLog {
 
     private String ipAddress;
     private String device; // <-- Add this field
+    private String status; // <-- Add this field for SUCCESS/FAILURE
 
     @Builder.Default
     private LocalDateTime createdAt = LocalDateTime.now();

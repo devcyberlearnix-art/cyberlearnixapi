@@ -143,28 +143,66 @@ public class AdminAuthService {
                                               HttpServletRequest httpRequest) {
 
         Admin admin = adminRepository.findById(adminId)
-                .orElseThrow(() -> new RuntimeException("Admin not found"));
+                .orElseThrow(() -> new org.springframework.web.server.ResponseStatusException(
+                        HttpStatus.NOT_FOUND, "Admin not found with ID: " + adminId));
 
-        if (request.getEmail() != null) admin.setEmail(request.getEmail());
-        if (request.getPassword() != null) admin.setPassword(passwordEncoder.encode(request.getPassword()));
+        java.util.List<String> updatedFields = new java.util.ArrayList<>();
 
-        adminRepository.save(admin);
+        if (request.getFirstName() != null && !request.getFirstName().trim().isEmpty()) {
+            admin.setFirstName(sanitizeInput(request.getFirstName()));
+            updatedFields.add("firstName");
+        }
 
-        String ipAddress = httpRequest.getRemoteAddr();
-        String device = httpRequest.getHeader("User-Agent");
-        if (device == null) device = "Unknown";
+        if (request.getLastName() != null && !request.getLastName().trim().isEmpty()) {
+            admin.setLastName(sanitizeInput(request.getLastName()));
+            updatedFields.add("lastName");
+        }
 
-        auditService.logAction(adminId, "ADMIN_PROFILE_UPDATED");
+        if (request.getProfilePhoto() != null) {
+            admin.setProfilePhoto(request.getProfilePhoto().trim());
+            updatedFields.add("profilePhoto");
+        }
+
+        if (request.getPreferredLanguage() != null && !request.getPreferredLanguage().trim().isEmpty()) {
+            admin.setPreferredLanguage(request.getPreferredLanguage().trim().toUpperCase());
+            updatedFields.add("preferredLanguage");
+        }
+
+        if (request.getCity() != null) {
+            admin.setCity(sanitizeInput(request.getCity()));
+            updatedFields.add("city");
+        }
+
+        if (request.getState() != null) {
+            admin.setState(sanitizeInput(request.getState()));
+            updatedFields.add("state");
+        }
+
+        if (request.getCountry() != null) {
+            admin.setCountry(sanitizeInput(request.getCountry()));
+            updatedFields.add("country");
+        }
+
+        if (updatedFields.isEmpty()) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    HttpStatus.BAD_REQUEST, "No valid fields provided for update");
+        }
+
+        Admin savedAdmin = adminRepository.save(admin);
+
+        String ipAddress = extractClientIp(httpRequest);
+        String device = httpRequest != null && httpRequest.getHeader("User-Agent") != null 
+                ? httpRequest.getHeader("User-Agent") : "Unknown Device";
+
+        auditService.logAction(adminId, "ADMIN_PROFILE_UPDATED: " + String.join(", ", updatedFields) 
+                + " from IP: " + ipAddress + " Device: " + device);
+
         return AdminProfileResponse.builder()
                 .success(true)
                 .message("Admin profile updated successfully")
                 .timestamp(LocalDateTime.now().toString())
                 .data(AdminProfileResponse.DataInfo.builder()
-                        .admin(AdminProfileResponse.AdminInfo.builder()
-                                .id(admin.getId())
-                                .email(admin.getEmail())
-                                .role(admin.getRole())
-                                .build())
+                        .admin(mapToAdminInfo(savedAdmin))
                         .ipAddress(ipAddress)
                         .device(device)
                         .build())
@@ -175,34 +213,59 @@ public class AdminAuthService {
                                            HttpServletRequest httpRequest) {
 
         Admin admin = adminRepository.findById(adminId)
-                .orElseThrow(() -> new RuntimeException("Admin not found"));
+                .orElseThrow(() -> new org.springframework.web.server.ResponseStatusException(
+                        HttpStatus.NOT_FOUND, "Admin not found with ID: " + adminId));
 
-        String ipAddress = httpRequest.getRemoteAddr();
-
-        if (ipAddress.equals("0:0:0:0:0:0:0:1")) {
-            ipAddress = "127.0.0.1";
-        }
-
-        String device = httpRequest.getHeader("User-Agent");
-
-        if (device == null) {
-            device = "Unknown Device";
-        }
+        String ipAddress = extractClientIp(httpRequest);
+        String device = httpRequest != null && httpRequest.getHeader("User-Agent") != null 
+                ? httpRequest.getHeader("User-Agent") : "Unknown Device";
 
         return AdminProfileResponse.builder()
                 .success(true)
                 .message("Admin profile fetched successfully")
                 .timestamp(LocalDateTime.now().toString())
                 .data(AdminProfileResponse.DataInfo.builder()
-                        .admin(AdminProfileResponse.AdminInfo.builder()
-                                .id(admin.getId())
-                                .email(admin.getEmail())
-                                .role(admin.getRole())
-                                .build())
+                        .admin(mapToAdminInfo(admin))
                         .ipAddress(ipAddress)
                         .device(device)
                         .build())
                 .build();
+    }
+
+    private AdminProfileResponse.AdminInfo mapToAdminInfo(Admin admin) {
+        return AdminProfileResponse.AdminInfo.builder()
+                .id(admin.getId())
+                .email(admin.getEmail())
+                .role(admin.getRole())
+                .adminType(admin.getAdminType() != null ? admin.getAdminType().name() : null)
+                .firstName(admin.getFirstName())
+                .lastName(admin.getLastName())
+                .profilePhoto(admin.getProfilePhoto())
+                .preferredLanguage(admin.getPreferredLanguage())
+                .city(admin.getCity())
+                .state(admin.getState())
+                .country(admin.getCountry())
+                .updatedAt(admin.getUpdatedAt() != null ? admin.getUpdatedAt().toString() : null)
+                .build();
+    }
+
+    private String sanitizeInput(String input) {
+        if (input == null) return null;
+        return input.trim().replaceAll("<[^>]*>", "");
+    }
+
+    private String extractClientIp(HttpServletRequest httpRequest) {
+        if (httpRequest == null) return "127.0.0.1";
+        String ip = httpRequest.getHeader("X-Forwarded-For");
+        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
+            ip = httpRequest.getRemoteAddr();
+        } else {
+            ip = ip.split(",")[0].trim();
+        }
+        if ("0:0:0:0:0:0:0:1".equals(ip)) {
+            ip = "127.0.0.1";
+        }
+        return ip;
     }
 
     public LogoutResponse logout(UUID adminId, HttpServletRequest httpRequest) {

@@ -134,6 +134,14 @@ public class UnifiedJwtService {
         return extractClaims(token).get("assignedService", String.class);
     }
 
+    public Date extractIssuedAt(String token) {
+        try {
+            return extractClaims(token).getIssuedAt();
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
     public boolean validateToken(String token) {
         try {
             extractClaims(token);

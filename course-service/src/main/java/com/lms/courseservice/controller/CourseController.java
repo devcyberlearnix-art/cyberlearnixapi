@@ -221,7 +221,8 @@ public class CourseController {
                 course.getTitle(),
                 userId,
                 course.getCategory(),
-                "Enrolled"
+                "Enrolled",
+                java.time.LocalDateTime.now().toString()
         );
         
         return new EnrollCourseResponse(true,

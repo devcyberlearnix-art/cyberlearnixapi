@@ -1,6 +1,7 @@
 package com.user.register.exception;
 
 import com.user.register.dto.ApiResponse;
+import com.user.register.exception.EmailChangeException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
@@ -27,6 +28,34 @@ public class GlobalExceptionHandler {
         );
         return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).body(response);
     }
+
+    /**
+     * Handles all domain-level email-change errors.
+     * The exception carries its own HTTP status (400 / 401 / 404 / 409 / 410 / 429),
+     * so we return exactly that status rather than a generic 500.
+     */
+    @ExceptionHandler(EmailChangeException.class)
+    public ResponseEntity<ApiResponse<Object>> handleEmailChangeException(EmailChangeException ex) {
+        ApiResponse<Object> response = new ApiResponse<>(
+                false,
+                ex.getMessage(),
+                null,
+                LocalDateTime.now()
+        );
+        return ResponseEntity.status(ex.getStatus()).body(response);
+    }
+
+    @ExceptionHandler(PasswordChangeException.class)
+    public ResponseEntity<ApiResponse<Object>> handlePasswordChangeException(PasswordChangeException ex) {
+        ApiResponse<Object> response = new ApiResponse<>(
+                false,
+                ex.getMessage(),
+                null,
+                LocalDateTime.now()
+        );
+        return ResponseEntity.status(ex.getStatus()).body(response);
+    }
+
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ApiResponse<Object>> handleMethodArgumentNotValid(MethodArgumentNotValidException ex) {

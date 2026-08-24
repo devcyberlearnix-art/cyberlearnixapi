@@ -19,6 +19,8 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import com.example.admin.dto.EnrollmentInfoDTO;
+import java.util.UUID;
 import java.util.Map;
 
 @Component
@@ -131,6 +133,24 @@ public class AdminCourseServiceClient {
         }
     }
 
+    public List<EnrollmentInfoDTO> getEnrollmentsByUserId(UUID userId) {
+        try {
+            String url = courseServiceUrl + "/api/v1/enrollments/users/" + userId;
+            ResponseEntity<EnrollmentInfoDTO[]> response = restTemplate.exchange(
+                    url,
+                    org.springframework.http.HttpMethod.GET,
+                    new HttpEntity<>(createHeaders()),
+                    EnrollmentInfoDTO[].class
+            );
+            return response.getBody() != null ? Arrays.asList(response.getBody()) : List.of();
+        } catch (RestClientException e) {
+            System.err.println("✗ Failed to get enrollments for user: " + e.getMessage());
+            return List.of();
+    }
+}
+    
+
+
     public List<Object> getCourseContent(Long courseId) {
         try {
             String url = courseServiceUrl + "/api/v1/courses/" + courseId + "/sections";
@@ -140,22 +160,11 @@ public class AdminCourseServiceClient {
                     new HttpEntity<>(createHeaders()),
                     Object[].class
             );
-            List<Object> data = new ArrayList<>();
             if (response.getBody() != null) {
-                for (Object item : response.getBody()) {
-                    if (item instanceof Map<?, ?> map) {
-                        Map<String, Object> normalized = new java.util.LinkedHashMap<>();
-                        normalized.put("id", map.get("id"));
-                        normalized.put("title", map.get("title"));
-                        normalized.put("orderIndex", map.get("orderIndex"));
-                        normalized.put("courseId", map.get("course") != null && map.get("course") instanceof Map<?, ?> courseMap ? courseMap.get("id") : null);
-                        data.add(normalized);
-                    } else {
-                        data.add(item);
-                    }
-                }
+                return List.of(response.getBody());
+            } else {
+                return List.of();
             }
-            return data;
         } catch (HttpStatusCodeException e) {
             System.err.println("✗ Failed to get course content: " + e.getStatusCode() + " - " + e.getResponseBodyAsString());
             return List.of();
@@ -164,6 +173,9 @@ public class AdminCourseServiceClient {
             return List.of();
         }
     }
+
+
+
 
     // --- Section & Lecture management ---
     public Map createSection(Long courseId, Map<String, Object> sectionPayload) {

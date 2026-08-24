@@ -136,8 +136,12 @@ public class UnifiedSecurityConfig {
 
                         .requestMatchers("/api/v1/users/me/sessions/**").authenticated()
 
-                        
+                        // Email change — all three steps require an authenticated user
+                        .requestMatchers("/api/v1/users/email/**").authenticated()
 
+                        // Password change — requires authentication
+                        .requestMatchers("/api/v1/users/change-password/**").authenticated()
+                        
                         // Admin user management endpoints (require admin role or service token)
 
                         .requestMatchers("/api/v1/users/stats").hasAnyRole("MAIN_ADMIN", "SUB_ADMIN")
