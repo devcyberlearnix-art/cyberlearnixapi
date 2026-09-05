@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>{{otpReason}}</title>
+    <style>
+        body, table, td, a { -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }
+        table, td { mso-table-lspace: 0pt; mso-table-rspace: 0pt; }
+        img { -ms-interpolation-mode: bicubic; }
+        img { border: 0; height: auto; line-height: 100%; outline: none; text-decoration: none; }
+        table { border-collapse: collapse !important; }
+        body { height: 100% !important; margin: 0 !important; padding: 0 !important; width: 100% !important; background-color: #0d0f1b; font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #e0e0ff; }
+        
+        .email-container { max-width: 600px; margin: 0 auto; background-color: #121429; border: 1px solid #2a2550; border-radius: 12px; overflow: hidden; }
+        
+        .header { background: linear-gradient(135deg, #16103b 0%, #332168 100%); padding: 25px 30px; border-bottom: 2px solid #5a3ba3; }
+        .logo-circle { background-color: #ffffff; color: #16103b; width: 34px; height: 34px; border-radius: 50%; display: inline-block; text-align: center; line-height: 34px; font-weight: 900; font-size: 22px; vertical-align: middle; }
+        .logo-text { color: #ffffff; font-size: 24px; font-weight: bold; margin: 0 0 0 10px; display: inline-block; vertical-align: middle; }
+        .tagline { color: #b3a0e5; font-size: 12px; margin: 4px 0 0 48px; display: block; }
+        .lock-icon-bg { background-color: rgba(255, 255, 255, 0.1); border: 1px solid #7c58d8; width: 40px; height: 40px; border-radius: 12px; text-align: center; line-height: 40px; }
+        
+        .content { padding: 35px 30px; }
+        .otp-title { color: #ffffff; font-size: 18px; font-weight: bold; text-transform: uppercase; margin: 0 0 15px 0; }
+        .greeting { color: #b3a0e5; font-size: 16px; font-weight: bold; margin: 0 0 15px 0; }
+        .message-text { color: #d0cdeb; font-size: 14px; line-height: 1.6; margin: 0 0 10px 0; }
+        
+        .otp-wrapper { text-align: center; margin: 35px 0; }
+        .otp-label { color: #b3a0e5; font-size: 14px; margin-bottom: 10px; display: block; }
+        .otp-box { background-color: #1a163a; border: 1px solid #5a3ba3; border-radius: 8px; padding: 18px; font-size: 38px; letter-spacing: 16px; font-weight: bold; color: #ffffff; text-align: center; display: inline-block; min-width: 250px; }
+        .validity { color: #a097cc; font-size: 12px; margin-top: 15px; display: block; }
+        .details { color: #a097cc; font-size: 12px; margin-top: 10px; }
+        
+        .tips-title { color: #ffffff; font-size: 15px; font-weight: bold; margin: 0 0 15px 0; }
+        .tips-list { margin: 0; padding: 0 0 0 15px; color: #c4bcdb; font-size: 13px; line-height: 1.8; }
+        .tips-list li { padding-left: 5px; margin-bottom: 4px; }
+        
+        .warning-box { background-color: #1f1742; border: 1px solid #4a367a; border-radius: 8px; padding: 18px; margin-top: 30px; }
+        .warning-text { color: #d0cdeb; font-size: 13px; line-height: 1.5; margin: 0; display: inline-block; vertical-align: middle; width: 100%; }
+        .info-icon { background-color: #7c58d8; color: white; width: 26px; height: 26px; border-radius: 50%; display: inline-block; text-align: center; line-height: 26px; font-weight: bold; font-size: 14px; vertical-align: middle; margin-right: 12px; }
+        .btn { display: inline-block; background-color: #ef4444; color: #ffffff; font-size: 14px; font-weight: 600; text-decoration: none; padding: 12px 24px; border-radius: 6px; margin-top: 12px; }
+        
+        .bottom-section { background-color: #0b0d1c; padding: 35px 30px; border-top: 1px solid #2a2550; }
+        .why-title { color: #ffffff; font-size: 16px; font-weight: bold; margin: 0 0 10px 0; }
+        .why-text { color: #a097cc; font-size: 13px; line-height: 1.6; margin: 0; }
+        
+        .reminders-title { color: #ffffff; font-size: 15px; font-weight: bold; margin: 30px 0 15px 0; }
+        .reminder-icon-box { background-color: #1a163a; border: 1px solid #332168; width: 34px; height: 34px; border-radius: 8px; text-align: center; line-height: 34px; display: inline-block; vertical-align: middle; margin-right: 10px; }
+        .reminder-text { color: #a097cc; font-size: 12px; line-height: 1.4; display: inline-block; vertical-align: middle; width: calc(100% - 55px); }
+        
+        .footer { text-align: center; padding: 25px 30px; }
+        .footer-text { color: #6a648c; font-size: 11px; line-height: 1.6; margin: 0; }
+        
+        @media screen and (max-width: 600px) {
+            .email-container { width: 100% !important; border-radius: 0 !important; border: none !important; }
+            .content, .header, .bottom-section, .footer { padding: 25px 20px !important; }
+            .otp-box { font-size: 30px !important; letter-spacing: 12px !important; padding: 15px !important; min-width: 200px !important; }
+            .reminder-stack { display: block !important; width: 100% !important; margin-bottom: 15px !important; }
+        }
+    </style>
+</head>
+<body style="margin: 0; padding: 0; background-color: #0d0f1b;">
+    <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #0d0f1b; padding: 40px 0;">
+        <tr>
+            <td align="center" style="padding: 20px 10px;">
+                <!-- Main Container -->
+                <table border="0" cellpadding="0" cellspacing="0" class="email-container" width="600" style="background-color: #121429; border: 1px solid #2a2550; border-radius: 12px;">
+                    
+                    <!-- Header -->
+                    <tr>
+                        <td class="header" style="background: linear-gradient(135deg, #16103b 0%, #332168 100%); padding: 25px 30px; border-bottom: 2px solid #5a3ba3;">
+                            <table border="0" cellpadding="0" cellspacing="0" width="100%">
+                                <tr>
+                                    <td align="left" valign="middle">
+                                        <div class="logo-circle">C</div>
+                                        <h1 class="logo-text">{{applicationName}}</h1>
+                                        <span class="tagline">Learn. Grow. Succeed.</span>
+                                    </td>
+                                    <td align="right" valign="middle" width="50">
+                                        <div class="lock-icon-bg">
+                                            <span style="font-size: 20px;">🔒</span>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+
+                    <!-- Body Content -->
+                    <tr>
+                        <td class="content" style="padding: 35px 30px;">
+                            <h2 class="otp-title">{{otpTitle}}</h2>
+                            <p class="greeting">Hello {{firstName}},</p>
+                            
+                            <p class="message-text">{{reasonDescription}}</p>
+                            <p class="message-text">{{instruction}}</p>
+
+                            <!-- OTP Box -->
+                            <div class="otp-wrapper">
+                                <span class="otp-label">Your One-Time Password (OTP)</span>
+                                <div class="otp-box">{{otp}}</div>
+                                <span class="validity">⏱️ This OTP is valid for {{expiryMinutes}} minutes.</span>
+                                <p class="details">Location: India</p>
+                            </div>
+
+                            <!-- Security Tips -->
+                            <div style="margin-top: 20px;">
+                                <h3 class="tips-title">🛡️ Security Tips</h3>
+                                <ul class="tips-list">
+                                    <li>Never share your OTP with anyone.</li>
+                                    <li>Only enter the OTP on the official {{applicationName}} platform.</li>
+                                    <li>Avoid using public or shared devices.</li>
+                                </ul>
+                            </div>
+
+                            <!-- Warning Box -->
+                            <div class="warning-box">
+                                <table border="0" cellpadding="0" cellspacing="0" width="100%">
+                                    <tr>
+                                        <td width="40" valign="top">
+                                            <div class="info-icon">i</div>
+                                        </td>
+                                        <td valign="middle">
+                                            <p class="warning-text">Suspicious Activity Warning: If you didn’t request this, please secure your account immediately or contact support.</p>
+                                        </td>
+                                    </tr>
+                                </table>
+                                <div style="text-align: center;">
+                                    <a href="{{secureAccountLink}}" class="btn">Secure My Account</a>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+
+                    <!-- Bottom Section (Why Receive & Reminders) -->
+                    <tr>
+                        <td class="bottom-section">
+                            <table border="0" cellpadding="0" cellspacing="0" width="100%">
+                                <tr>
+                                    <td width="60" valign="top">
+                                        <div style="background: rgba(124, 88, 216, 0.1); border: 1px solid #4a367a; width: 50px; height: 50px; border-radius: 12px; text-align: center; line-height: 50px;">
+                                            <span style="font-size: 24px;">🛡️</span>
+                                        </div>
+                                    </td>
+                                    <td valign="top">
+                                        <h3 class="why-title">Why do you receive these OTP emails?</h3>
+                                        <p class="why-text">{{whyReceiveText}}</p>
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <h4 class="reminders-title">General Security Reminders</h4>
+                            
+                            <!-- Reminders Grid -->
+                            <table border="0" cellpadding="0" cellspacing="0" width="100%">
+                                <tr>
+                                    <td class="reminder-stack" width="25%" valign="top" style="padding-right: 5px;">
+                                        <table border="0" cellpadding="0" cellspacing="0" width="100%">
+                                            <tr>
+                                                <td width="45" valign="top">
+                                                    <div class="reminder-icon-box"><span style="font-size: 16px;">🔒</span></div>
+                                                </td>
+                                                <td valign="middle">
+                                                    <span class="reminder-text">Never share your OTP.</span>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                    <td class="reminder-stack" width="25%" valign="top" style="padding-right: 5px;">
+                                        <table border="0" cellpadding="0" cellspacing="0" width="100%">
+                                            <tr>
+                                                <td width="45" valign="top">
+                                                    <div class="reminder-icon-box"><span style="font-size: 16px;">👤</span></div>
+                                                </td>
+                                                <td valign="middle">
+                                                    <span class="reminder-text">{{applicationName}} will never ask for it.</span>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                    <td class="reminder-stack" width="25%" valign="top" style="padding-right: 5px;">
+                                        <table border="0" cellpadding="0" cellspacing="0" width="100%">
+                                            <tr>
+                                                <td width="45" valign="top">
+                                                    <div class="reminder-icon-box"><span style="font-size: 16px;">🌐</span></div>
+                                                </td>
+                                                <td valign="middle">
+                                                    <span class="reminder-text">Use OTP only on official platform.</span>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                    <td class="reminder-stack" width="25%" valign="top">
+                                        <table border="0" cellpadding="0" cellspacing="0" width="100%">
+                                            <tr>
+                                                <td width="45" valign="top">
+                                                    <div class="reminder-icon-box"><span style="font-size: 16px;">🛡️</span></div>
+                                                </td>
+                                                <td valign="middle">
+                                                    <span class="reminder-text">Keep your account credentials secure.</span>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                    
+                    <!-- Footer -->
+                    <tr>
+                        <td class="footer">
+                            <p class="footer-text">© 2026 CyberLearnix This is an automated security message. For help, contact: <a href="mailto:support@cyberlearnix.com" style="color:#8b5cf6; text-decoration:none;">support@cyberlearnix.com</a></p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>

@@ -148,8 +148,8 @@ public class EmailChangeService {
         log.info("[EmailChange] Created session id={} for userId={}", request.getId(), user.getId());
 
         // ── Send OTP emails ────────────────────────────────────────────────────
-        emailService.sendOtpEmail(currentEmail, oldOtp);
-        emailService.sendOtpEmail(newEmail, newOtp);
+        emailService.sendEmailChangeOtp(currentEmail, oldOtp);
+        emailService.sendEmailChangeOtp(newEmail, newOtp);
         log.info("[EmailChange] OTP sent to old={} and new={}", currentEmail, maskEmail(newEmail));
 
         return EmailChangeResponse.builder()

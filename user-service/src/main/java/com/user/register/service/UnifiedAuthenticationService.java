@@ -1444,11 +1444,8 @@ public class UnifiedAuthenticationService {
 
 
             // Send OTP via email
-
             try {
-
-                emailService.sendOtpEmail(email, otp);
-
+                emailService.sendPasswordResetOtp(email, otp);
             } catch (Exception e) {
 
                 log.error("Failed to send password reset OTP email to: {}", email, e);
@@ -2524,11 +2521,8 @@ public class UnifiedAuthenticationService {
 
 
             // Send OTP via email
-
             try {
-
-                emailService.sendOtpEmail(email, otp);
-
+                emailService.sendLoginOtp(email, otp);
             } catch (Exception e) {
 
                 log.error("Failed to send login OTP email to: {}", email, e);
