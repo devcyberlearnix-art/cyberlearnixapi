@@ -34,9 +34,6 @@ import org.springframework.http.HttpStatus;
 
 import org.springframework.http.ResponseEntity;
 
-import org.springframework.mail.javamail.JavaMailSender;
-
-import org.springframework.mail.javamail.MimeMessageHelper;
 
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
@@ -84,7 +81,6 @@ import com.user.register.util.SecurityUtils;
 
 
 
-import jakarta.mail.internet.MimeMessage;
 
 import jakarta.servlet.http.Cookie;
 
@@ -120,7 +116,7 @@ public class RegistrationService {
 
     private final OtpService otpService;
 
-    private final JavaMailSender mailSender;
+    private final EmailService emailService;
 
     private final BCryptPasswordEncoder passwordEncoder; // inject bean
 
@@ -150,8 +146,7 @@ public class RegistrationService {
 
     private String encryptionKey;
 
-    @Value("${app.otp.log-value:true}")
-    private boolean logOtpValue;
+
 
     private String confirmPassword;
 
@@ -169,9 +164,6 @@ public class RegistrationService {
 
 
 
-    @Value("${spring.mail.username}")
-
-    private String fromEmail;
 
 
 
@@ -318,7 +310,7 @@ public class RegistrationService {
 
                 // Send OTP email - don't fail registration if email fails
                 try {
-                    sendOtpEmail(mobileUser.getEmail(), otp, "Registration OTP");
+                    emailService.sendOtpEmail(mobileUser.getEmail(), otp);
                 } catch (Exception e) {
                     log.error("Failed to send registration OTP email to: {}", mobileUser.getEmail(), e);
                 }
@@ -366,7 +358,7 @@ public class RegistrationService {
 
                 // Send OTP email - don't fail registration if email fails
                 try {
-                    sendOtpEmail(existingUser.getEmail(), otp, "Registration OTP");
+                    emailService.sendOtpEmail(existingUser.getEmail(), otp);
                 } catch (Exception e) {
                     log.error("Failed to send registration OTP email to: {}", existingUser.getEmail(), e);
                 }
@@ -494,7 +486,7 @@ public class RegistrationService {
 
         // Send OTP email - don't fail registration if email fails
         try {
-            sendOtpEmail(savedUser.getEmail(), otp, "Registration OTP");
+            emailService.sendOtpEmail(savedUser.getEmail(), otp);
         } catch (Exception e) {
             log.error("Failed to send registration OTP email to: {}", savedUser.getEmail(), e);
             // Continue with registration even if email fails
@@ -549,7 +541,7 @@ public class RegistrationService {
 
         String otp = generateOTP();
         try {
-            sendOtpEmail(email, otp, "Registration OTP");
+            emailService.sendOtpEmail(email, otp);
         } catch (Exception exception) {
             log.error("Failed to resend registration OTP email to: {}", email, exception);
             throw new ResponseStatusException(
@@ -615,7 +607,7 @@ public class RegistrationService {
         String otp = generateOTP();
         otpService.createSession(normalizedEmail, "registration", otp, 5, 5);
         try {
-            sendOtpEmail(normalizedEmail, otp, "Registration OTP");
+            emailService.sendOtpEmail(normalizedEmail, otp);
         } catch (Exception exception) {
             log.error("Failed to send registration OTP email to corrected address: {}", normalizedEmail, exception);
         }
@@ -862,80 +854,8 @@ public class RegistrationService {
 
 
 
-    private void sendOtpEmail(String email, String otp, String passwordResetOtp) {
+    // OTP emails are now sent via EmailService — no direct mail sending in this class.
 
-        try {
-
-            MimeMessage message = mailSender.createMimeMessage();
-
-            MimeMessageHelper helper = new MimeMessageHelper(message, true);
-
-
-
-            helper.setFrom(fromEmail);
-
-            helper.setTo(email);
-
-            helper.setSubject("Registration OTP Verification");
-
-
-
-            // Load HTML template
-
-            String htmlContent = loadTemplate(otp);
-
-
-
-            helper.setText(htmlContent, true); // ✅ true = HTML
-
-
-
-            mailSender.send(message);
-
-
-
-            log.info("Registration OTP email sent successfully to: {}", email);
-            if (logOtpValue) {
-                log.info("Registration OTP value for {} is {}", email, otp);
-            }
-
-
-
-        } catch (Exception e) {
-
-            log.error("Registration OTP email sending failed for: {}", email, e);
-
-        }
-
-    }
-
-
-
-    private String loadTemplate(String otp) {
-
-        try {
-
-            InputStream inputStream = getClass()
-
-                    .getResourceAsStream("/templates/otp-email.html");
-
-
-
-            String template = new String(inputStream.readAllBytes());
-
-
-
-            return template.replace("{{OTP}}", otp);
-
-
-
-        } catch (Exception e) {
-
-            throw new RuntimeException("Failed to load email template", e);
-
-        }
-
-    }
 
 
 
@@ -1974,7 +1894,7 @@ public class RegistrationService {
 
 
 
-        sendOtpEmail(user.getEmail(), otp, "Login OTP");
+        emailService.sendLoginOtp(user.getEmail(), otp);
 
 
 
@@ -2330,7 +2250,7 @@ public class RegistrationService {
 
         // Send OTP email
 
-        sendOtpEmail(user.getEmail(), otp, "Password Reset OTP");
+        emailService.sendPasswordResetOtp(user.getEmail(), otp);
 
 
 

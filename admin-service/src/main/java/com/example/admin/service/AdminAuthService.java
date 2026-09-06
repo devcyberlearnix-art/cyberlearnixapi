@@ -664,7 +664,7 @@ public class AdminAuthService {
         otpService.markCooldown(email, "password_reset", 30);
 
         try {
-            emailService.sendOtp(admin.getEmail(), otp);
+            emailService.sendPasswordResetOtp(admin.getEmail(), otp);
         } catch (RuntimeException ex) {
             throw new ResponseStatusException(
                     HttpStatus.SERVICE_UNAVAILABLE,
@@ -1104,7 +1104,7 @@ public class AdminAuthService {
         adminRepository.save(admin);
 
         // Send OTP via email
-        emailService.sendOtp(admin.getEmail(), otp);
+        emailService.sendPasswordResetOtp(admin.getEmail(), otp);
 
         log.info("Password reset OTP sent to admin: {}", admin.getEmail());
 
