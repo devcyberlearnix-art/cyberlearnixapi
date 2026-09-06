@@ -28,6 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static com.lms.review.client.EnrollmentCheckResponse.EnrollmentCheckData;
 
 @ExtendWith(MockitoExtension.class)
 class ReviewServiceTest {
@@ -82,7 +83,13 @@ class ReviewServiceTest {
         when(reviewRepository.findByUserIdAndCourseId(userId, courseId)).thenReturn(Optional.empty());
         when(courseClient.getCourseById(courseId))
                 .thenReturn(new com.lms.review.client.CourseCheckResponse(courseId, "Course"));
-        when(enrollmentClient.checkEnrollment(courseId)).thenReturn(new EnrollmentCheckResponse(false));
+        when(enrollmentClient.checkEnrollment(courseId)).thenReturn(EnrollmentCheckResponse.builder()
+                .success(false)
+                .message("Not enrolled")
+                .data(EnrollmentCheckData.builder()
+                        .enrolled(false)
+                        .build())
+                .build());
 
         assertThrows(BusinessException.class, () -> reviewService.createReview(userId, request));
     }
@@ -100,7 +107,13 @@ class ReviewServiceTest {
         when(reviewRepository.findByUserIdAndCourseId(userId, courseId)).thenReturn(Optional.empty());
         when(courseClient.getCourseById(courseId))
                 .thenReturn(new com.lms.review.client.CourseCheckResponse(courseId, "Course"));
-        when(enrollmentClient.checkEnrollment(courseId)).thenReturn(new EnrollmentCheckResponse(true));
+        when(enrollmentClient.checkEnrollment(courseId)).thenReturn(EnrollmentCheckResponse.builder()
+                .success(true)
+                .message("Enrolled")
+                .data(EnrollmentCheckData.builder()
+                        .enrolled(true)
+                        .build())
+                .build());
         when(reviewRepository.save(any(Review.class))).thenAnswer(invocation -> {
             Review saved = invocation.getArgument(0);
             saved.setId(1L);
@@ -127,7 +140,13 @@ class ReviewServiceTest {
 
         when(reviewRepository.findByUserIdAndCourseId(userId, courseId)).thenReturn(Optional.empty());
         when(courseClient.getCourseById(courseId)).thenThrow(new RuntimeException("course service down"));
-        when(enrollmentClient.checkEnrollment(courseId)).thenReturn(new EnrollmentCheckResponse(true));
+        when(enrollmentClient.checkEnrollment(courseId)).thenReturn(EnrollmentCheckResponse.builder()
+                .success(true)
+                .message("Enrolled")
+                .data(EnrollmentCheckData.builder()
+                        .enrolled(true)
+                        .build())
+                .build());
         when(reviewRepository.save(any(Review.class))).thenAnswer(invocation -> {
             Review saved = invocation.getArgument(0);
             saved.setId(1L);

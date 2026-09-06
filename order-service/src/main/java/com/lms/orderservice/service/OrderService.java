@@ -17,6 +17,8 @@ import com.lms.orderservice.repository.OrderRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.web.server.ResponseStatusException;
 
 
@@ -29,6 +31,8 @@ import java.util.Objects;
 
 @Service
 public class OrderService {
+
+    private static final Logger logger = LoggerFactory.getLogger(OrderService.class);
 
     private final CartClient cartClient;
     private final CouponClient couponClient;
@@ -136,25 +140,8 @@ public class OrderService {
             }
         }
 
-        // 4. Create Order
-        Order order = new Order();
-        order.setUserId(userId);
-        order.setStatus(OrderStatus.PENDING.name());
-        order.setCreatedAt(LocalDateTime.now());
-        order.setTotalAmount(finalTotal);
-
-        Order savedOrder = orderRepository.save(order);
-
-        // 5. Save Order Items (courses)
-        for (Long courseId : courseIds) {
-            OrderItem item = new OrderItem();
-            item.setOrderId(savedOrder.getOrderId());
-            item.setCourseId(courseId);
-
-            orderItemRepository.save(item);
-        }
-
-        // 6) Redeem coupon (optional) per course
+        // 4) Redeem coupon (optional) per course BEFORE order persistence
+        // This ensures consistency: if redemption fails, order is not created with invalid discount
         if (couponCode != null && !couponCode.isBlank()) {
             for (Long courseId : courseIds) {
                 if (courseId == null)
@@ -164,18 +151,44 @@ public class OrderService {
                     redeemRequest.setCouponCode(couponCode);
                     redeemRequest.setCourseId(courseId.toString());
                     couponClient.redeem(redeemRequest);
-                } catch (Exception ignored) {
-                    // do not fail the order if coupon redemption fails; coupon-service can be
-                    // retried later
+                } catch (Exception e) {
+                    // Coupon redemption is required for consistency
+                    // If it fails, we must not create the order with a discount that wasn't applied
+                    throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
+                            "Failed to redeem coupon. Order cannot be created to ensure consistency.", e);
                 }
             }
         }
 
+        // 5. Create Order
+        Order order = new Order();
+        order.setUserId(userId);
+        order.setStatus(OrderStatus.PENDING.name());
+        order.setCreatedAt(LocalDateTime.now());
+        order.setTotalAmount(finalTotal);
+
+        Order savedOrder = orderRepository.save(order);
+
+        // 6. Save Order Items (courses)
+        for (Long courseId : courseIds) {
+            OrderItem item = new OrderItem();
+            item.setOrderId(savedOrder.getOrderId());
+            item.setCourseId(courseId);
+
+            orderItemRepository.save(item);
+        }
+
         // 7) Clear the cart after successful order creation
+        // This happens after order persistence to avoid duplicate orders on retry
+        // Failure is logged but does not fail the order (order is already valid)
         try {
             cartClient.clearCart(userId);
-        } catch (Exception ignored) {
-            // cart clear can be retried; order is already persisted
+        } catch (Exception e) {
+            // Log the failure with context for manual intervention or retry
+            logger.error("Failed to clear cart for userId: {} after order creation. Order ID: {}. Error: {}", 
+                    userId, savedOrder.getOrderId(), e.getMessage(), e);
+            // Cart clear is idempotent (deleteByUserId), so retry is safe
+            // Order is valid and persisted, so we return success to the client
         }
 
         return savedOrder;

@@ -12,6 +12,9 @@ import org.springframework.http.HttpMethod;
 
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 
+import java.util.Arrays;
+import java.util.List;
+
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
@@ -20,6 +23,7 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtAuthenticationFilter jwtAuthFilter) throws Exception {
 
         http
+                .cors(cors -> cors.disable()) // Disable CORS - handled by API Gateway
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .exceptionHandling(errors -> errors

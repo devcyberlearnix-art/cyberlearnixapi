@@ -47,6 +47,8 @@ public class SimpleJwtTokenProvider {
         // Create secret keys (support both raw and Base64-encoded secrets)
         byte[] accessBytes = decodeIfBase64(accessSecret);
         byte[] refreshBytes = decodeIfBase64(refreshSecret);
+        log.info("[SimpleJwtTokenProvider] Access key length: {}, Refresh key length: {}", 
+            accessBytes.length, refreshBytes.length);
         this.accessTokenSecret = Keys.hmacShaKeyFor(accessBytes);
         this.refreshTokenSecret = Keys.hmacShaKeyFor(refreshBytes);
 
@@ -75,23 +77,9 @@ public class SimpleJwtTokenProvider {
             return new byte[0];
         }
 
-        // Raw secrets are most common. Only treat as Base64 when the string is a valid
-        // encoding
-        // and re-encoding the decoded bytes reproduces the original secret.
-        if (s.length() % 4 == 0 && s.matches("[A-Za-z0-9+/=]+")) {
-            try {
-                byte[] decoded = Decoders.BASE64.decode(s);
-                if (decoded != null && decoded.length >= 32) {
-                    String reencoded = java.util.Base64.getEncoder().withoutPadding().encodeToString(decoded);
-                    String reencodedPadded = java.util.Base64.getEncoder().encodeToString(decoded);
-                    if (s.equals(reencoded) || s.equals(reencodedPadded)) {
-                        return decoded;
-                    }
-                }
-            } catch (Exception ignored) {
-                // Fall through to raw bytes when decode fails
-            }
-        }
+        // TEMPORARY FIX: Always use raw UTF-8 bytes to match User Service and Admin Service
+        // The Base64 decoding logic was causing key mismatches
+        log.debug("[SimpleJwtTokenProvider] Using raw UTF-8 bytes (fix for key mismatch)");
         return s.getBytes(java.nio.charset.StandardCharsets.UTF_8);
     }
 

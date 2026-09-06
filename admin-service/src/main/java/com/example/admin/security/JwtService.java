@@ -133,7 +133,9 @@ public class JwtService {
     // ================= CLAIM EXTRACTION (using shared validator) =================
     public UUID extractAdminId(String token) {
         try {
+            log.debug("[JwtService] Extracting adminId from token");
             String userId = sharedJwtValidator.extractUserId(token);
+            log.debug("[JwtService] Extracted userId: {}", userId);
             return UUID.fromString(userId);
         } catch (Exception e) {
             log.error("Failed to extract admin ID from token", e);
@@ -143,7 +145,10 @@ public class JwtService {
 
     public String extractRole(String token) {
         try {
-            return sharedJwtValidator.extractRole(token);
+            log.debug("[JwtService] Extracting role from token");
+            String role = sharedJwtValidator.extractRole(token);
+            log.debug("[JwtService] Extracted role: {}", role);
+            return role;
         } catch (Exception e) {
             log.error("Failed to extract role from token", e);
             throw new JwtException("Invalid token");
@@ -152,7 +157,10 @@ public class JwtService {
 
     public String extractEmail(String token) {
         try {
-            return sharedJwtValidator.extractEmail(token);
+            log.debug("[JwtService] Extracting email from token");
+            String email = sharedJwtValidator.extractEmail(token);
+            log.debug("[JwtService] Extracted email: {}", email);
+            return email;
         } catch (Exception e) {
             log.error("Failed to extract email from token", e);
             return null;
@@ -161,7 +169,9 @@ public class JwtService {
 
     public String extractAdminType(String token) {
         try {
+            log.debug("[JwtService] Extracting adminType from token");
             String value = sharedJwtValidator.extractAdminType(token);
+            log.debug("[JwtService] Extracted adminType: {}", value);
             return "NONE".equals(value) ? null : value;
         } catch (Exception e) {
             log.error("Failed to extract admin type from token", e);
@@ -171,7 +181,9 @@ public class JwtService {
 
     public AssignedService extractAssignedService(String token) {
         try {
+            log.debug("[JwtService] Extracting assignedService from token");
             String value = sharedJwtValidator.extractAssignedService(token);
+            log.debug("[JwtService] Extracted assignedService: {}", value);
             if (value == null || value.isBlank() || "NONE".equals(value)) {
                 return null;
             }

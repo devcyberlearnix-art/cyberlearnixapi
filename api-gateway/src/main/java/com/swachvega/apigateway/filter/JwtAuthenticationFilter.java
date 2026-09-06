@@ -175,7 +175,11 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
 
         log.info("Processing request: {} {} (normalized: {}) - Checking if public path", method, rawPath, path);
 
-
+        // Skip authentication for OPTIONS preflight requests (CORS)
+        if ("OPTIONS".equalsIgnoreCase(method)) {
+            log.info("OPTIONS preflight request detected, skipping authentication: {}", path);
+            return chain.filter(exchange);
+        }
 
         // Skip authentication for public paths
 
@@ -209,7 +213,10 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
 
         String token = jwtTokenProvider.extractTokenFromHeader(authHeader);
 
-
+        // Token fingerprinting for tracing
+        String tokenFingerprint = token != null ? token.substring(0, Math.min(8, token.length())) : "null";
+        int tokenLength = token != null ? token.length() : 0;
+        log.info("Token fingerprint: {}, length: {} for path: {}", tokenFingerprint, tokenLength, path);
 
         if (token == null || token.isEmpty()) {
 
@@ -218,8 +225,6 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
             return unauthorizedResponse(exchange, "Missing or invalid authorization token");
 
         }
-
-
 
         log.info("Token extracted successfully, validating for path: {}", path);
 
@@ -243,9 +248,11 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
 
                     return jwtTokenProvider.validateAccessToken(token)
 
-                            .doOnNext(claims -> log.info("Token validated successfully for user: {} on path: {}", claims.get("sub"),
-
-                                    path))
+                            .doOnNext(claims -> {
+                                log.info("Token validated successfully for user: {} on path: {}", claims.get("sub"), path);
+                                log.info("Gateway validated token fingerprint: {}, issuer: {}, audience: {}, subject: {}", 
+                                    tokenFingerprint, claims.get("iss"), claims.get("aud"), claims.get("sub"));
+                            })
 
                             .flatMap(claims -> {
 

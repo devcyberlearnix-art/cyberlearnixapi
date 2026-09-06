@@ -1,29 +1,8 @@
 server:
-
-
-
   port: 8080
 
-
-
-  netty:
-
-
-
-      default-filters:
-
-        - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_FIRST
-
-      # ✅ ✅ GLOBAL CORS CONFIG (MAIN FIX)
-
   compression:
-
-
-
     enabled: true
-
-
-
     mime-types: application/json,application/xml,text/html,text/plain
 
 
@@ -92,117 +71,35 @@ spring:
 
 
 
-      # ✅ ✅ GLOBAL CORS CONFIG (MAIN FIX)
-      default-filters:
-        - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_FIRST
-
-
-
+      # Completely disable any auto-configuration of CORS
       globalcors:
-
-
-
-        corsConfigurations:
-
-
-
-          '[/**]':
-
-
-
-            allowedOriginPatterns:
-
-
-
-              - "http://localhost:*"
-
-
-
-              - "http://127.0.0.1:*"
-
-
-
-              - "https://*.ngrok-free.dev"
-
-
-
-              - "https://*.ngrok.io"
-
-
-
-            allowedMethods:
-
-
-
-              - GET
-
-
-
-              - POST
-
-
-
-              - PUT
-
-
-
-              - DELETE
-
-
-
-              - OPTIONS
-
-
-
-              - PATCH
-
-
-
-            allowedHeaders:
-
-
-
-              - Authorization
-
-
-
-              - Content-Type
-
-
-
-              - X-Requested-With
-
-
-
-              - Accept
-
-
-
-              - Origin
-
-
-
-              - Access-Control-Request-Method
-
-
-
-              - Access-Control-Request-Headers
-
-
-
-            allowCredentials: true
-
-
-
-            exposedHeaders:
-
-
-
-              - Authorization
-
-
-
-              - X-Total-Count
+        enabled: false
+
+      # Disabled: CORS is now handled by CorsWebFilter bean in CorsConfig.java
+      # The globalcors configuration in YAML doesn't work reliably with Spring Cloud Gateway 4.x
+      # Using programmatic CorsWebFilter instead
+      # globalcors:
+      #   cors-configurations:
+      #     '[/**]':
+      #       allowedOriginPatterns:
+      #         - "http://localhost:*"
+      #         - "http://127.0.0.1:*"
+      #         - "https://*.ngrok-free.app"
+      #         - "https://*.ngrok-free.dev"
+      #         - "https://*.ngrok.io"
+      #       allowedMethods:
+      #         - GET
+      #         - POST
+      #         - PUT
+      #         - PATCH
+      #         - DELETE
+      #         - OPTIONS
+      #       allowedHeaders:
+      #         - "*"
+      #       allowCredentials: true
+      #       maxAge: 3600
+      # default-filters:
+      #   - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_FIRST
 
 
 
@@ -590,7 +487,7 @@ spring:
 
 
 
-          uri: ${WISHLISTSERVICE_URL:http://localhost:8092}
+          uri: ${WISHLISTSERVICE_URL:http://localhost:8090}
 
 
 

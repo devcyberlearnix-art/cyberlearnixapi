@@ -33,24 +33,12 @@ public class AdminAuthorizationFilter extends OncePerRequestFilter {
                 || path.equals("/api/v1/admin/password/otp/resend")
                 // Allow internal/service-crafted content endpoints without admin JWT
                 || path.startsWith("/api/v1/admin/sections")
-                || path.matches("/api/v1/admin/courses/\\d+/sections")
-                // Allow admin API endpoints for orders, payments, and reviews
-                || path.equals("/api/v1/admin/orders")
-                || path.equals("/api/v1/admin/payments")
-                || path.equals("/api/v1/admin/reviews");
+                || path.matches("/api/v1/admin/courses/\\d+/sections");
     }
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
-
-        String path = request.getRequestURI();
-
-        // Skip authorization for admin API endpoints
-        if (path.equals("/api/v1/admin/orders") || path.equals("/api/v1/admin/payments") || path.equals("/api/v1/admin/reviews")) {
-            filterChain.doFilter(request, response);
-            return;
-        }
 
         AdminPrincipal principal = AdminSecurityContext.getPrincipal();
 

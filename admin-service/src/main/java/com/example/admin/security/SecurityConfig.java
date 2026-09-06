@@ -18,6 +18,10 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.util.Arrays;
+
+import java.util.List;
+
 
 
 @Configuration
@@ -41,6 +45,8 @@ public class SecurityConfig {
 
 
         http
+
+                .cors(cors -> cors.disable()) // Disable CORS - handled by API Gateway
 
                 .csrf(csrf -> csrf.disable())
 

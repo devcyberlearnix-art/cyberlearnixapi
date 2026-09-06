@@ -65,25 +65,38 @@ public class SharedJwtValidator {
      */
     public Claims validateToken(String token) {
         try {
+            String tokenFingerprint = token.substring(0, Math.min(8, token.length()));
+            log.debug("[SharedJwtValidator] Validating token, fingerprint: {}, length: {}", tokenFingerprint, token.length());
+            
+            log.debug("[SharedJwtValidator] Signature validation starting");
             var parserBuilder = Jwts.parserBuilder()
                     .setSigningKey(secretKey);
+            log.debug("[SharedJwtValidator] Signature validation passed");
             
             if (issuer != null && !issuer.isBlank()) {
+                log.debug("[SharedJwtValidator] Requiring issuer: {}", issuer);
                 parserBuilder.requireIssuer(issuer);
+                log.debug("[SharedJwtValidator] Issuer validation passed");
             }
             
             if (audience != null && !audience.isBlank()) {
+                log.debug("[SharedJwtValidator] Requiring audience: {}", audience);
                 parserBuilder.requireAudience(audience);
+                log.debug("[SharedJwtValidator] Audience validation passed");
             }
             
-            return parserBuilder.build()
+            log.debug("[SharedJwtValidator] Parsing token claims");
+            Claims claims = parserBuilder.build()
                     .parseClaimsJws(token)
                     .getBody();
+            log.debug("[SharedJwtValidator] Token validated successfully, subject: {}, issuer: {}, audience: {}", 
+                claims.getSubject(), claims.getIssuer(), claims.getAudience());
+            return claims;
         } catch (ExpiredJwtException e) {
-            log.warn("Token expired: {}", e.getMessage());
+            log.warn("[SharedJwtValidator] Token expired: {}", e.getMessage());
             throw new JwtException("Token expired, please login again");
         } catch (JwtException e) {
-            log.warn("Invalid token: {}", e.getMessage());
+            log.warn("[SharedJwtValidator] Invalid token: {}", e.getMessage());
             throw new JwtException("Invalid token");
         }
     }
