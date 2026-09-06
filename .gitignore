@@ -30,3 +30,8 @@ Thumbs.db
 
 # Local test helper scripts
 seed_test_user.sql
+
+# Local test credentials
+test_login.json
+test_login2.json
+test_login3.json
