@@ -7,6 +7,11 @@ package com.user.register.service;
 
 
 import com.user.register.dto.unified.*;
+import com.cyberlearnix.commonlibs.dto.UserLoginEvent;
+import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+
 
 
 
@@ -30,10 +35,11 @@ import lombok.RequiredArgsConstructor;
 
 
 import lombok.extern.slf4j.Slf4j;
+import com.user.register.service.SessionService;
 
 
 
-import org.springframework.beans.factory.annotation.Value;
+
 
 
 
@@ -104,6 +110,9 @@ public class UnifiedAuthenticationService {
 
 
     private final UserRepository userRepository;
+    private final KafkaTemplate<String, UserLoginEvent> kafkaTemplate;
+    @Value("${app.kafka.topic.user-login:user-login-topic}")
+    private String userLoginTopic;
 
 
 
@@ -128,6 +137,7 @@ public class UnifiedAuthenticationService {
 
 
     private final EmailService emailService;
+    private final SessionService sessionService;
 
 
 
@@ -279,7 +289,10 @@ public class UnifiedAuthenticationService {
 
 
 
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Account suspended by admin");
+            // Reactivate suspended account on login
+            user.setStatus(User.Status.ACTIVE);
+            userRepository.save(user);
+            log.info("User {} reactivated from SUSPENDED status on login", user.getId());
 
 
 
@@ -364,6 +377,8 @@ public class UnifiedAuthenticationService {
 
 
         );
+        // Persist session in DB for user-service endpoint
+        sessionService.createSession(user, httpRequest, accessToken, refreshToken);
 
 
 
@@ -496,6 +511,33 @@ public class UnifiedAuthenticationService {
 
 
                 .build();
+
+
+
+        // Publish login event to Kafka (non-blocking, decrypted names)
+        try {
+            String firstName = decryptField(user.getFirstName());
+            String lastName  = decryptField(user.getLastName());
+            String fullName  = (firstName != null ? firstName : "") + " " + (lastName != null ? lastName : "");
+            UserLoginEvent event = new UserLoginEvent(
+                    UUID.randomUUID(),
+                    "USER_LOGIN",
+                    user.getId(),
+                    user.getEmail(),
+                    fullName.trim(),
+                    LocalDateTime.now(),
+                    user.getIpAddress(),
+                    user.getDevice(),
+                    user.getBrowser(),
+                    user.getOs(),
+                    "UNKNOWN",
+                    isNewDevice(user)
+            );
+            kafkaTemplate.send(userLoginTopic, user.getId().toString(), event);
+            log.info("UserLoginEvent published for user {} (newDevice={})", user.getId(), event.isNewDevice());
+        } catch (Exception e) {
+            log.error("Failed to publish UserLoginEvent for user {}", user.getId(), e);
+        }
 
 
 
@@ -1149,57 +1191,25 @@ public class UnifiedAuthenticationService {
 
 
     private String detectDevice(String userAgent) {
-
-
-
+        // Dynamically detect device based on configurable patterns
         if (userAgent == null) return "Unknown Device";
-
-
-
-        userAgent = userAgent.toLowerCase();
-
-
-
-
-
-
-
-        if (userAgent.contains("postman")) return "Postman";
-
-
-
-        if (userAgent.contains("android")) return "Android Mobile";
-
-
-
-        if (userAgent.contains("iphone")) return "iPhone";
-
-
-
-        if (userAgent.contains("ipad")) return "iPad";
-
-
-
-        if (userAgent.contains("windows")) return "Windows Desktop";
-
-
-
-        if (userAgent.contains("mac")) return "Mac Desktop";
-
-
-
-        if (userAgent.contains("linux")) return "Linux Desktop";
-
-
-
-
-
-
-
+        String lower = userAgent.toLowerCase();
+        java.util.LinkedHashMap<String, String> patterns = new java.util.LinkedHashMap<>();
+        patterns.put("postman", "Postman");
+        patterns.put("android", "Android Mobile");
+        patterns.put("iphone", "iPhone");
+        patterns.put("ipad", "iPad");
+        patterns.put("windows", "Windows Desktop");
+        patterns.put("mac", "Mac Desktop");
+        patterns.put("linux", "Linux Desktop");
+        patterns.put("curl", "Curl");
+        patterns.put("insomnia", "Insomnia");
+        for (java.util.Map.Entry<String, String> entry : patterns.entrySet()) {
+            if (lower.contains(entry.getKey())) {
+                return entry.getValue();
+            }
+        }
         return "Unknown Device";
-
-
-
     }
 
 
@@ -3112,7 +3122,25 @@ public class UnifiedAuthenticationService {
 
 
 
+
+    /**
+     * Determines if the login originated from a new device.
+     * Updates the user's lastDevice for future logins.
+     */
+    private boolean isNewDevice(com.user.register.entity.User user) {
+        String currentDevice = user.getDevice();
+        if (currentDevice == null) {
+            return false;
+        }
+        String previousDevice = user.getLastDevice();
+        boolean isNew = previousDevice == null || !previousDevice.equals(currentDevice);
+        if (isNew) {
+            user.setLastDevice(currentDevice);
+        }
+        return isNew;
+    }
 }
+
 
 
 

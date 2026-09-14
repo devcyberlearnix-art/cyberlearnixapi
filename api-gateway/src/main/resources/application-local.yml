@@ -524,6 +524,30 @@ spring:
 
 
 
+        # ── Security Verification (email CTA links) ────────────────────
+
+
+
+        - id: notificationservice-security
+
+
+
+          uri: http://localhost:8093
+
+
+
+          predicates:
+
+
+
+            - Path=/api/v1/security/**
+
+
+
+
+
+
+
         # ── Admin Service (8087) ─────────────────────────
 
 

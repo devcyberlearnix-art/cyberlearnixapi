@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="color-scheme" content="dark only">
+    <meta name="supported-color-schemes" content="dark only">
+    <title>Security Alert: New Sign-in for {{applicationName}}</title>
+    <!--[if mso]>
+    <noscript>
+        <xml>
+            <o:OfficeDocumentSettings>
+                <o:PixelsPerInch>96</o:PixelsPerInch>
+            </o:OfficeDocumentSettings>
+        </xml>
+    </noscript>
+    <![endif]-->
+    <style>
+        body, table, td, a { -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }
+        table, td { mso-table-lspace: 0pt; mso-table-rspace: 0pt; border-collapse: collapse !important; }
+        img { -ms-interpolation-mode: bicubic; border: 0; height: auto; line-height: 100%; outline: none; text-decoration: none; }
+        body { height: 100% !important; margin: 0 !important; padding: 0 !important; width: 100% !important; background-color: #0d0f1b; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #e0e0ff; }
+        
+        /* Layout Containers */
+        .email-container { max-width: 600px; margin: 0 auto; background-color: #121429; border: 1px solid #2a2550; border-radius: 12px; overflow: hidden; }
+        .header { background: linear-gradient(135deg, #16103b 0%, #332168 100%); padding: 26px 32px; border-bottom: 2px solid #5a3ba3; }
+        .content { padding: 36px 32px; }
+        .footer { text-align: center; padding: 28px 32px; background-color: #0b0d1c; border-top: 1px solid #1f1b3d; }
+
+        /* Branding Elements */
+        .logo-circle { background-color: #ffffff; color: #16103b; width: 34px; height: 34px; border-radius: 50%; display: inline-block; text-align: center; line-height: 34px; font-weight: 900; font-size: 20px; vertical-align: middle; }
+        .logo-text { color: #ffffff; font-size: 22px; font-weight: 700; letter-spacing: -0.3px; margin: 0 0 0 10px; display: inline-block; vertical-align: middle; }
+        .tagline { color: #b3a0e5; font-size: 12px; margin: 3px 0 0 46px; display: block; font-weight: 400; }
+        .shield-icon-bg { background-color: rgba(124, 88, 216, 0.15); border: 1px solid #7c58d8; width: 42px; height: 42px; border-radius: 10px; text-align: center; line-height: 42px; display: inline-block; }
+
+        /* Typography & Copy */
+        .alert-title { color: #ffffff; font-size: 20px; font-weight: 700; line-height: 1.3; margin: 0 0 12px 0; }
+        .greeting { color: #b3a0e5; font-size: 15px; font-weight: 600; margin: 0 0 16px 0; }
+        .body-lead { color: #d0cdeb; font-size: 14px; line-height: 1.65; margin: 0 0 20px 0; }
+
+        /* 2FA Security Pill */
+        .two-factor-pill { background-color: #1a163a; border: 1px solid #5a3ba3; border-radius: 20px; padding: 6px 14px; display: inline-block; font-size: 12px; font-weight: 600; color: #c4b5fd; margin-bottom: 22px; }
+        .pill-dot { height: 8px; width: 8px; background-color: #10b981; border-radius: 50%; display: inline-block; margin-right: 6px; vertical-align: middle; }
+
+        /* Risk Notice Box */
+        .risk-box { background-color: #1a1533; border: 1px solid #4a3478; border-left: 4px solid #8b5cf6; border-radius: 8px; padding: 18px 20px; margin: 20px 0 26px 0; }
+        .risk-box-high { border-left-color: #f59e0b; background-color: #211626; border-color: #5c384e; }
+        .risk-badge { font-size: 11px; text-transform: uppercase; letter-spacing: 0.8px; font-weight: 700; padding: 3px 8px; border-radius: 4px; display: inline-block; margin-bottom: 8px; }
+        .risk-badge-high { background-color: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.35); }
+        .risk-badge-normal { background-color: rgba(139, 92, 246, 0.2); color: #c4b5fd; border: 1px solid rgba(139, 92, 246, 0.35); }
+        .risk-title { color: #ffffff; font-size: 14px; font-weight: 600; margin: 0 0 6px 0; }
+        .risk-desc { color: #c4bcdb; font-size: 13px; line-height: 1.55; margin: 0; }
+
+        /* Session Details Card */
+        .details-card { background-color: #16142e; border: 1px solid #2e2858; border-radius: 10px; padding: 20px; margin-bottom: 28px; }
+        .details-title { color: #ffffff; font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; margin: 0 0 14px 0; padding-bottom: 8px; border-bottom: 1px solid #252047; }
+        .detail-row { margin-bottom: 10px; }
+        .detail-label { color: #8e87b8; font-size: 13px; font-weight: 500; width: 130px; display: inline-block; }
+        .detail-value { color: #f1f0fb; font-size: 13px; font-weight: 600; }
+        .detail-sub { color: #a59cc7; font-size: 12px; font-weight: 400; margin-left: 4px; }
+
+        /* CTA Button */
+        .btn-wrapper { text-align: center; margin: 30px 0; }
+        .btn-cta { background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); color: #ffffff !important; display: inline-block; font-size: 15px; font-weight: 600; text-decoration: none; padding: 14px 34px; border-radius: 8px; box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35); min-width: 220px; text-align: center; border: 1px solid #7c58d8; }
+        .btn-cta:hover { background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); }
+
+        /* Action Checklist */
+        .checklist-box { background-color: #0e1122; border: 1px solid #252147; border-radius: 8px; padding: 20px; margin: 24px 0; }
+        .checklist-title { color: #ffffff; font-size: 13px; font-weight: 600; margin: 0 0 10px 0; }
+        .checklist-items { margin: 0; padding: 0 0 0 18px; color: #b3a9d4; font-size: 13px; line-height: 1.7; }
+
+        /* 2FA Educational Callout */
+        .education-box { border-top: 1px solid #252147; padding-top: 22px; margin-top: 26px; }
+        .education-text { color: #9a92c4; font-size: 12px; line-height: 1.6; margin: 0; }
+        .education-icon { color: #a78bfa; font-size: 14px; margin-right: 4px; vertical-align: middle; }
+
+        /* Footer */
+        .footer-text { color: #686188; font-size: 11px; line-height: 1.6; margin: 0 0 8px 0; }
+        .footer-links a { color: #8e83b8; text-decoration: underline; }
+        .session-id { font-family: monospace; font-size: 10px; color: #524d70; margin-top: 12px; }
+
+        /* Mobile Optimization */
+        @media screen and (max-width: 600px) {
+            .email-container { width: 100% !important; border-radius: 0 !important; border: none !important; }
+            .content, .header, .footer { padding: 22px 18px !important; }
+            .detail-label { display: block !important; width: 100% !important; margin-bottom: 2px !important; font-size: 12px !important; }
+            .detail-value { display: block !important; width: 100% !important; margin-bottom: 10px !important; }
+            .btn-cta { width: 100% !important; box-sizing: border-box !important; padding: 16px 20px !important; }
+        }
+    </style>
+</head>
+<body style="margin: 0; padding: 0; background-color: #0d0f1b;">
+    <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #0d0f1b; padding: 32px 0;">
+        <tr>
+            <td align="center" style="padding: 12px 8px;">
+                <!-- Main Card Container -->
+                <table border="0" cellpadding="0" cellspacing="0" class="email-container" width="600" style="background-color: #121429; border: 1px solid #2a2550; border-radius: 12px;">
+                    
+                    <!-- Header -->
+                    <tr>
+                        <td class="header" style="background: linear-gradient(135deg, #16103b 0%, #332168 100%); padding: 26px 32px; border-bottom: 2px solid #5a3ba3;">
+                            <table border="0" cellpadding="0" cellspacing="0" width="100%">
+                                <tr>
+                                    <td align="left" valign="middle">
+                                        <div class="logo-circle" style="background-color: #ffffff; color: #16103b; width: 34px; height: 34px; border-radius: 50%; display: inline-block; text-align: center; line-height: 34px; font-weight: 900; font-size: 20px; vertical-align: middle;">C</div>
+                                        <h1 class="logo-text" style="color: #ffffff; font-size: 22px; font-weight: 700; letter-spacing: -0.3px; margin: 0 0 0 10px; display: inline-block; vertical-align: middle;">{{applicationName}}</h1>
+                                        <span class="tagline" style="color: #b3a0e5; font-size: 12px; margin: 3px 0 0 46px; display: block; font-weight: 400;">Security & Identity Protection</span>
+                                    </td>
+                                    <td align="right" valign="middle" width="50">
+                                        <div class="shield-icon-bg" style="background-color: rgba(124, 88, 216, 0.15); border: 1px solid #7c58d8; width: 42px; height: 42px; border-radius: 10px; text-align: center; line-height: 42px; display: inline-block;">
+                                            <span style="font-size: 20px;">🛡️</span>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+
+                    <!-- Body Content -->
+                    <tr>
+                        <td class="content" style="padding: 36px 32px;">
+                            
+                            <!-- 2FA Status Indicator Pill -->
+                            <div class="two-factor-pill" style="background-color: #1a163a; border: 1px solid #5a3ba3; border-radius: 20px; padding: 6px 14px; display: inline-block; font-size: 12px; font-weight: 600; color: #c4b5fd; margin-bottom: 20px;">
+                                <span class="pill-dot" style="height: 8px; width: 8px; background-color: {{statusDotColor}}; border-radius: 50%; display: inline-block; margin-right: 6px; vertical-align: middle;"></span>
+                                {{twoFactorStatusText}}
+                            </div>
+
+                            <h2 class="alert-title" style="color: #ffffff; font-size: 20px; font-weight: 700; line-height: 1.3; margin: 0 0 12px 0;">
+                                {{headlineTitle}}
+                            </h2>
+
+                            <p class="greeting" style="color: #b3a0e5; font-size: 15px; font-weight: 600; margin: 0 0 14px 0;">
+                                Hello {{userName}},
+                            </p>
+
+                            <p class="body-lead" style="color: #d0cdeb; font-size: 14px; line-height: 1.65; margin: 0 0 20px 0;">
+                                {{securityLeadMessage}}
+                            </p>
+
+                            <!-- Dynamic Risk Banner -->
+                            <div class="risk-box {{riskBoxClass}}" style="border-radius: 8px; padding: 18px 20px; margin: 20px 0 26px 0; border: 1px solid {{riskBorderColor}}; border-left: 4px solid {{riskAccentColor}}; background-color: {{riskBgColor}};">
+                                <div class="risk-badge {{riskBadgeClass}}" style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.8px; font-weight: 700; padding: 3px 8px; border-radius: 4px; display: inline-block; margin-bottom: 8px; background-color: {{riskBadgeBg}}; color: {{riskBadgeColor}}; border: 1px solid {{riskBadgeBorder}};">
+                                    {{riskBadgeLabel}}
+                                </div>
+                                <h3 class="risk-title" style="color: #ffffff; font-size: 14px; font-weight: 600; margin: 0 0 6px 0;">{{riskTitle}}</h3>
+                                <p class="risk-desc" style="color: #c4bcdb; font-size: 13px; line-height: 1.55; margin: 0;">{{riskDescription}}</p>
+                            </div>
+
+                            <!-- Session Details Card -->
+                            <table border="0" cellpadding="0" cellspacing="0" width="100%" class="details-card" style="background-color: #16142e; border: 1px solid #2e2858; border-radius: 10px; margin-bottom: 28px;">
+                                <tr>
+                                    <td style="padding: 20px;">
+                                        <div class="details-title" style="color: #ffffff; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; margin: 0 0 14px 0; padding-bottom: 8px; border-bottom: 1px solid #252047;">
+                                            Sign-in Session Details
+                                        </div>
+                                        
+                                        <div class="detail-row" style="margin-bottom: 10px;">
+                                            <span class="detail-label" style="color: #8e87b8; font-size: 13px; font-weight: 500; width: 130px; display: inline-block;">Device / OS:</span>
+                                            <span class="detail-value" style="color: #f1f0fb; font-size: 13px; font-weight: 600;">{{device}}<span class="detail-sub" style="color: #a59cc7; font-size: 12px; font-weight: 400; margin-left: 4px;">({{operatingSystem}})</span></span>
+                                        </div>
+
+                                        <div class="detail-row" style="margin-bottom: 10px;">
+                                            <span class="detail-label" style="color: #8e87b8; font-size: 13px; font-weight: 500; width: 130px; display: inline-block;">Browser:</span>
+                                            <span class="detail-value" style="color: #f1f0fb; font-size: 13px; font-weight: 600;">{{browser}}</span>
+                                        </div>
+
+                                        <div class="detail-row" style="margin-bottom: 10px;">
+                                            <span class="detail-label" style="color: #8e87b8; font-size: 13px; font-weight: 500; width: 130px; display: inline-block;">Location:</span>
+                                            <span class="detail-value" style="color: #f1f0fb; font-size: 13px; font-weight: 600;">{{location}}</span>
+                                        </div>
+
+                                        <div class="detail-row" style="margin-bottom: 10px;">
+                                            <span class="detail-label" style="color: #8e87b8; font-size: 13px; font-weight: 500; width: 130px; display: inline-block;">IP Address:</span>
+                                            <span class="detail-value" style="color: #f1f0fb; font-size: 13px; font-weight: 600; font-family: Consolas, monospace;">{{ipAddress}}</span>
+                                        </div>
+
+                                        <div class="detail-row" style="margin-bottom: 0;">
+                                            <span class="detail-label" style="color: #8e87b8; font-size: 13px; font-weight: 500; width: 130px; display: inline-block;">Time (UTC):</span>
+                                            <span class="detail-value" style="color: #f1f0fb; font-size: 13px; font-weight: 600;">{{loginTime}}</span>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <!-- Primary Action CTA -->
+                            <div class="btn-wrapper" style="text-align: center; margin: 30px 0;">
+                                <!--[if mso]>
+                                <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="{{verifyActivityUrl}}" style="height:48px;v-text-anchor:middle;width:230px;" arcsize="18%" stroke="f" fillcolor="#6366f1">
+                                <w:anchorlock/>
+                                <center style="color:#ffffff;font-family:sans-serif;font-size:15px;font-weight:bold;">Verify Activity</center>
+                                </v:roundrect>
+                                <![endif]-->
+                                <!--[if !mso]><!-- -->
+                                <a href="{{verifyActivityUrl}}" target="_blank" rel="noopener noreferrer" class="btn-cta" style="background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); color: #ffffff !important; display: inline-block; font-size: 15px; font-weight: 600; text-decoration: none; padding: 14px 34px; border-radius: 8px; box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35); min-width: 220px; text-align: center; border: 1px solid #7c58d8;">
+                                    Verify Activity
+                                </a>
+                                <!--<![endif]-->
+                            </div>
+
+                            <!-- Calm Suspicious Activity Guidance -->
+                            <div class="checklist-box" style="background-color: #0e1122; border: 1px solid #252147; border-radius: 8px; padding: 20px; margin: 24px 0;">
+                                <div class="checklist-title" style="color: #ffffff; font-size: 13px; font-weight: 600; margin: 0 0 10px 0;">
+                                    Was this you?
+                                </div>
+                                <ul class="checklist-items" style="margin: 0; padding: 0 0 0 18px; color: #b3a9d4; font-size: 13px; line-height: 1.7;">
+                                    <li><strong>If yes:</strong> You can safely disregard this message. Your session is active and protected.</li>
+                                    <li><strong>If no:</strong> Click <a href="{{verifyActivityUrl}}" style="color: #a78bfa; text-decoration: underline;">Verify Activity</a> above to terminate active sessions and reset your password immediately.</li>
+                                </ul>
+                            </div>
+
+                            <!-- 2FA Educational & Fallback Note -->
+                            <div class="education-box" style="border-top: 1px solid #252147; padding-top: 22px; margin-top: 26px;">
+                                <p class="education-text" style="color: #9a92c4; font-size: 12px; line-height: 1.6; margin: 0 0 8px 0;">
+                                    <span class="education-icon" style="color: #a78bfa; font-size: 14px; margin-right: 4px; vertical-align: middle;">ℹ️</span>
+                                    <strong>Two-Step Verification adds an extra layer of security by requiring a second verification step during login.</strong>
+                                </p>
+                                <p class="education-text" style="color: #9a92c4; font-size: 12px; line-height: 1.6; margin: 0;">
+                                    {{fallbackTwoFactorAdvice}}
+                                </p>
+                            </div>
+
+                        </td>
+                    </tr>
+
+                    <!-- Footer -->
+                    <tr>
+                        <td class="footer" style="text-align: center; padding: 28px 32px; background-color: #0b0d1c; border-top: 1px solid #1f1b3d;">
+                            <p class="footer-text" style="color: #686188; font-size: 11px; line-height: 1.6; margin: 0 0 8px 0;">
+                                You are receiving this critical security alert regarding your {{applicationName}} account.<br>
+                                To review all authorized sign-ins and security preferences, visit your <a href="{{securityDashboardUrl}}" style="color: #8e83b8; text-decoration: underline;">Security Dashboard</a>.
+                            </p>
+                            <p class="footer-text" style="color: #686188; font-size: 11px; line-height: 1.6; margin: 0 0 8px 0;">
+                                &copy; {{currentYear}} {{applicationName}}. All rights reserved.
+                            </p>
+                            <div class="session-id" style="font-family: Consolas, monospace; font-size: 10px; color: #524d70; margin-top: 12px;">
+                                Event ID: {{eventId}}
+                            </div>
+                        </td>
+                    </tr>
+
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>
