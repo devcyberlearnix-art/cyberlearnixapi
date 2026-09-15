@@ -2186,9 +2186,9 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/instructors/applications/{{userId}}/approve",
+              "raw": "{{baseUrl}}/instructors/applications/{{applicationId}}/approve",
               "host": ["{{baseUrl}}"],
-              "path": ["instructors", "applications", "{{userId}}", "approve"]
+              "path": ["instructors", "applications", "{{applicationId}}", "approve"]
             },
             "description": "Approve instructor application (Admin only)."
           },
@@ -2243,9 +2243,9 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/instructors/applications/{{userId}}/reject",
+              "raw": "{{baseUrl}}/instructors/applications/{{applicationId}}/reject",
               "host": ["{{baseUrl}}"],
-              "path": ["instructors", "applications", "{{userId}}", "reject"]
+              "path": ["instructors", "applications", "{{applicationId}}", "reject"]
             },
             "description": "Reject instructor application (Admin only)."
           },

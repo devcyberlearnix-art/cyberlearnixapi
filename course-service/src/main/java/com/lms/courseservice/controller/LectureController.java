@@ -7,6 +7,7 @@ import com.lms.courseservice.service.LectureService;
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -80,6 +81,7 @@ public class LectureController {
 
     // 🔒 Only enrolled users (handled in service)
     @GetMapping("/{sectionId}/lectures")
+    @Transactional(readOnly = true)
     public List<Lecture> getLectures(@PathVariable Long sectionId) {
         return lectureService.getLecturesBySection(sectionId);
     }

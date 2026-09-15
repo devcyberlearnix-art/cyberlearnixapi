@@ -286,7 +286,7 @@ public class AdminUserService {
 
                 List<AdminUserServiceClient.InstructorApplicationDTO> applications = userClient.getAllInstructorApplications(authorization);
 
-        
+
 
         if (applications.isEmpty()) {
 
@@ -310,8 +310,6 @@ public class AdminUserService {
 
                 .toArray(AdminInstructorApplicationsResponse.InstructorApplicationDetail[]::new);
 
-
-
         return AdminInstructorApplicationsResponse.builder()
 
                 .success(true)
@@ -326,156 +324,286 @@ public class AdminUserService {
 
     }
 
+    public AdminInstructorApplicationsResponse getAllInstructorApplicationsPaginated(String authorization, int page, int size) {
+
+        Map<String, Object> applicationsData = userClient.getAllInstructorApplicationsPaginated(authorization, page, size);
+
+        @SuppressWarnings("unchecked")
+        List<AdminUserServiceClient.InstructorApplicationDTO> applications = (List<AdminUserServiceClient.InstructorApplicationDTO>) applicationsData.get("applications");
+
+        if (applications.isEmpty()) {
+
+            return AdminInstructorApplicationsResponse.builder()
+
+                    .success(true)
+
+                    .message("No instructor applications found")
+
+                    .timestamp(LocalDateTime.now().toString())
+
+                    .data(List.of())
+
+                    .pagination(AdminInstructorApplicationsResponse.PaginationInfo.builder()
+                            .currentPage((Integer) applicationsData.get("currentPage"))
+                            .totalPages((Integer) applicationsData.get("totalPages"))
+                            .totalApplications(((Number) applicationsData.get("totalApplications")).longValue())
+                            .pageSize((Integer) applicationsData.get("pageSize"))
+                            .build())
+                    .build();
+
+        }
+
+        AdminInstructorApplicationsResponse.InstructorApplicationDetail[] detailsArray = applications.stream()
+
+                .map(this::convertToApplicationDetail)
+
+                .toArray(AdminInstructorApplicationsResponse.InstructorApplicationDetail[]::new);
+
+        return AdminInstructorApplicationsResponse.builder()
+
+                .success(true)
+
+                .message("Applications fetched successfully")
+
+                .data(java.util.Arrays.asList(detailsArray))
+
+                .timestamp(LocalDateTime.now().toString())
+
+                .pagination(AdminInstructorApplicationsResponse.PaginationInfo.builder()
+                        .currentPage((Integer) applicationsData.get("currentPage"))
+                        .totalPages((Integer) applicationsData.get("totalPages"))
+                        .totalApplications(((Number) applicationsData.get("totalApplications")).longValue())
+                        .pageSize((Integer) applicationsData.get("pageSize"))
+                        .build())
+                .build();
+
+    }
+
+    public AdminInstructorApplicationsResponse getInstructorApplicationsByStatusPaginated(String authorization, String status, int page, int size) {
+
+        Map<String, Object> applicationsData = userClient.getInstructorApplicationsByStatusPaginated(authorization, status, page, size);
+
+        @SuppressWarnings("unchecked")
+        List<AdminUserServiceClient.InstructorApplicationDTO> applications = (List<AdminUserServiceClient.InstructorApplicationDTO>) applicationsData.get("applications");
+
+        if (applications.isEmpty()) {
+
+            return AdminInstructorApplicationsResponse.builder()
+
+                    .success(true)
+
+                    .message("No instructor applications found for status: " + status)
+
+                    .timestamp(LocalDateTime.now().toString())
+
+                    .data(List.of())
+
+                    .pagination(AdminInstructorApplicationsResponse.PaginationInfo.builder()
+                            .currentPage((Integer) applicationsData.get("currentPage"))
+                            .totalPages((Integer) applicationsData.get("totalPages"))
+                            .totalApplications(((Number) applicationsData.get("totalApplications")).longValue())
+                            .pageSize((Integer) applicationsData.get("pageSize"))
+                            .status((String) applicationsData.get("status"))
+                            .build())
+                    .build();
+
+        }
+
+        AdminInstructorApplicationsResponse.InstructorApplicationDetail[] detailsArray = applications.stream()
+
+                .map(this::convertToApplicationDetail)
+
+                .toArray(AdminInstructorApplicationsResponse.InstructorApplicationDetail[]::new);
+
+        return AdminInstructorApplicationsResponse.builder()
+
+                .success(true)
+
+                .message("Applications by status fetched successfully")
+
+                .data(java.util.Arrays.asList(detailsArray))
+
+                .timestamp(LocalDateTime.now().toString())
+
+                .pagination(AdminInstructorApplicationsResponse.PaginationInfo.builder()
+                        .currentPage((Integer) applicationsData.get("currentPage"))
+                        .totalPages((Integer) applicationsData.get("totalPages"))
+                        .totalApplications(((Number) applicationsData.get("totalApplications")).longValue())
+                        .pageSize((Integer) applicationsData.get("pageSize"))
+                        .status((String) applicationsData.get("status"))
+                        .build())
+                .build();
+
+    }
+
+    public AdminApproveInstructorResponse approveInstructorApplicationByApplicationId(UUID applicationId) {
+
+        AdminUserServiceClient.InstructorApplicationDTO application = userClient.approveInstructorApplication(applicationId);
+
+
+        if (application == null) {
+
+            return AdminApproveInstructorResponse.builder()
+
+                    .success(false)
+
+                    .message("Failed to approve instructor application")
+
+                    .timestamp(LocalDateTime.now().toString())
+
+                    .build();
+
+        }
+
+
+
+        AdminApproveInstructorResponse.ApprovedApplicationDetail detail = convertToApprovedDetail(application);
+
+        return AdminApproveInstructorResponse.builder()
+
+                .success(true)
+
+                .message("Instructor application approved successfully")
+
+                .data(detail)
+
+                .timestamp(LocalDateTime.now().toString())
+
+                .build();
+
+    }
+
+    public AdminApproveInstructorResponse approveInstructorApplicationByApplicationId(UUID applicationId, String authorizationHeader) {
+
+        AdminUserServiceClient.InstructorApplicationDTO application = userClient.approveInstructorApplication(applicationId, authorizationHeader);
+
+
+        if (application == null) {
+
+            return AdminApproveInstructorResponse.builder()
+
+                    .success(false)
+
+                    .message("Failed to approve instructor application")
+
+                    .timestamp(LocalDateTime.now().toString())
+
+                    .build();
+
+        }
+
+
+
+        AdminApproveInstructorResponse.ApprovedApplicationDetail detail = convertToApprovedDetail(application);
+
+        return AdminApproveInstructorResponse.builder()
+
+                .success(true)
+
+                .message("Instructor application approved successfully")
+
+                .data(detail)
+
+                .timestamp(LocalDateTime.now().toString())
+
+                .build();
+
+    }
+
+
+
+    public AdminApproveInstructorResponse rejectInstructorApplicationByApplicationId(UUID applicationId) {
+
+        AdminUserServiceClient.InstructorApplicationDTO application = userClient.rejectInstructorApplication(applicationId);
+
+
+        if (application == null) {
+
+            return AdminApproveInstructorResponse.builder()
+
+                    .success(false)
+
+                    .message("Failed to reject instructor application")
+
+                    .timestamp(LocalDateTime.now().toString())
+
+                    .build();
+
+        }
+
+
+
+        AdminApproveInstructorResponse.ApprovedApplicationDetail detail = convertToApprovedDetail(application);
+
+        return AdminApproveInstructorResponse.builder()
+
+                .success(true)
+
+                .message("Instructor application rejected successfully")
+
+                .data(detail)
+
+                .timestamp(LocalDateTime.now().toString())
+
+                .build();
+
+    }
+
+    public AdminApproveInstructorResponse rejectInstructorApplicationByApplicationId(UUID applicationId, String authorizationHeader) {
+
+        AdminUserServiceClient.InstructorApplicationDTO application = userClient.rejectInstructorApplication(applicationId, authorizationHeader);
+
+
+
+        if (application == null) {
+
+            return AdminApproveInstructorResponse.builder()
+
+                    .success(false)
+
+                    .message("Failed to reject instructor application")
+
+                    .timestamp(LocalDateTime.now().toString())
+
+                    .build();
+
+        }
+
+        AdminApproveInstructorResponse.ApprovedApplicationDetail detail = convertToApprovedDetail(application);
+
+        return AdminApproveInstructorResponse.builder()
+
+                .success(true)
+
+                .message("Instructor application rejected successfully")
+
+                .data(detail)
+
+                .timestamp(LocalDateTime.now().toString())
+
+                .build();
+
+    }
+
+    // Backward compatibility methods - deprecated
+    @Deprecated
     public AdminApproveInstructorResponse approveInstructorApplicationByUserId(UUID userId) {
-
-        AdminUserServiceClient.InstructorApplicationDTO application = userClient.approveInstructorApplication(userId);
-
-        
-
-        if (application == null) {
-
-            return AdminApproveInstructorResponse.builder()
-
-                    .success(false)
-
-                    .message("Failed to approve instructor application")
-
-                    .timestamp(LocalDateTime.now().toString())
-
-                    .build();
-
-        }
-
-
-
-        AdminApproveInstructorResponse.ApprovedApplicationDetail detail = convertToApprovedDetail(application);
-
-        return AdminApproveInstructorResponse.builder()
-
-                .success(true)
-
-                .message("Instructor application approved successfully")
-
-                .data(detail)
-
-                .timestamp(LocalDateTime.now().toString())
-
-                .build();
-
+        return approveInstructorApplicationByApplicationId(userId);
     }
 
+    @Deprecated
     public AdminApproveInstructorResponse approveInstructorApplicationByUserId(UUID userId, String authorizationHeader) {
-
-        AdminUserServiceClient.InstructorApplicationDTO application = userClient.approveInstructorApplication(userId, authorizationHeader);
-
-        
-
-        if (application == null) {
-
-            return AdminApproveInstructorResponse.builder()
-
-                    .success(false)
-
-                    .message("Failed to approve instructor application")
-
-                    .timestamp(LocalDateTime.now().toString())
-
-                    .build();
-
-        }
-
-
-
-        AdminApproveInstructorResponse.ApprovedApplicationDetail detail = convertToApprovedDetail(application);
-
-        return AdminApproveInstructorResponse.builder()
-
-                .success(true)
-
-                .message("Instructor application approved successfully")
-
-                .data(detail)
-
-                .timestamp(LocalDateTime.now().toString())
-
-                .build();
-
+        return approveInstructorApplicationByApplicationId(userId, authorizationHeader);
     }
 
-
-
+    @Deprecated
     public AdminApproveInstructorResponse rejectInstructorApplicationByUserId(UUID userId) {
-
-        AdminUserServiceClient.InstructorApplicationDTO application = userClient.rejectInstructorApplication(userId);
-
-        
-
-        if (application == null) {
-
-            return AdminApproveInstructorResponse.builder()
-
-                    .success(false)
-
-                    .message("Failed to reject instructor application")
-
-                    .timestamp(LocalDateTime.now().toString())
-
-                    .build();
-
-        }
-
-
-
-        AdminApproveInstructorResponse.ApprovedApplicationDetail detail = convertToApprovedDetail(application);
-
-        return AdminApproveInstructorResponse.builder()
-
-                .success(true)
-
-                .message("Instructor application rejected successfully")
-
-                .data(detail)
-
-                .timestamp(LocalDateTime.now().toString())
-
-                .build();
-
+        return rejectInstructorApplicationByApplicationId(userId);
     }
 
+    @Deprecated
     public AdminApproveInstructorResponse rejectInstructorApplicationByUserId(UUID userId, String authorizationHeader) {
-
-        AdminUserServiceClient.InstructorApplicationDTO application = userClient.rejectInstructorApplication(userId, authorizationHeader);
-
-
-
-        if (application == null) {
-
-            return AdminApproveInstructorResponse.builder()
-
-                    .success(false)
-
-                    .message("Failed to reject instructor application")
-
-                    .timestamp(LocalDateTime.now().toString())
-
-                    .build();
-
-        }
-
-        AdminApproveInstructorResponse.ApprovedApplicationDetail detail = convertToApprovedDetail(application);
-
-        return AdminApproveInstructorResponse.builder()
-
-                .success(true)
-
-                .message("Instructor application rejected successfully")
-
-                .data(detail)
-
-                .timestamp(LocalDateTime.now().toString())
-
-                .build();
-
+        return rejectInstructorApplicationByApplicationId(userId, authorizationHeader);
     }
 
 
@@ -560,9 +688,11 @@ public class AdminUserService {
 
         AdminInstructorApplicationsResponse.ApplicationInfo application = AdminInstructorApplicationsResponse.ApplicationInfo.builder()
 
-                .applicationId(dto.getUserId())
+                .applicationId(dto.getApplicationId() != null ? dto.getApplicationId() : dto.getUserId())
 
                 .status(dto.getStatus())
+
+                .reviewMessage(dto.getReviewMessage())
 
                 .submittedAt(dto.getAppliedAt())
 
@@ -578,63 +708,21 @@ public class AdminUserService {
 
                 .email(dto.getEmail())
 
-                .currentRole("USER")
+                .currentRole(dto.getCurrentRole() != null ? dto.getCurrentRole() : "USER")
 
-                .appliedRole("INSTRUCTOR")
+                .appliedRole(dto.getAppliedRole() != null ? dto.getAppliedRole() : "INSTRUCTOR")
 
-                .accountStatus("ACTIVE")
+                .accountStatus(dto.getAccountStatus() != null ? dto.getAccountStatus() : "ACTIVE")
 
-                .isInstructorApproved(false)
+                .isInstructorApproved(dto.getIsInstructorApproved() != null ? dto.getIsInstructorApproved() : false)
 
                 .build();
 
         detail.setUser(user);
 
-        
+        Map<String, Boolean> requiredDocs = resolveRequiredDocuments(dto);
 
-        Map<String, Boolean> requiredDocs = new java.util.HashMap<>();
-
-        requiredDocs.put("resumeUrl", dto.getResumeUrl() != null);
-
-        requiredDocs.put("educationalCertificatesUrl", dto.getEducationalCertificatesUrl() != null);
-
-        requiredDocs.put("governmentIdProofUrl", dto.getGovernmentIdProofUrl() != null);
-
-        requiredDocs.put("experienceLetterUrl", dto.getExperienceLetterUrl() != null);
-
-        requiredDocs.put("internshipCertificateUrl", dto.getInternshipCertificateUrl() != null);
-
-        requiredDocs.put("skillCertificatesUrl", dto.getSkillCertificatesUrl() != null);
-
-        requiredDocs.put("portfolioUrl", dto.getPortfolioUrl() != null);
-
-        requiredDocs.put("demoLecturePptUrl", dto.getDemoLecturePptUrl() != null);
-
-        requiredDocs.put("demoLectureRecordingUrl", dto.getDemoLectureRecordingUrl() != null);
-
-        requiredDocs.put("projectsUrl", dto.getProjectsUrl() != null);
-
-        requiredDocs.put("passportPhotoUrl", dto.getPassportPhotoUrl() != null);
-
-        requiredDocs.put("bankDetailsUrl", dto.getBankDetailsUrl() != null);
-
-        requiredDocs.put("panDocumentUrl", dto.getPanDocumentUrl() != null);
-
-        requiredDocs.put("applicationFormUrl", dto.getApplicationFormUrl() != null);
-
-        
-
-        Map<String, Boolean> optionalDocs = new java.util.HashMap<>();
-
-        optionalDocs.put("bankAccountNumber", dto.getBankAccountNumber() != null);
-
-        optionalDocs.put("bankIfsc", dto.getBankIfsc() != null);
-
-        optionalDocs.put("bankName", dto.getBankName() != null);
-
-        optionalDocs.put("panNumber", dto.getPanNumber() != null);
-
-        optionalDocs.put("additionalNotes", dto.getAdditionalNotes() != null);
+        Map<String, Boolean> optionalDocs = resolveOptionalDocuments(dto);
 
         
 
@@ -648,7 +736,7 @@ public class AdminUserService {
 
         detail.setDocuments(documents);
 
-        
+        detail.setNextSteps(dto.getNextSteps());
 
         return detail;
 
@@ -664,7 +752,7 @@ public class AdminUserService {
 
         AdminApproveInstructorResponse.ApplicationInfo application = AdminApproveInstructorResponse.ApplicationInfo.builder()
 
-                .applicationId(dto.getUserId())
+                .applicationId(dto.getApplicationId() != null ? dto.getApplicationId() : dto.getUserId())
 
                 .status(dto.getStatus())
 
@@ -684,13 +772,13 @@ public class AdminUserService {
 
                 .email(dto.getEmail())
 
-                .currentRole("USER")
+                .currentRole(dto.getCurrentRole() != null ? dto.getCurrentRole() : "USER")
 
-                .appliedRole("INSTRUCTOR")
+                .appliedRole(dto.getAppliedRole() != null ? dto.getAppliedRole() : "INSTRUCTOR")
 
-                .accountStatus("ACTIVE")
+                .accountStatus(dto.getAccountStatus() != null ? dto.getAccountStatus() : "ACTIVE")
 
-                .isInstructorApproved(true)
+                .isInstructorApproved(dto.getIsInstructorApproved() != null ? dto.getIsInstructorApproved() : true)
 
                 .build();
 
@@ -698,51 +786,9 @@ public class AdminUserService {
 
         
 
-        Map<String, Boolean> requiredDocs = new java.util.HashMap<>();
+        Map<String, Boolean> requiredDocs = resolveRequiredDocuments(dto);
 
-        requiredDocs.put("resumeUrl", dto.getResumeUrl() != null);
-
-        requiredDocs.put("educationalCertificatesUrl", dto.getEducationalCertificatesUrl() != null);
-
-        requiredDocs.put("governmentIdProofUrl", dto.getGovernmentIdProofUrl() != null);
-
-        requiredDocs.put("experienceLetterUrl", dto.getExperienceLetterUrl() != null);
-
-        requiredDocs.put("internshipCertificateUrl", dto.getInternshipCertificateUrl() != null);
-
-        requiredDocs.put("skillCertificatesUrl", dto.getSkillCertificatesUrl() != null);
-
-        requiredDocs.put("portfolioUrl", dto.getPortfolioUrl() != null);
-
-        requiredDocs.put("demoLecturePptUrl", dto.getDemoLecturePptUrl() != null);
-
-        requiredDocs.put("demoLectureRecordingUrl", dto.getDemoLectureRecordingUrl() != null);
-
-        requiredDocs.put("projectsUrl", dto.getProjectsUrl() != null);
-
-        requiredDocs.put("passportPhotoUrl", dto.getPassportPhotoUrl() != null);
-
-        requiredDocs.put("bankDetailsUrl", dto.getBankDetailsUrl() != null);
-
-        requiredDocs.put("panDocumentUrl", dto.getPanDocumentUrl() != null);
-
-        requiredDocs.put("applicationFormUrl", dto.getApplicationFormUrl() != null);
-
-        
-
-        Map<String, Boolean> optionalDocs = new java.util.HashMap<>();
-
-        optionalDocs.put("bankAccountNumber", dto.getBankAccountNumber() != null);
-
-        optionalDocs.put("bankIfsc", dto.getBankIfsc() != null);
-
-        optionalDocs.put("bankName", dto.getBankName() != null);
-
-        optionalDocs.put("panNumber", dto.getPanNumber() != null);
-
-        optionalDocs.put("additionalNotes", dto.getAdditionalNotes() != null);
-
-        
+        Map<String, Boolean> optionalDocs = resolveOptionalDocuments(dto);
 
         AdminApproveInstructorResponse.DocumentsInfo documents = AdminApproveInstructorResponse.DocumentsInfo.builder()
                 .required(requiredDocs)
@@ -753,7 +799,46 @@ public class AdminUserService {
         return detail;
     }
 
+    private Map<String, Boolean> resolveRequiredDocuments(AdminUserServiceClient.InstructorApplicationDTO dto) {
+        if (dto.getRequiredDocuments() != null) {
+            return dto.getRequiredDocuments();
+        }
+
+        Map<String, Boolean> requiredDocs = new java.util.LinkedHashMap<>();
+        requiredDocs.put("resumeUrl", dto.getResumeUrl() != null);
+        requiredDocs.put("educationalCertificatesUrl", dto.getEducationalCertificatesUrl() != null);
+        requiredDocs.put("governmentIdProofUrl", dto.getGovernmentIdProofUrl() != null);
+        requiredDocs.put("experienceLetterUrl", dto.getExperienceLetterUrl() != null);
+        requiredDocs.put("internshipCertificateUrl", dto.getInternshipCertificateUrl() != null);
+        requiredDocs.put("skillCertificatesUrl", dto.getSkillCertificatesUrl() != null);
+        requiredDocs.put("portfolioUrl", dto.getPortfolioUrl() != null);
+        requiredDocs.put("demoLecturePptUrl", dto.getDemoLecturePptUrl() != null);
+        requiredDocs.put("demoLectureRecordingUrl", dto.getDemoLectureRecordingUrl() != null);
+        requiredDocs.put("projectsUrl", dto.getProjectsUrl() != null);
+        requiredDocs.put("passportPhotoUrl", dto.getPassportPhotoUrl() != null);
+        requiredDocs.put("bankDetailsUrl", dto.getBankDetailsUrl() != null);
+        requiredDocs.put("panDocumentUrl", dto.getPanDocumentUrl() != null);
+        requiredDocs.put("applicationFormUrl", dto.getApplicationFormUrl() != null);
+        return requiredDocs;
+    }
+
+    private Map<String, Boolean> resolveOptionalDocuments(AdminUserServiceClient.InstructorApplicationDTO dto) {
+        if (dto.getOptionalDocuments() != null) {
+            return dto.getOptionalDocuments();
+        }
+
+        Map<String, Boolean> optionalDocs = new java.util.LinkedHashMap<>();
+        optionalDocs.put("bankAccountNumber", dto.getBankAccountNumber() != null);
+        optionalDocs.put("bankIfsc", dto.getBankIfsc() != null);
+        optionalDocs.put("bankName", dto.getBankName() != null);
+        optionalDocs.put("panNumber", dto.getPanNumber() != null);
+        optionalDocs.put("additionalNotes", dto.getAdditionalNotes() != null);
+        return optionalDocs;
+    }
+
     public AdminInstructorDetailResponse getInstructorDetailedById(String idStr, String authorization) {
+        System.out.println("=== getInstructorDetailedById called with idStr: " + idStr + " ===");
+
         if (idStr == null || idStr.trim().isEmpty()) {
             return AdminInstructorDetailResponse.builder()
                     .success(false)
@@ -765,7 +850,9 @@ public class AdminUserService {
         UUID userUuid = null;
         try {
             userUuid = UUID.fromString(idStr.trim());
-        } catch (IllegalArgumentException ignored) {
+            System.out.println("Successfully parsed UUID: " + userUuid);
+        } catch (IllegalArgumentException e) {
+            System.out.println("Failed to parse UUID from: " + idStr + " - " + e.getMessage());
             // Not a UUID, might be numeric or other format
         }
 
@@ -946,9 +1033,16 @@ public class AdminUserService {
     }
 
     private long getLongValue(Object obj) {
+        System.out.println("=== getLongValue called with obj: " + obj + " (type: " + (obj != null ? obj.getClass().getName() : "null") + ") ===");
         if (obj instanceof Number num) return num.longValue();
         if (obj instanceof String str) {
-            try { return Long.parseLong(str); } catch (Exception ignored) {}
+            try { return Long.parseLong(str); } catch (Exception ignored) {
+                // If it's a UUID string, we can't convert it to Long, return 0
+                if (str.contains("-")) {
+                    System.err.println("⚠️ Cannot convert UUID to Long: " + str);
+                    return 0L;
+                }
+            }
         }
         return 0L;
     }

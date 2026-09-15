@@ -20,6 +20,19 @@ public class AdminInstructorApplicationsResponse {
     private String message;
     private List<InstructorApplicationDetail> data;
     private String timestamp;
+    private PaginationInfo pagination;
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class PaginationInfo {
+        private int currentPage;
+        private int totalPages;
+        private long totalApplications;
+        private int pageSize;
+        private String status;
+    }
 
     @Data
     @Builder

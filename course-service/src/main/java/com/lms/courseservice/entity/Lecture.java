@@ -1,11 +1,13 @@
 package com.lms.courseservice.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 
 @Entity
 @Table(name = "lectures")
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
@@ -31,5 +33,6 @@ public class Lecture {
 
     @ManyToOne
     @JoinColumn(name = "section_id")
+    @JsonIgnore
     private Section section;
 }

@@ -1,5 +1,6 @@
 package com.swachvega.apigateway.config;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.Ordered;
@@ -8,38 +9,54 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.reactive.CorsWebFilter;
 import org.springframework.web.cors.reactive.UrlBasedCorsConfigurationSource;
 
+import java.util.Arrays;
+import java.util.List;
+
 @Configuration
 public class CorsConfig {
+
+    @Value("${cors.allowed-origins:http://localhost:3000}")
+    private String[] allowedOrigins;
+
+    @Value("${cors.allowed-methods:GET,POST,PUT,DELETE,OPTIONS,PATCH}")
+    private String[] allowedMethods;
+
+    @Value("${cors.allowed-headers:Authorization,Content-Type,Accept,Origin,X-Requested-With,ngrok-skip-browser-warning}")
+    private String[] allowedHeaders;
+
+    @Value("${cors.allow-credentials:true}")
+    private Boolean allowCredentials;
+
+    @Value("${cors.max-age:3600}")
+    private Long maxAge;
 
     @Bean
     @Order(Ordered.HIGHEST_PRECEDENCE)
     public CorsWebFilter corsWebFilter() {
         CorsConfiguration corsConfig = new CorsConfiguration();
         
-        // Allow frontend origin only (http://localhost:3000)
-        corsConfig.addAllowedOrigin("http://localhost:3000");
+        // Allow configured origins from environment
+        List<String> origins = Arrays.asList(allowedOrigins);
+        origins.forEach(corsConfig::addAllowedOrigin);
         
-        // Allow common HTTP methods
-        corsConfig.addAllowedMethod("GET");
-        corsConfig.addAllowedMethod("POST");
-        corsConfig.addAllowedMethod("PUT");
-        corsConfig.addAllowedMethod("DELETE");
-        corsConfig.addAllowedMethod("OPTIONS");
-        corsConfig.addAllowedMethod("PATCH");
+        // Add wildcard for ngrok in development if localhost is allowed
+        if (origins.contains("http://localhost:3000") || origins.contains("http://localhost:*")) {
+            corsConfig.addAllowedOriginPattern("https://*.ngrok-free.app");
+            corsConfig.addAllowedOriginPattern("https://*.ngrok-free.dev");
+            corsConfig.addAllowedOriginPattern("https://*.ngrok.io");
+        }
         
-        // Allow specific headers that frontend actually sends
-        corsConfig.addAllowedHeader("Authorization");
-        corsConfig.addAllowedHeader("Content-Type");
-        corsConfig.addAllowedHeader("Accept");
-        corsConfig.addAllowedHeader("Origin");
-        corsConfig.addAllowedHeader("X-Requested-With");
-        corsConfig.addAllowedHeader("ngrok-skip-browser-warning");
+        // Allow configured HTTP methods
+        Arrays.asList(allowedMethods).forEach(corsConfig::addAllowedMethod);
+        
+        // Allow configured headers
+        Arrays.asList(allowedHeaders).forEach(corsConfig::addAllowedHeader);
         
         // Allow credentials (cookies, authorization headers)
-        corsConfig.setAllowCredentials(true);
+        corsConfig.setAllowCredentials(allowCredentials);
         
-        // Cache preflight requests for 1 hour
-        corsConfig.setMaxAge(3600L);
+        // Cache preflight requests
+        corsConfig.setMaxAge(maxAge);
         
         // Apply to all paths
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();

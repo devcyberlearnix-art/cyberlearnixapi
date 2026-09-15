@@ -325,10 +325,11 @@ public class AdminCourseServiceClient {
         }
 
         Object instructorId = map.get("instructorId");
-        if (instructorId instanceof Number number) {
-            dto.setInstructorId(number.longValue());
-        } else if (instructorId instanceof String instructorIdText) {
-            dto.setInstructorId(Long.parseLong(instructorIdText));
+        if (instructorId != null) {
+            // Courses created by the current user service identify instructors with UUIDs,
+            // while legacy course records can still contain numeric IDs. Preserve either
+            // representation instead of assuming a numeric value.
+            dto.setInstructorId(String.valueOf(instructorId));
         }
 
         dto.setStatus(getString(map.get("status")));
@@ -360,7 +361,7 @@ public class AdminCourseServiceClient {
         private String language;
         private BigDecimal price;
         private String thumbnail;
-        private Long instructorId;
+        private String instructorId;
         private String status;
         private String slug;
     }

@@ -1,0 +1,1637 @@
+{
+  "_type": "export",
+  "__export_format": 4,
+  "__export_date": "2026-09-12T00:00:00.000Z",
+  "__export_source": "insomnia.desktop.app:v8.6.1",
+  "resources": [
+    {
+      "_id": "env_local",
+      "_type": "environment",
+      "name": "Local",
+      "data": {
+        "base_url": "http://localhost:8083",
+        "jwt_token": "",
+        "service_auth_token": "course-service-secret-key-2024",
+        "course_id": "1",
+        "section_id": "1",
+        "lecture_id": "1",
+        "requirement_id": "1",
+        "outcome_id": "1",
+        "material_id": "1",
+        "faq_id": "1",
+        "instructor_id": "123e4567-e89b-12d3-a456-426614174000",
+        "student_id": "987e6543-e21b-12d3-a456-426614174999"
+      }
+    },
+    {
+      "_id": "env_production",
+      "_type": "environment",
+      "name": "Production",
+      "data": {
+        "base_url": "https://api.cyberlearnix.com/course-service",
+        "jwt_token": "",
+        "service_auth_token": "{{production_service_auth}}",
+        "course_id": "1",
+        "section_id": "1",
+        "lecture_id": "1",
+        "requirement_id": "1",
+        "outcome_id": "1",
+        "material_id": "1",
+        "faq_id": "1",
+        "instructor_id": "123e4567-e89b-12d3-a456-426614174000",
+        "student_id": "987e6543-e21b-12d3-a456-426614174999"
+      }
+    },
+    {
+      "_id": "wrk_course_service",
+      "_type": "workspace",
+      "name": "Course Service API",
+      "description": "Complete API testing workspace for Course Service with all endpoints including Course CRUD, Requirements, Learning Outcomes, Materials, FAQs, Sections, Lectures, Course Details, Curriculum, Enrollment, Search/Filter, Admin, Media Upload, and integration APIs"
+    },
+    {
+      "_id": "fld_auth",
+      "_type": "request_group",
+      "name": "01 Authentication",
+      "description": "Authentication and authorization setup",
+      "parentId": "wrk_course_service"
+    },
+    {
+      "_id": "fld_course_crud",
+      "_type": "request_group",
+      "name": "02 Course CRUD",
+      "description": "Course Create, Read, Update, Delete operations",
+      "parentId": "wrk_course_service"
+    },
+    {
+      "_id": "fld_sections",
+      "_type": "request_group",
+      "name": "03 Sections",
+      "description": "Section management operations",
+      "parentId": "wrk_course_service"
+    },
+    {
+      "_id": "fld_lectures",
+      "_type": "request_group",
+      "name": "04 Lectures",
+      "description": "Lecture management operations",
+      "parentId": "wrk_course_service"
+    },
+    {
+      "_id": "fld_requirements",
+      "_type": "request_group",
+      "name": "05 Requirements",
+      "description": "Course requirements management",
+      "parentId": "wrk_course_service"
+    },
+    {
+      "_id": "fld_outcomes",
+      "_type": "request_group",
+      "name": "06 Learning Outcomes",
+      "description": "Learning outcomes management",
+      "parentId": "wrk_course_service"
+    },
+    {
+      "_id": "fld_materials",
+      "_type": "request_group",
+      "name": "07 Materials",
+      "description": "Course materials management",
+      "parentId": "wrk_course_service"
+    },
+    {
+      "_id": "fld_faqs",
+      "_type": "request_group",
+      "name": "08 FAQs",
+      "description": "FAQ management",
+      "parentId": "wrk_course_service"
+    },
+    {
+      "_id": "fld_preview",
+      "_type": "request_group",
+      "name": "09 Course Preview",
+      "description": "Course preview management",
+      "parentId": "wrk_course_service"
+    },
+    {
+      "_id": "fld_details_curriculum",
+      "_type": "request_group",
+      "name": "10 Details & Curriculum",
+      "description": "Course details and curriculum endpoints",
+      "parentId": "wrk_course_service"
+    },
+    {
+      "_id": "fld_enrollment",
+      "_type": "request_group",
+      "name": "11 Enrollment",
+      "description": "Enrollment operations",
+      "parentId": "wrk_course_service"
+    },
+    {
+      "_id": "fld_search_filter",
+      "_type": "request_group",
+      "name": "12 Search & Filter",
+      "description": "Search, filter, and discovery endpoints",
+      "parentId": "wrk_course_service"
+    },
+    {
+      "_id": "fld_admin",
+      "_type": "request_group",
+      "name": "13 Admin Operations",
+      "description": "Admin-specific operations",
+      "parentId": "wrk_course_service"
+    },
+    {
+      "_id": "fld_media_upload",
+      "_type": "request_group",
+      "name": "14 Media Upload",
+      "description": "Video and media upload operations",
+      "parentId": "wrk_course_service"
+    },
+    {
+      "_id": "fld_integration",
+      "_type": "request_group",
+      "name": "15 Integration APIs",
+      "description": "Internal service-to-service endpoints",
+      "parentId": "wrk_course_service"
+    },
+    {
+      "_id": "fld_error_cases",
+      "_type": "request_group",
+      "name": "16 Error Cases",
+      "description": "Validation error, unauthorized, forbidden, and not-found test cases",
+      "parentId": "wrk_course_service"
+    },
+    {
+      "_id": "req_auth_note",
+      "_type": "request",
+      "name": "📋 Authentication Setup",
+      "description": "Setup instructions for JWT tokens and service authentication",
+      "method": "GET",
+      "url": "{{ base_url }}/api/v1/courses",
+      "parentId": "fld_auth",
+      "body": {
+        "mimeType": "application/json"
+      },
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "parameters": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ jwt_token }}"
+      }
+    },
+    {
+      "_id": "req_create_course",
+      "_type": "request",
+      "name": "Create Course",
+      "description": "Create a new course (Instructor/Admin only)",
+      "method": "POST",
+      "url": "{{ base_url }}/api/v1/courses",
+      "parentId": "fld_course_crud",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"title\": \"Complete Java Masterclass\",\n  \"subtitle\": \"From Beginner to Expert\",\n  \"description\": \"Comprehensive Java programming course covering all essential concepts from basics to advanced topics including OOP, collections, streams, and more.\",\n  \"category\": \"Programming\",\n  \"level\": \"Beginner\",\n  \"language\": \"English\",\n  \"price\": 99.99,\n  \"thumbnail\": \"https://example.com/thumbnail.jpg\",\n  \"instructorId\": \"{{ instructor_id }}\",\n  \"status\": \"DRAFT\",\n  \"premium\": true\n}"
+      },
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "parameters": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ jwt_token }}"
+      }
+    },
+    {
+      "_id": "req_get_all_courses",
+      "_type": "request",
+      "name": "Get All Courses",
+      "description": "Get all courses (Public - No authentication required)",
+      "method": "GET",
+      "url": "{{ base_url }}/api/v1/courses",
+      "parentId": "fld_course_crud",
+      "body": {
+        "mimeType": "application/json"
+      },
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "parameters": [],
+      "authentication": {
+        "type": "none"
+      }
+    },
+    {
+      "_id": "req_get_course_by_id",
+      "_type": "request",
+      "name": "Get Course by ID",
+      "description": "Get a specific course by ID (Public)",
+      "method": "GET",
+      "url": "{{ base_url }}/api/v1/courses/{{ course_id }}",
+      "parentId": "fld_course_crud",
+      "body": {
+        "mimeType": "application/json"
+      },
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "parameters": [],
+      "authentication": {
+        "type": "none"
+      }
+    },
+    {
+      "_id": "req_update_course_full",
+      "_type": "request",
+      "name": "Update Course (Full)",
+      "description": "Full course update (Instructor/Admin only)",
+      "method": "PUT",
+      "url": "{{ base_url }}/api/v1/courses/{{ course_id }}",
+      "parentId": "fld_course_crud",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"title\": \"Complete Java Masterclass - Updated\",\n  \"subtitle\": \"From Beginner to Expert - 2024 Edition\",\n  \"description\": \"Comprehensive Java programming course covering all essential concepts from basics to advanced topics including OOP, collections, streams, and more. Updated with latest Java features.\",\n  \"category\": \"Programming\",\n  \"level\": \"Intermediate\",\n  \"language\": \"English\",\n  \"price\": 129.99,\n  \"thumbnail\": \"https://example.com/thumbnail-updated.jpg\",\n  \"status\": \"PUBLISHED\",\n  \"premium\": true\n}"
+      },
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "parameters": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ jwt_token }}"
+      }
+    },
+    {
+      "_id": "req_update_course_partial",
+      "_type": "request",
+      "name": "Update Course (Partial)",
+      "description": "Partial course update (Instructor/Admin only)",
+      "method": "PATCH",
+      "url": "{{ base_url }}/api/v1/courses/{{ course_id }}",
+      "parentId": "fld_course_crud",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"price\": 149.99,\n  \"status\": \"PUBLISHED\"\n}"
+      },
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "parameters": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ jwt_token }}"
+      }
+    },
+    {
+      "_id": "req_delete_course",
+      "_type": "request",
+      "name": "Delete Course",
+      "description": "Delete a course (Instructor/Admin only)",
+      "method": "DELETE",
+      "url": "{{ base_url }}/api/v1/courses/{{ course_id }}",
+      "parentId": "fld_course_crud",
+      "body": {
+        "mimeType": "application/json"
+      },
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "parameters": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ jwt_token }}"
+      }
+    },
+    {
+      "_id": "req_create_section",
+      "_type": "request",
+      "name": "Create Section",
+      "description": "Create a new section for a course (Instructor/Admin only)",
+      "method": "POST",
+      "url": "{{ base_url }}/api/v1/courses/{{ course_id }}/sections",
+      "parentId": "fld_sections",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"title\": \"Introduction to Java\",\n  \"orderIndex\": 1\n}"
+      },
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "parameters": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ jwt_token }}"
+      }
+    },
+    {
+      "_id": "req_get_sections",
+      "_type": "request",
+      "name": "Get Course Sections",
+      "description": "Get all sections for a course (Public)",
+      "method": "GET",
+      "url": "{{ base_url }}/api/v1/courses/{{ course_id }}/sections",
+      "parentId": "fld_sections",
+      "body": {
+        "mimeType": "application/json"
+      },
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "parameters": [],
+      "authentication": {
+        "type": "none"
+      }
+    },
+    {
+      "_id": "req_update_section",
+      "_type": "request",
+      "name": "Update Section",
+      "description": "Update a section (Instructor/Admin only)",
+      "method": "PATCH",
+      "url": "{{ base_url }}/api/v1/courses/sections/{{ section_id }}",
+      "parentId": "fld_sections",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"title\": \"Introduction to Java - Updated\",\n  \"orderIndex\": 1\n}"
+      },
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "parameters": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ jwt_token }}"
+      }
+    },
+    {
+      "_id": "req_delete_section",
+      "_type": "request",
+      "name": "Delete Section",
+      "description": "Delete a section (Instructor/Admin only)",
+      "method": "DELETE",
+      "url": "{{ base_url }}/api/v1/courses/sections/{{ section_id }}",
+      "parentId": "fld_sections",
+      "body": {
+        "mimeType": "application/json"
+      },
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "parameters": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ jwt_token }}"
+      }
+    },
+    {
+      "_id": "req_create_lecture",
+      "_type": "request",
+      "name": "Create Lecture",
+      "description": "Create a new lecture in a section (Instructor/Admin only)",
+      "method": "POST",
+      "url": "{{ base_url }}/api/v1/sections/{{ section_id }}/lectures",
+      "parentId": "fld_lectures",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"title\": \"Java Basics and Setup\",\n  \"description\": \"Learn how to set up Java development environment and understand basic Java syntax\",\n  \"videoUrl\": \"https://res.cloudinary.com/dmvmvdefr/video/upload/v1691234567/java-basics.mp4\",\n  \"duration\": 1800,\n  \"orderIndex\": 1,\n  \"previewEnabled\": true,\n  \"resources\": \"https://example.com/resources/java-basics.zip\"\n}"
+      },
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "parameters": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ jwt_token }}"
+      }
+    },
+    {
+      "_id": "req_get_lectures",
+      "_type": "request",
+      "name": "Get Section Lectures",
+      "description": "Get all lectures in a section (Public)",
+      "method": "GET",
+      "url": "{{ base_url }}/api/v1/sections/{{ section_id }}/lectures",
+      "parentId": "fld_lectures",
+      "body": {
+        "mimeType": "application/json"
+      },
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "parameters": [],
+      "authentication": {
+        "type": "none"
+      }
+    },
+    {
+      "_id": "req_update_lecture",
+      "_type": "request",
+      "name": "Update Lecture",
+      "description": "Update a lecture (Instructor/Admin only)",
+      "method": "PATCH",
+      "url": "{{ base_url }}/api/v1/sections/{{ section_id }}/lectures/{{ lecture_id }}",
+      "parentId": "fld_lectures",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"title\": \"Java Basics and Setup - Updated\",\n  \"description\": \"Learn how to set up Java development environment and understand basic Java syntax with new examples\",\n  \"duration\": 2100,\n  \"previewEnabled\": false\n}"
+      },
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "parameters": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ jwt_token }}"
+      }
+    },
+    {
+      "_id": "req_delete_lecture",
+      "_type": "request",
+      "name": "Delete Lecture",
+      "description": "Delete a lecture (Instructor/Admin only)",
+      "method": "DELETE",
+      "url": "{{ base_url }}/api/v1/sections/{{ section_id }}/lectures/{{ lecture_id }}",
+      "parentId": "fld_lectures",
+      "body": {
+        "mimeType": "application/json"
+      },
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "parameters": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ jwt_token }}"
+      }
+    },
+    {
+      "_id": "req_create_requirement",
+      "_type": "request",
+      "name": "Create Requirement",
+      "description": "Create a course requirement (Instructor/Admin only)",
+      "method": "POST",
+      "url": "{{ base_url }}/api/v1/courses/{{ course_id }}/requirements",
+      "parentId": "fld_requirements",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"courseId\": {{ course_id }},\n  \"requirementType\": \"Prerequisite\",\n  \"requirementText\": \"Basic understanding of programming concepts\"\n}"
+      },
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "parameters": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ jwt_token }}"
+      }
+    },
+    {
+      "_id": "req_get_requirements",
+      "_type": "request",
+      "name": "Get Course Requirements",
+      "description": "Get all requirements for a course (Public)",
+      "method": "GET",
+      "url": "{{ base_url }}/api/v1/courses/{{ course_id }}/requirements",
+      "parentId": "fld_requirements",
+      "body": {
+        "mimeType": "application/json"
+      },
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "parameters": [],
+      "authentication": {
+        "type": "none"
+      }
+    },
+    {
+      "_id": "req_update_requirement",
+      "_type": "request",
+      "name": "Update Requirement",
+      "description": "Update a course requirement (Instructor/Admin only)",
+      "method": "PUT",
+      "url": "{{ base_url }}/api/v1/courses/requirements/{{ requirement_id }}",
+      "parentId": "fld_requirements",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"courseId\": {{ course_id }},\n  \"requirementType\": \"Prerequisite\",\n  \"requirementText\": \"Basic understanding of programming concepts and logic\"\n}"
+      },
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "parameters": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ jwt_token }}"
+      }
+    },
+    {
+      "_id": "req_update_requirement_partial",
+      "_type": "request",
+      "name": "Update Requirement (Partial)",
+      "description": "Partially update a course requirement (Instructor/Admin only)",
+      "method": "PATCH",
+      "url": "{{ base_url }}/api/v1/courses/requirements/{{ requirement_id }}",
+      "parentId": "fld_requirements",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"requirementText\": \"Basic understanding of programming concepts and logic - Updated\"\n}"
+      },
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "parameters": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ jwt_token }}"
+      }
+    },
+    {
+      "_id": "req_delete_requirement",
+      "_type": "request",
+      "name": "Delete Requirement",
+      "description": "Delete a course requirement (Instructor/Admin only)",
+      "method": "DELETE",
+      "url": "{{ base_url }}/api/v1/courses/requirements/{{ requirement_id }}",
+      "parentId": "fld_requirements",
+      "body": {
+        "mimeType": "application/json"
+      },
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "parameters": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ jwt_token }}"
+      }
+    },
+    {
+      "_id": "req_create_outcome",
+      "_type": "request",
+      "name": "Create Learning Outcome",
+      "description": "Create a learning outcome (Instructor/Admin only)",
+      "method": "POST",
+      "url": "{{ base_url }}/api/v1/courses/{{ course_id }}/outcomes",
+      "parentId": "fld_outcomes",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"courseId\": {{ course_id }},\n  \"outcomeText\": \"Master Java fundamentals and object-oriented programming concepts\",\n  \"skillCategory\": \"Programming\"\n}"
+      },
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "parameters": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ jwt_token }}"
+      }
+    },
+    {
+      "_id": "req_get_outcomes",
+      "_type": "request",
+      "name": "Get Learning Outcomes",
+      "description": "Get all learning outcomes for a course (Public)",
+      "method": "GET",
+      "url": "{{ base_url }}/api/v1/courses/{{ course_id }}/outcomes",
+      "parentId": "fld_outcomes",
+      "body": {
+        "mimeType": "application/json"
+      },
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "parameters": [],
+      "authentication": {
+        "type": "none"
+      }
+    },
+    {
+      "_id": "req_update_outcome",
+      "_type": "request",
+      "name": "Update Learning Outcome",
+      "description": "Update a learning outcome (Instructor/Admin only)",
+      "method": "PUT",
+      "url": "{{ base_url }}/api/v1/courses/outcomes/{{ outcome_id }}",
+      "parentId": "fld_outcomes",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"courseId\": {{ course_id }},\n  \"outcomeText\": \"Master Java fundamentals and object-oriented programming concepts with practical projects\",\n  \"skillCategory\": \"Programming\"\n}"
+      },
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "parameters": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ jwt_token }}"
+      }
+    },
+    {
+      "_id": "req_update_outcome_partial",
+      "_type": "request",
+      "name": "Update Learning Outcome (Partial)",
+      "description": "Partially update a learning outcome (Instructor/Admin only)",
+      "method": "PATCH",
+      "url": "{{ base_url }}/api/v1/courses/outcomes/{{ outcome_id }}",
+      "parentId": "fld_outcomes",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"outcomeText\": \"Master Java fundamentals and object-oriented programming concepts with advanced practical projects\"\n}"
+      },
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "parameters": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ jwt_token }}"
+      }
+    },
+    {
+      "_id": "req_delete_outcome",
+      "_type": "request",
+      "name": "Delete Learning Outcome",
+      "description": "Delete a learning outcome (Instructor/Admin only)",
+      "method": "DELETE",
+      "url": "{{ base_url }}/api/v1/courses/outcomes/{{ outcome_id }}",
+      "parentId": "fld_outcomes",
+      "body": {
+        "mimeType": "application/json"
+      },
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "parameters": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ jwt_token }}"
+      }
+    },
+    {
+      "_id": "req_create_material",
+      "_type": "request",
+      "name": "Create Material",
+      "description": "Create a course material (Instructor/Admin only)",
+      "method": "POST",
+      "url": "{{ base_url }}/api/v1/courses/{{ course_id }}/materials",
+      "parentId": "fld_materials",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"courseId\": {{ course_id }},\n  \"materialName\": \"Java Cheat Sheet\",\n  \"materialType\": \"PDF\",\n  \"fileUrl\": \"https://example.com/materials/java-cheat-sheet.pdf\"\n}"
+      },
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "parameters": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ jwt_token }}"
+      }
+    },
+    {
+      "_id": "req_get_materials",
+      "_type": "request",
+      "name": "Get Course Materials",
+      "description": "Get all materials for a course (Public)",
+      "method": "GET",
+      "url": "{{ base_url }}/api/v1/courses/{{ course_id }}/materials",
+      "parentId": "fld_materials",
+      "body": {
+        "mimeType": "application/json"
+      },
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "parameters": [],
+      "authentication": {
+        "type": "none"
+      }
+    },
+    {
+      "_id": "req_update_material",
+      "_type": "request",
+      "name": "Update Material",
+      "description": "Update a course material (Instructor/Admin only)",
+      "method": "PUT",
+      "url": "{{ base_url }}/api/v1/courses/materials/{{ material_id }}",
+      "parentId": "fld_materials",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"courseId\": {{ course_id }},\n  \"materialName\": \"Java Cheat Sheet - Updated\",\n  \"materialType\": \"PDF\",\n  \"fileUrl\": \"https://example.com/materials/java-cheat-sheet-v2.pdf\"\n}"
+      },
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "parameters": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ jwt_token }}"
+      }
+    },
+    {
+      "_id": "req_update_material_partial",
+      "_type": "request",
+      "name": "Update Material (Partial)",
+      "description": "Partially update a course material (Instructor/Admin only)",
+      "method": "PATCH",
+      "url": "{{ base_url }}/api/v1/courses/materials/{{ material_id }}",
+      "parentId": "fld_materials",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"materialName\": \"Java Complete Reference Guide\"\n}"
+      },
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "parameters": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ jwt_token }}"
+      }
+    },
+    {
+      "_id": "req_delete_material",
+      "_type": "request",
+      "name": "Delete Material",
+      "description": "Delete a course material (Instructor/Admin only)",
+      "method": "DELETE",
+      "url": "{{ base_url }}/api/v1/courses/materials/{{ material_id }}",
+      "parentId": "fld_materials",
+      "body": {
+        "mimeType": "application/json"
+      },
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "parameters": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ jwt_token }}"
+      }
+    },
+    {
+      "_id": "req_create_faq",
+      "_type": "request",
+      "name": "Create FAQ",
+      "description": "Create a course FAQ (Instructor/Admin only)",
+      "method": "POST",
+      "url": "{{ base_url }}/api/v1/courses/{{ course_id }}/faqs",
+      "parentId": "fld_faqs",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"courseId\": {{ course_id }},\n  \"question\": \"Do I need any prior programming experience?\",\n  \"answer\": \"No prior programming experience is required. This course starts from the very basics and gradually builds up to advanced concepts.\"\n}"
+      },
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "X-Forwarded-For",
+          "value": "127.0.0.1"
+        }
+      ],
+      "parameters": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ jwt_token }}"
+      }
+    },
+    {
+      "_id": "req_get_faqs",
+      "_type": "request",
+      "name": "Get Course FAQs",
+      "description": "Get all FAQs for a course (Public)",
+      "method": "GET",
+      "url": "{{ base_url }}/api/v1/courses/{{ course_id }}/faqs",
+      "parentId": "fld_faqs",
+      "body": {
+        "mimeType": "application/json"
+      },
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "parameters": [],
+      "authentication": {
+        "type": "none"
+      }
+    },
+    {
+      "_id": "req_update_faq",
+      "_type": "request",
+      "name": "Update FAQ",
+      "description": "Update a course FAQ (Instructor/Admin only)",
+      "method": "PUT",
+      "url": "{{ base_url }}/api/v1/courses/faqs/{{ faq_id }}",
+      "parentId": "fld_faqs",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"courseId\": {{ course_id }},\n  \"question\": \"Do I need any prior programming experience?\",\n  \"answer\": \"No prior programming experience is required. This course starts from the very basics and gradually builds up to advanced concepts. We provide comprehensive beginner-friendly content.\"\n}"
+      },
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "X-Forwarded-For",
+          "value": "127.0.0.1"
+        }
+      ],
+      "parameters": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ jwt_token }}"
+      }
+    },
+    {
+      "_id": "req_update_faq_partial",
+      "_type": "request",
+      "name": "Update FAQ (Partial)",
+      "description": "Partially update a course FAQ (Instructor/Admin only)",
+      "method": "PATCH",
+      "url": "{{ base_url }}/api/v1/courses/faqs/{{ faq_id }}",
+      "parentId": "fld_faqs",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"answer\": \"No prior programming experience is required. This course is designed for complete beginners with comprehensive support and resources.\"\n}"
+      },
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "X-Forwarded-For",
+          "value": "127.0.0.1"
+        }
+      ],
+      "parameters": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ jwt_token }}"
+      }
+    },
+    {
+      "_id": "req_delete_faq",
+      "_type": "request",
+      "name": "Delete FAQ",
+      "description": "Delete a course FAQ (Instructor/Admin only)",
+      "method": "DELETE",
+      "url": "{{ base_url }}/api/v1/courses/faqs/{{ faq_id }}",
+      "parentId": "fld_faqs",
+      "body": {
+        "mimeType": "application/json"
+      },
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "X-Forwarded-For",
+          "value": "127.0.0.1"
+        }
+      ],
+      "parameters": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ jwt_token }}"
+      }
+    },
+    {
+      "_id": "req_create_preview",
+      "_type": "request",
+      "name": "Create Course Preview",
+      "description": "Create a course preview (Instructor/Admin only)",
+      "method": "POST",
+      "url": "{{ base_url }}/api/v1/courses/{{ course_id }}/preview",
+      "parentId": "fld_preview",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"title\": \"Course Introduction\",\n  \"videoUrl\": \"https://res.cloudinary.com/dmvmvdefr/video/upload/v1691234567/intro.mp4\",\n  \"duration\": 300\n}"
+      },
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "parameters": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ jwt_token }}"
+      }
+    },
+    {
+      "_id": "req_get_preview",
+      "_type": "request",
+      "name": "Get Course Preview",
+      "description": "Get course preview (Public)",
+      "method": "GET",
+      "url": "{{ base_url }}/api/v1/courses/{{ course_id }}/preview",
+      "parentId": "fld_preview",
+      "body": {
+        "mimeType": "application/json"
+      },
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "parameters": [],
+      "authentication": {
+        "type": "none"
+      }
+    },
+    {
+      "_id": "req_update_preview",
+      "_type": "request",
+      "name": "Update Course Preview",
+      "description": "Update course preview (Instructor/Admin only)",
+      "method": "PATCH",
+      "url": "{{ base_url }}/api/v1/courses/{{ course_id }}/preview",
+      "parentId": "fld_preview",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"title\": \"Course Introduction - Updated\",\n  \"videoUrl\": \"https://res.cloudinary.com/dmvmvdefr/video/upload/v1691234568/intro-v2.mp4\",\n  \"duration\": 360\n}"
+      },
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "parameters": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ jwt_token }}"
+      }
+    },
+    {
+      "_id": "req_get_course_details",
+      "_type": "request",
+      "name": "Get Course Details",
+      "description": "Get comprehensive course details including instructor, curriculum, reviews, enrollment status, requirements, outcomes, materials, FAQ (Public with optional auth)",
+      "method": "GET",
+      "url": "{{ base_url }}/api/v1/courses/{{ course_id }}/details",
+      "parentId": "fld_details_curriculum",
+      "body": {
+        "mimeType": "application/json"
+      },
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ jwt_token }}",
+          "disabled": true
+        },
+        {
+          "name": "X-Forwarded-For",
+          "value": "127.0.0.1",
+          "disabled": true
+        }
+      ],
+      "parameters": [],
+      "authentication": {
+        "type": "none"
+      }
+    },
+    {
+      "_id": "req_get_curriculum",
+      "_type": "request",
+      "name": "Get Course Curriculum",
+      "description": "Get hierarchical course curriculum structure with sections and lectures (Public)",
+      "method": "GET",
+      "url": "{{ base_url }}/api/v1/courses/{{ course_id }}/curriculum",
+      "parentId": "fld_details_curriculum",
+      "body": {
+        "mimeType": "application/json"
+      },
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "parameters": [],
+      "authentication": {
+        "type": "none"
+      }
+    },
+    {
+      "_id": "req_enroll_course",
+      "_type": "request",
+      "name": "Enroll in Course",
+      "description": "Enroll user in a course (Student/Instructor/Admin)",
+      "method": "POST",
+      "url": "{{ base_url }}/api/v1/courses/{{ course_id }}/enroll",
+      "parentId": "fld_enrollment",
+      "body": {
+        "mimeType": "application/json"
+      },
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "parameters": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ jwt_token }}"
+      }
+    },
+    {
+      "_id": "req_check_enrollment",
+      "_type": "request",
+      "name": "Check Enrollment",
+      "description": "Check if user is enrolled in a course (Requires authentication)",
+      "method": "GET",
+      "url": "{{ base_url }}/api/v1/enrollments/check/{{ course_id }}",
+      "parentId": "fld_enrollment",
+      "body": {
+        "mimeType": "application/json"
+      },
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "parameters": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ jwt_token }}"
+      }
+    },
+    {
+      "_id": "req_get_enrolled_students",
+      "_type": "request",
+      "name": "Get Enrolled Students",
+      "description": "Get students enrolled in a course (Instructor/Admin only)",
+      "method": "GET",
+      "url": "{{ base_url }}/api/v1/courses/{{ course_id }}/students",
+      "parentId": "fld_enrollment",
+      "body": {
+        "mimeType": "application/json"
+      },
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "parameters": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ jwt_token }}"
+      }
+    },
+    {
+      "_id": "req_get_course_list",
+      "_type": "request",
+      "name": "Get Course List with Filters",
+      "description": "Get paginated course list with search and filter options (Public)",
+      "method": "GET",
+      "url": "{{ base_url }}/api/v1/courses/list",
+      "parentId": "fld_search_filter",
+      "body": {
+        "mimeType": "application/json"
+      },
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "parameters": [
+        {
+          "name": "search",
+          "value": "Java",
+          "disabled": true
+        },
+        {
+          "name": "category",
+          "value": "Programming",
+          "disabled": true
+        },
+        {
+          "name": "level",
+          "value": "Beginner",
+          "disabled": true
+        },
+        {
+          "name": "language",
+          "value": "English",
+          "disabled": true
+        },
+        {
+          "name": "minPrice",
+          "value": "0",
+          "disabled": true
+        },
+        {
+          "name": "maxPrice",
+          "value": "100",
+          "disabled": true
+        },
+        {
+          "name": "premium",
+          "value": "false",
+          "disabled": true
+        },
+        {
+          "name": "free",
+          "value": "true",
+          "disabled": true
+        },
+        {
+          "name": "paid",
+          "value": "false",
+          "disabled": true
+        },
+        {
+          "name": "sort",
+          "value": "newest",
+          "disabled": true
+        },
+        {
+          "name": "page",
+          "value": "0",
+          "disabled": true
+        },
+        {
+          "name": "size",
+          "value": "10",
+          "disabled": true
+        }
+      ],
+      "authentication": {
+        "type": "none"
+      }
+    },
+    {
+      "_id": "req_get_trending_courses",
+      "_type": "request",
+      "name": "Get Trending Courses",
+      "description": "Get paginated trending courses sorted by trending score (Public)",
+      "method": "GET",
+      "url": "{{ base_url }}/api/v1/courses/trending",
+      "parentId": "fld_search_filter",
+      "body": {
+        "mimeType": "application/json"
+      },
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "parameters": [
+        {
+          "name": "page",
+          "value": "0"
+        },
+        {
+          "name": "size",
+          "value": "10"
+        },
+        {
+          "name": "category",
+          "value": "Programming",
+          "disabled": true
+        },
+        {
+          "name": "level",
+          "value": "Beginner",
+          "disabled": true
+        }
+      ],
+      "authentication": {
+        "type": "none"
+      }
+    },
+    {
+      "_id": "req_get_featured_courses",
+      "_type": "request",
+      "name": "Get Featured Courses",
+      "description": "Get featured courses for homepage (Public)",
+      "method": "GET",
+      "url": "{{ base_url }}/api/v1/courses/featured",
+      "parentId": "fld_search_filter",
+      "body": {
+        "mimeType": "application/json"
+      },
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "parameters": [
+        {
+          "name": "limit",
+          "value": "6"
+        }
+      ],
+      "authentication": {
+        "type": "none"
+      }
+    },
+    {
+      "_id": "req_track_impression",
+      "_type": "request",
+      "name": "Track Course Impression",
+      "description": "Track course impression for analytics (Public)",
+      "method": "POST",
+      "url": "{{ base_url }}/api/v1/courses/{{ course_id }}/impressions",
+      "parentId": "fld_search_filter",
+      "body": {
+        "mimeType": "application/json"
+      },
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "parameters": [
+        {
+          "name": "source",
+          "value": "HOME"
+        }
+      ],
+      "authentication": {
+        "type": "none"
+      }
+    },
+    {
+      "_id": "req_get_course_stats",
+      "_type": "request",
+      "name": "Get Course Stats",
+      "description": "Get course statistics (Admin only)",
+      "method": "GET",
+      "url": "{{ base_url }}/api/v1/courses/stats",
+      "parentId": "fld_admin",
+      "body": {
+        "mimeType": "application/json"
+      },
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "parameters": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ jwt_token }}"
+      }
+    },
+    {
+      "_id": "req_update_course_status",
+      "_type": "request",
+      "name": "Update Course Status",
+      "description": "Update course status for approval/rejection (Admin service only with service token)",
+      "method": "PATCH",
+      "url": "{{ base_url }}/api/v1/courses/{{ course_id }}/status",
+      "parentId": "fld_admin",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"status\": \"PUBLISHED\"\n}"
+      },
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "X-Service-Auth",
+          "value": "{{ service_auth_token }}"
+        }
+      ],
+      "parameters": [],
+      "authentication": {
+        "type": "none"
+      }
+    },
+    {
+      "_id": "req_upload_video",
+      "_type": "request",
+      "name": "Upload Video",
+      "description": "Upload video file to Cloudinary (Instructor/Admin only)",
+      "method": "POST",
+      "url": "{{ base_url }}/api/v1/upload/video",
+      "parentId": "fld_media_upload",
+      "body": {
+        "mimeType": "multipart/form-data",
+        "params": [
+          {
+            "name": "file",
+            "value": "",
+            "type": "file",
+            "fileName": "video.mp4"
+          }
+        ]
+      },
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "multipart/form-data"
+        }
+      ],
+      "parameters": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ jwt_token }}"
+      }
+    },
+    {
+      "_id": "req_internal_enroll",
+      "_type": "request",
+      "name": "Internal Enrollment",
+      "description": "Internal enrollment endpoint for payment service (Service-to-Service)",
+      "method": "POST",
+      "url": "{{ base_url }}/api/v1/enrollments/internal/enroll",
+      "parentId": "fld_integration",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"courseId\": {{ course_id }},\n  \"userId\": \"{{ student_id }}\"\n}"
+      },
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "parameters": [],
+      "authentication": {
+        "type": "none"
+      }
+    },
+    {
+      "_id": "req_get_user_enrollments",
+      "_type": "request",
+      "name": "Get User Enrollments",
+      "description": "Get enrollments by user ID (Internal endpoint for admin service)",
+      "method": "GET",
+      "url": "{{ base_url }}/api/v1/enrollments/users/{{ student_id }}",
+      "parentId": "fld_integration",
+      "body": {
+        "mimeType": "application/json"
+      },
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "parameters": [],
+      "authentication": {
+        "type": "none"
+      }
+    },
+    {
+      "_id": "req_error_validation",
+      "_type": "request",
+      "name": "Validation Error - Missing Required Fields",
+      "description": "Test validation error with missing required fields",
+      "method": "POST",
+      "url": "{{ base_url }}/api/v1/courses",
+      "parentId": "fld_error_cases",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"title\": \"\",\n  \"description\": \"Too short\"\n}"
+      },
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "parameters": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ jwt_token }}"
+      }
+    },
+    {
+      "_id": "req_error_unauthorized",
+      "_type": "request",
+      "name": "Unauthorized - Missing Token",
+      "description": "Test unauthorized access when JWT token is missing",
+      "method": "POST",
+      "url": "{{ base_url }}/api/v1/courses",
+      "parentId": "fld_error_cases",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"title\": \"Test Course\",\n  \"description\": \"Test description for validation error testing\"\n}"
+      },
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "parameters": [],
+      "authentication": {
+        "type": "none"
+      }
+    },
+    {
+      "_id": "req_error_forbidden",
+      "_type": "request",
+      "name": "Forbidden - Wrong Role",
+      "description": "Test forbidden access when user has wrong role",
+      "method": "POST",
+      "url": "{{ base_url }}/api/v1/courses",
+      "parentId": "fld_error_cases",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"title\": \"Test Course\",\n  \"description\": \"Test description for role-based access testing\"\n}"
+      },
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "parameters": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ jwt_token }}"
+      }
+    },
+    {
+      "_id": "req_error_not_found",
+      "_type": "request",
+      "name": "Not Found - Invalid Course ID",
+      "description": "Test not found error with invalid course ID",
+      "method": "GET",
+      "url": "{{ base_url }}/api/v1/courses/99999",
+      "parentId": "fld_error_cases",
+      "body": {
+        "mimeType": "application/json"
+      },
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "parameters": [],
+      "authentication": {
+        "type": "none"
+      }
+    },
+    {
+      "_id": "req_error_invalid_token",
+      "_type": "request",
+      "name": "Invalid JWT Token",
+      "description": "Test with invalid or expired JWT token",
+      "method": "POST",
+      "url": "{{ base_url }}/api/v1/courses",
+      "parentId": "fld_error_cases",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"title\": \"Test Course\",\n  \"description\": \"Test description for invalid token testing\"\n}"
+      },
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "parameters": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "invalid.token.here"
+      }
+    },
+    {
+      "_id": "req_error_service_auth",
+      "_type": "request",
+      "name": "Invalid Service Auth",
+      "description": "Test with invalid service authentication token",
+      "method": "PATCH",
+      "url": "{{ base_url }}/api/v1/courses/{{ course_id }}/status",
+      "parentId": "fld_error_cases",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"status\": \"PUBLISHED\"\n}"
+      },
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "X-Service-Auth",
+          "value": "invalid-service-token"
+        }
+      ],
+      "parameters": [],
+      "authentication": {
+        "type": "none"
+      }
+    }
+  ]
+}

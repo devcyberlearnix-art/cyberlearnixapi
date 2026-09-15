@@ -2,6 +2,7 @@ package com.user.register.controller;
 
 import com.user.register.dto.ApiResponse;
 import com.user.register.dto.UserProfileResponse;
+import com.user.register.security.UnifiedJwtService;
 import com.user.register.service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.junit.jupiter.api.BeforeEach;
@@ -9,12 +10,16 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 import org.springframework.http.ResponseEntity;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 class UserControllerTest {
 
     private UserController userController;
@@ -23,11 +28,15 @@ class UserControllerTest {
     private UserService userService;
 
     @Mock
+    private UnifiedJwtService unifiedJwtService;
+
+    @Mock
     private HttpServletRequest request;
 
     @BeforeEach
     void setUp() {
-        userController = new UserController(userService);
+        when(unifiedJwtService.validateToken(any())).thenReturn(false);
+        userController = new UserController(userService, unifiedJwtService);
     }
 
     @Test

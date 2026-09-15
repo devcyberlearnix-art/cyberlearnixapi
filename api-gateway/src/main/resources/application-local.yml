@@ -4,6 +4,12 @@ server:
 
 spring:
 
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      timeout: 2000ms
+
   cloud:
 
     gateway:
@@ -351,6 +357,28 @@ spring:
           filters:
 
             - RewritePath=/wishlistservice/v3/api-docs/(?<segment>.*), /v3/api-docs/$\{segment}
+
+jwt:
+  issuer: cyberlearnix
+  audience: cyberlearnix-clients
+  access-token:
+    secret: 8c4e9d2f1a7b6c5d9e3f0a1b7c8d4e5f9a2b6c1d8e7f3a4b5c9d1e6f8a2b7c3
+    expiration-minutes: 15
+  refresh-token:
+    secret: 8c4e9d2f1a7b6c5d9e3f0a1b7c8d4e5f9a2b6c1d8e7f3a4b5c9d1e6f8a2b7c3
+    expiration-days: 30
+
+cors:
+  allowed-origins: http://localhost:3000,http://localhost:3001
+  allowed-methods: GET,POST,PUT,DELETE,OPTIONS,PATCH
+  allowed-headers: Authorization,Content-Type,Accept,Origin,X-Requested-With,ngrok-skip-browser-warning
+  allow-credentials: true
+  max-age: 3600
+
+rate-limit:
+  enabled: true
+  requests-per-minute: 100
+  whitelist-ips:
 
 logging:
 

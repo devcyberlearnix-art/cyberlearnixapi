@@ -4,6 +4,7 @@ import com.lms.courseservice.dto.ApiResponse;
 
 import com.lms.courseservice.dto.CourseInfo;
 import com.lms.courseservice.dto.CourseListResponse;
+import com.lms.courseservice.dto.CourseRequestDTO;
 import com.lms.courseservice.dto.DeleteCourseResponse;
 import com.lms.courseservice.dto.EnrollCourseResponse;
 import com.lms.courseservice.dto.EnrollmentInfo;
@@ -16,8 +17,10 @@ import com.lms.courseservice.dto.TrendingResponseData;
 import com.lms.courseservice.entity.Course;
 import com.lms.courseservice.security.JwtUtil;
 import com.lms.courseservice.service.CourseService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
@@ -38,14 +41,23 @@ public class CourseController {
      * Create Course (Instructor/Admin only - enforced by SecurityConfig)
      */
     @PostMapping
-    public Course createCourse(@RequestBody Course course) {
-        return courseService.createCourse(course);
+    public ResponseEntity<ApiResponse<Course>> createCourse(@Valid @RequestBody CourseRequestDTO courseRequest) {
+        Course course = courseService.createCourseFromDTO(courseRequest);
+        return ResponseEntity.ok(
+            ApiResponse.<Course>builder()
+                .success(true)
+                .message("Course created successfully")
+                .data(course)
+                .timestamp(Instant.now().toString())
+                .build()
+        );
     }
 
     /**
      * Get All Courses (Public)
      */
     @GetMapping
+    @Transactional(readOnly = true)
     public List<Course> getAllCourses() {
         return courseService.getAllCourses();
     }
@@ -128,6 +140,7 @@ public class CourseController {
      * Get Course by ID (Public)
      */
     @GetMapping("/{id}")
+    @Transactional(readOnly = true)
     public Course getCourse(@PathVariable Long id) {
         return courseService.getCourseById(id);
     }

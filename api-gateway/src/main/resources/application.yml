@@ -287,7 +287,7 @@ spring:
 
 
 
-            - Path=/api/v1/instructors/applications/**
+            - Path=/api/v1/instructors/**
 
 
 
@@ -1014,6 +1014,20 @@ jwt:
 
 
     expiration-days: 30
+
+# CORS Configuration
+cors:
+  allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:3001}
+  allowed-methods: ${CORS_ALLOWED_METHODS:GET,POST,PUT,DELETE,OPTIONS,PATCH}
+  allowed-headers: ${CORS_ALLOWED_HEADERS:Authorization,Content-Type,Accept,Origin,X-Requested-With,ngrok-skip-browser-warning}
+  allow-credentials: ${CORS_ALLOW_CREDENTIALS:true}
+  max-age: ${CORS_MAX_AGE:3600}
+
+# Rate Limiting Configuration
+rate-limit:
+  enabled: ${RATE_LIMIT_ENABLED:true}
+  requests-per-minute: ${RATE_LIMIT_REQUESTS_PER_MINUTE:100}
+  whitelist-ips: ${RATE_LIMIT_WHITELIST_IPS:}
 
 
 

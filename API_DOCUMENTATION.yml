@@ -189,12 +189,12 @@ user_service:
           auth_required: true
           auth_type: "@PreAuthorize: MAIN_ADMIN, SUB_ADMIN"
         - method: "PUT"
-          path: "/admin/instructors/applications/{userId}/approve"
+          path: "/admin/instructors/applications/{applicationId}/approve"
           description: "Approve instructor application"
           auth_required: true
           auth_type: "@PreAuthorize: MAIN_ADMIN, SUB_ADMIN"
         - method: "PUT"
-          path: "/admin/instructors/applications/{userId}/reject"
+          path: "/admin/instructors/applications/{applicationId}/reject"
           description: "Reject instructor application"
           auth_required: true
           auth_type: "@PreAuthorize: MAIN_ADMIN, SUB_ADMIN"
@@ -348,7 +348,7 @@ admin_service:
           auth_required: true
           auth_type: "Admin"
         - method: "PUT"
-          path: "/admin/instructors/applications/{userId}/approve"
+          path: "/admin/instructors/applications/{applicationId}/approve"
           description: "Approve instructor"
           auth_required: true
           auth_type: "Admin"

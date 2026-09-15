@@ -1,6 +1,7 @@
 package com.lms.courseservice.config;
 
 import com.lms.courseservice.security.JwtFilter;
+import com.lms.courseservice.security.ServiceAuthFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -19,6 +20,7 @@ import java.util.List;
 public class SecurityConfig {
 
     private final JwtFilter jwtFilter;
+    private final ServiceAuthFilter serviceAuthFilter;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -36,12 +38,24 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/v1/courses/trending").permitAll()
                         // GET specific course and course list (wildcard matches /list, /{id})
                         .requestMatchers(HttpMethod.GET, "/api/v1/courses/*").permitAll()
+                        // GET course details (comprehensive course information)
+                        .requestMatchers(HttpMethod.GET, "/api/v1/courses/*/details").permitAll()
+                        // GET course curriculum (hierarchical structure)
+                        .requestMatchers(HttpMethod.GET, "/api/v1/courses/*/curriculum").permitAll()
                         // GET course sections
                         .requestMatchers(HttpMethod.GET, "/api/v1/courses/*/sections").permitAll()
                         // GET lectures in section
                         .requestMatchers(HttpMethod.GET, "/api/v1/sections/*/lectures").permitAll()
                         // GET course preview
                         .requestMatchers(HttpMethod.GET, "/api/v1/courses/*/preview").permitAll()
+                        // GET course requirements
+                        .requestMatchers(HttpMethod.GET, "/api/v1/courses/*/requirements").permitAll()
+                        // GET learning outcomes
+                        .requestMatchers(HttpMethod.GET, "/api/v1/courses/*/outcomes").permitAll()
+                        // GET course materials
+                        .requestMatchers(HttpMethod.GET, "/api/v1/courses/*/materials").permitAll()
+                        // GET course FAQs
+                        .requestMatchers(HttpMethod.GET, "/api/v1/courses/*/faqs").permitAll()
                         // Track anonymous home/search engagement for featured ranking
                         .requestMatchers(HttpMethod.POST, "/api/v1/courses/*/impressions").permitAll()
 
@@ -108,6 +122,58 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.PATCH, "/api/v1/courses/*/preview", "/api/v1/courses/*/preview/")
                         .hasAnyRole("INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN", "ADMIN")
 
+                        // ============== COURSE REQUIREMENTS MANAGEMENT ==============
+                        // Create requirement
+                        .requestMatchers(HttpMethod.POST, "/api/v1/courses/*/requirements", "/api/v1/courses/*/requirements/")
+                        .hasAnyRole("INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN", "ADMIN")
+                        // Update requirement (full and partial)
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/courses/requirements/*", "/api/v1/courses/requirements/*/")
+                        .hasAnyRole("INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN", "ADMIN")
+                        .requestMatchers(HttpMethod.PATCH, "/api/v1/courses/requirements/*", "/api/v1/courses/requirements/*/")
+                        .hasAnyRole("INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN", "ADMIN")
+                        // Delete requirement
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/courses/requirements/*", "/api/v1/courses/requirements/*/")
+                        .hasAnyRole("INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN", "ADMIN")
+
+                        // ============== LEARNING OUTCOMES MANAGEMENT ==============
+                        // Create outcome
+                        .requestMatchers(HttpMethod.POST, "/api/v1/courses/*/outcomes", "/api/v1/courses/*/outcomes/")
+                        .hasAnyRole("INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN", "ADMIN")
+                        // Update outcome (full and partial)
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/courses/outcomes/*", "/api/v1/courses/outcomes/*/")
+                        .hasAnyRole("INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN", "ADMIN")
+                        .requestMatchers(HttpMethod.PATCH, "/api/v1/courses/outcomes/*", "/api/v1/courses/outcomes/*/")
+                        .hasAnyRole("INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN", "ADMIN")
+                        // Delete outcome
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/courses/outcomes/*", "/api/v1/courses/outcomes/*/")
+                        .hasAnyRole("INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN", "ADMIN")
+
+                        // ============== COURSE MATERIALS MANAGEMENT ==============
+                        // Create material
+                        .requestMatchers(HttpMethod.POST, "/api/v1/courses/*/materials", "/api/v1/courses/*/materials/")
+                        .hasAnyRole("INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN", "ADMIN")
+                        // Update material (full and partial)
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/courses/materials/*", "/api/v1/courses/materials/*/")
+                        .hasAnyRole("INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN", "ADMIN")
+                        .requestMatchers(HttpMethod.PATCH, "/api/v1/courses/materials/*", "/api/v1/courses/materials/*/")
+                        .hasAnyRole("INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN", "ADMIN")
+                        // Delete material
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/courses/materials/*", "/api/v1/courses/materials/*/")
+                        .hasAnyRole("INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN", "ADMIN")
+
+                        // ============== COURSE FAQ MANAGEMENT ==============
+                        // Create FAQ
+                        .requestMatchers(HttpMethod.POST, "/api/v1/courses/*/faqs", "/api/v1/courses/*/faqs/")
+                        .hasAnyRole("INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN", "ADMIN")
+                        // Update FAQ (full and partial)
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/courses/faqs/*", "/api/v1/courses/faqs/*/")
+                        .hasAnyRole("INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN", "ADMIN")
+                        .requestMatchers(HttpMethod.PATCH, "/api/v1/courses/faqs/*", "/api/v1/courses/faqs/*/")
+                        .hasAnyRole("INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN", "ADMIN")
+                        // Delete FAQ
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/courses/faqs/*", "/api/v1/courses/faqs/*/")
+                        .hasAnyRole("INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN", "ADMIN")
+
                         // ============== MEDIA UPLOAD ==============
                         // Upload video to Cloudinary (Instructor/Admin only)
                         .requestMatchers(HttpMethod.POST, "/api/v1/upload/video", "/api/v1/upload/video/", "/api/v1/courses/upload/video", "/api/v1/courses/upload/video/")
@@ -116,6 +182,7 @@ public class SecurityConfig {
                         // Default: deny all other requests
                         .anyRequest().denyAll())
 
+                .addFilterBefore(serviceAuthFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
