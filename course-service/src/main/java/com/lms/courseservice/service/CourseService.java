@@ -3,6 +3,7 @@ package com.lms.courseservice.service;
 import com.lms.courseservice.dto.CourseListData;
 import com.lms.courseservice.dto.CourseRatingSummary;
 import com.lms.courseservice.dto.CourseListResponse;
+import com.lms.courseservice.dto.CourseRequestDTO;
 import com.lms.courseservice.dto.FeaturedCourseResponse;
 import com.lms.courseservice.dto.SortOption;
 import com.lms.courseservice.dto.TrendingCourseResponse;
@@ -45,6 +46,7 @@ public class CourseService {
     private final SectionRepository sectionRepository;
 
     private final ReviewRatingClient reviewRatingClient;
+    private final CacheInvalidationService cacheInvalidationService;
 
     public Course createCourse(Course course) {
         if (course.getStatus() == null || course.getStatus().isBlank()) {
@@ -53,6 +55,27 @@ public class CourseService {
         return courseRepository.save(course);
     }
 
+    public Course createCourseFromDTO(CourseRequestDTO dto) {
+        Course course = Course.builder()
+            .title(dto.getTitle())
+            .subtitle(dto.getSubtitle())
+            .description(dto.getDescription())
+            .category(dto.getCategory())
+            .level(dto.getLevel())
+            .language(dto.getLanguage())
+            .price(dto.getPrice())
+            .thumbnail(dto.getThumbnail())
+            .instructorId(dto.getInstructorId())
+            .status(dto.getStatus() != null ? dto.getStatus() : "DRAFT")
+            .premium(dto.getPremium() != null ? dto.getPremium() : false)
+            .searchCount(0L)
+            .viewCount(0L)
+            .build();
+        
+        return courseRepository.save(course);
+    }
+
+    @Transactional(readOnly = true)
     public List<Course> getAllCourses() {
         return courseRepository.findAll();
     }
@@ -154,6 +177,7 @@ public class CourseService {
     private record FeaturedCandidate(Course course, CourseRatingSummary ratingSummary, long enrollments) {
     }
 
+    @Transactional(readOnly = true)
     public Course getCourseById(Long id) {
         return courseRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Course not found with id: " + id));
@@ -197,7 +221,13 @@ public class CourseService {
         if (updatedCourse.getPremium() != null)
             course.setPremium(updatedCourse.getPremium());
 
-        return courseRepository.save(course);
+        Course savedCourse = courseRepository.save(course);
+        
+        // Evict cache for this course
+        cacheInvalidationService.evictCourseDetailsForCourse(id);
+        cacheInvalidationService.evictCurriculumForCourse(id);
+        
+        return savedCourse;
     }
 
     @Transactional
@@ -231,6 +261,10 @@ public class CourseService {
 
         // 5. Finally delete the course
         courseRepository.deleteById(id);
+        
+        // Evict cache for this course
+        cacheInvalidationService.evictCourseDetailsForCourse(id);
+        cacheInvalidationService.evictCurriculumForCourse(id);
     }
 
     public Lecture enableLecturePreview(Long courseId, Long lectureId) {

@@ -67,6 +67,9 @@ dependencies {
     // Actuator
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
 
+    // Common Libraries (for shared utilities)
+    implementation project(':commonlibs')
+
     // Test
     implementation 'org.springframework.kafka:spring-kafka'
     implementation project(':commonlibs')

@@ -21,6 +21,7 @@ public class Enrollment {
     @Column(name = "completion_rate")
     private Double completionRate; // 0.0 to 100.0
 
+    @Builder.Default
     private Boolean active = true;  // mark active by default
 
     @ManyToOne
@@ -31,12 +32,15 @@ public class Enrollment {
     private UUID studentId;  // store the user’s ID directly
 
     @Column(name = "status")
+    @Builder.Default
     private String status = "ENROLLED"; // default status
 
     @Column(name = "enrolled_at", nullable = false)
+    @Builder.Default
     private LocalDateTime enrolledAt = LocalDateTime.now();
 
     @Column(name = "last_activity_at")
+    @Builder.Default
     private LocalDateTime lastActivityAt = LocalDateTime.now();
     @Column(name = "grade")
     private Double grade;

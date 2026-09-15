@@ -1,6 +1,8 @@
 package com.user.register.repository;
 
 import com.user.register.entity.InstructorApplication;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
@@ -14,4 +16,8 @@ public interface InstructorApplicationRepository extends JpaRepository<Instructo
     List<InstructorApplication> findByStatus(InstructorApplication.ApplicationStatus status);
 
     boolean existsByUserIdAndStatus(UUID userId, InstructorApplication.ApplicationStatus status);
+
+    Page<InstructorApplication> findAll(Pageable pageable);
+
+    Page<InstructorApplication> findByStatus(InstructorApplication.ApplicationStatus status, Pageable pageable);
 }

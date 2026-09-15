@@ -109,28 +109,73 @@ public class AdminUserController {
 
     @GetMapping("/instructors/applications")
     public ResponseEntity<AdminInstructorApplicationsResponse> getAllInstructorApplicationsDetailed(
-            @RequestHeader("Authorization") String authorization) {
-        AdminInstructorApplicationsResponse response = adminUserService.getAllInstructorApplicationsDetailed(authorization);
+            @RequestHeader("Authorization") String authorization,
+            @RequestParam(required = false) String status,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        if (page < 0) {
+            return ResponseEntity.badRequest().body(
+                AdminInstructorApplicationsResponse.builder()
+                    .success(false)
+                    .message("Page number must be >= 0")
+                    .timestamp(java.time.LocalDateTime.now().toString())
+                    .build()
+            );
+        }
+        if (size < 1 || size > 100) {
+            return ResponseEntity.badRequest().body(
+                AdminInstructorApplicationsResponse.builder()
+                    .success(false)
+                    .message("Page size must be between 1 and 100")
+                    .timestamp(java.time.LocalDateTime.now().toString())
+                    .build()
+            );
+        }
+        
+        AdminInstructorApplicationsResponse response;
+        if (status != null && !status.isBlank()) {
+            response = adminUserService.getInstructorApplicationsByStatusPaginated(authorization, status, page, size);
+        } else {
+            response = adminUserService.getAllInstructorApplicationsPaginated(authorization, page, size);
+        }
+        
         return ResponseEntity
                 .status(response.isSuccess() ? 200 : 500)
                 .body(response);
     }
 
-    @PutMapping("/instructors/applications/{userId}/approve")
-    public ResponseEntity<AdminApproveInstructorResponse> approveInstructorApplicationByUserId(
-            @PathVariable UUID userId,
+    /**
+     * Deprecated: Use GET /instructors/applications?status={status} instead
+     * This endpoint is kept for backward compatibility
+     * 
+     * @deprecated Use query parameter version: GET /instructors/applications?status={status}
+     */
+    @Deprecated
+    @GetMapping("/instructors/applications/status/{status}")
+    public ResponseEntity<AdminInstructorApplicationsResponse> getInstructorApplicationsByStatusLegacy(
+            @PathVariable String status,
+            @RequestHeader("Authorization") String authorization,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        // Redirect to the new query parameter implementation
+        return getAllInstructorApplicationsDetailed(authorization, status, page, size);
+    }
+
+    @PutMapping("/instructors/applications/{applicationId}/approve")
+    public ResponseEntity<AdminApproveInstructorResponse> approveInstructorApplicationByApplicationId(
+            @PathVariable UUID applicationId,
             @RequestHeader("Authorization") String authorization) {
-        AdminApproveInstructorResponse response = adminUserService.approveInstructorApplicationByUserId(userId, authorization);
+        AdminApproveInstructorResponse response = adminUserService.approveInstructorApplicationByApplicationId(applicationId, authorization);
         return ResponseEntity
                 .status(response.isSuccess() ? HttpStatus.OK : HttpStatus.BAD_REQUEST)
                 .body(response);
     }
 
-    @PutMapping("/instructors/applications/{userId}/reject")
-    public ResponseEntity<AdminApproveInstructorResponse> rejectInstructorApplicationByUserId(
-            @PathVariable UUID userId,
+    @PutMapping("/instructors/applications/{applicationId}/reject")
+    public ResponseEntity<AdminApproveInstructorResponse> rejectInstructorApplicationByApplicationId(
+            @PathVariable UUID applicationId,
             @RequestHeader("Authorization") String authorization) {
-        AdminApproveInstructorResponse response = adminUserService.rejectInstructorApplicationByUserId(userId, authorization);
+        AdminApproveInstructorResponse response = adminUserService.rejectInstructorApplicationByApplicationId(applicationId, authorization);
         return ResponseEntity
                 .status(response.isSuccess() ? HttpStatus.OK : HttpStatus.BAD_REQUEST)
                 .body(response);

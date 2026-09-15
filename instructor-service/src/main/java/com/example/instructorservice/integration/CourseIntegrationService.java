@@ -32,6 +32,21 @@ public class CourseIntegrationService {
             HttpEntity<Map<String, Object>> entity = new HttpEntity<>(payload, headers);
             ResponseEntity<Map> response = restTemplate.postForEntity(
                     courseServiceUrl + "/api/v1/courses", entity, Map.class);
+            
+            // Handle new ApiResponse format
+            if (response.getBody() != null) {
+                Object dataObj = response.getBody().get("data");
+                if (dataObj instanceof Map dataMap) {
+                    Object id = dataMap.get("id");
+                    if (!(id instanceof Number number)) {
+                        throw new IllegalStateException("Course service response did not contain a numeric id");
+                    }
+                    log.info("Synced course creation to course-service for courseId={}", course.getId());
+                    return number.longValue();
+                }
+            }
+            
+            // Fallback to old format for backward compatibility
             Object id = response.getBody() != null ? response.getBody().get("id") : null;
             if (!(id instanceof Number number)) {
                 throw new IllegalStateException("Course service response did not contain a numeric id");
@@ -80,12 +95,13 @@ public class CourseIntegrationService {
         payload.put("subtitle", request.getSubtitle());
         payload.put("description", request.getDescription());
         payload.put("category", request.getCategory());
-        payload.put("level", null);
-        payload.put("language", null);
+        payload.put("level", request.getLevel() != null ? request.getLevel() : (course.getLevel() != null ? course.getLevel() : "BEGINNER"));
+        payload.put("language", request.getLanguage() != null ? request.getLanguage() : (course.getLanguage() != null ? course.getLanguage() : "en"));
         payload.put("price", request.getPrice());
         payload.put("thumbnail", request.getThumbnailUrl());
         payload.put("instructorId", course.getInstructor() != null ? course.getInstructor().getUserId() : null);
         payload.put("status", course.getStatus() != null ? course.getStatus().name() : "DRAFT");
+        payload.put("premium", false); // Default to false, can be enhanced later
         return payload;
     }
 }

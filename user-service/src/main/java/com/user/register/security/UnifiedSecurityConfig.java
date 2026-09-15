@@ -41,6 +41,7 @@ public class UnifiedSecurityConfig {
     private final UnifiedJwtAuthenticationFilter unifiedJwtAuthenticationFilter;
 
     private final UnifiedJwtAuthenticationEntryPoint unauthorizedHandler;
+    private final ServiceAuthFilter serviceAuthFilter;
 
 
 
@@ -169,7 +170,7 @@ public class UnifiedSecurityConfig {
 
                         .requestMatchers("/api/v1/admins/**").hasAnyRole("MAIN_ADMIN", "SUB_ADMIN")
 
-                        .requestMatchers("/api/v1/admin/instructors/**").hasAnyRole("MAIN_ADMIN", "SUB_ADMIN")
+                        .requestMatchers("/api/v1/admin/instructors/**").authenticated()  // Business logic handles role check
 
                         
 
@@ -197,6 +198,7 @@ public class UnifiedSecurityConfig {
 
                 )
 
+                .addFilterBefore(serviceAuthFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(unifiedJwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
 

@@ -45,7 +45,12 @@ public class Course {
     private CourseStatus status;
 
     @ElementCollection
-    private List<String> tags;
+    private List<String> tags = new java.util.ArrayList<>();
+
+    // Custom setter to handle builder pattern with @ElementCollection
+    public void setTags(List<String> tags) {
+        this.tags = tags != null ? new java.util.ArrayList<>(tags) : new java.util.ArrayList<>();
+    }
 
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
@@ -61,6 +66,7 @@ public class Course {
     private Long courseServiceId; // Reference to course ID in Course Service (port 8083)
 
     @Column(name = "sync_status")
+    @Builder.Default
     private String syncStatus = "PENDING"; // PENDING, SYNCED, FAILED
 
     @PrePersist

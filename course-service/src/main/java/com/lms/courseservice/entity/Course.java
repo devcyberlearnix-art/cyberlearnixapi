@@ -1,5 +1,6 @@
 package com.lms.courseservice.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -48,4 +49,9 @@ public class Course {
 
     @Builder.Default
     private Long viewCount = 0L;
+
+    @OneToMany(mappedBy = "course", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnore
+    @Builder.Default
+    private java.util.List<Section> sections = new java.util.ArrayList<>();
 }
