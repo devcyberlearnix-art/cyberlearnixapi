@@ -147,7 +147,15 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
 
             "/adminservice/swagger-ui/**",
 
-            "/adminservice/v3/api-docs/**");
+            "/adminservice/v3/api-docs/**",
+
+            // Security verification – email CTA links (no login required)
+
+            "/api/v1/security/verify-activity",
+
+            "/api/v1/security/confirm-activity",
+
+            "/api/v1/security/report-compromised");
 
 
 
