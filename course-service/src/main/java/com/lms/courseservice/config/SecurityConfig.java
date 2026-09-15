@@ -10,6 +10,9 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
+import java.util.Arrays;
+import java.util.List;
+
 @Configuration
 @EnableMethodSecurity
 @RequiredArgsConstructor
@@ -22,13 +25,16 @@ public class SecurityConfig {
 
         http
                 .csrf(csrf -> csrf.disable())
+                .cors(cors -> cors.disable()) // Disable CORS - handled by API Gateway
                 .authorizeHttpRequests(auth -> auth
                     .requestMatchers(HttpMethod.GET, "/api/v1/courses/stats")
                     .hasAnyRole("MAIN_ADMIN", "SUB_ADMIN")
                         // ============== PUBLIC ENDPOINTS (No Auth Required) ==============
                         // GET all courses
                         .requestMatchers(HttpMethod.GET, "/api/v1/courses").permitAll()
-                        // GET specific course
+                        // GET trending courses (public landing page) - specific pattern first
+                        .requestMatchers(HttpMethod.GET, "/api/v1/courses/trending").permitAll()
+                        // GET specific course and course list (wildcard matches /list, /{id})
                         .requestMatchers(HttpMethod.GET, "/api/v1/courses/*").permitAll()
                         // GET course sections
                         .requestMatchers(HttpMethod.GET, "/api/v1/courses/*/sections").permitAll()
@@ -36,8 +42,6 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/v1/sections/*/lectures").permitAll()
                         // GET course preview
                         .requestMatchers(HttpMethod.GET, "/api/v1/courses/*/preview").permitAll()
-                        // GET course students (for admin dashboard)
-                        .requestMatchers(HttpMethod.GET, "/api/v1/courses/*/students").permitAll()
                         // Track anonymous home/search engagement for featured ranking
                         .requestMatchers(HttpMethod.POST, "/api/v1/courses/*/impressions").permitAll()
 
@@ -47,8 +51,6 @@ public class SecurityConfig {
                         // Enrollment lookup by user (from admin service)
                         .requestMatchers(HttpMethod.GET, "/api/v1/enrollments/users/*").permitAll()
                         // Admin service operations (with service token)
-                        .requestMatchers(HttpMethod.PUT, "/api/v1/courses/*").permitAll()
-                        .requestMatchers(HttpMethod.PATCH, "/api/v1/courses/*").permitAll()
                         .requestMatchers(HttpMethod.PATCH, "/api/v1/courses/*/status").permitAll()
 
                         // ============== AUTHENTICATED ENDPOINTS ==============
@@ -61,6 +63,9 @@ public class SecurityConfig {
                         .hasAnyRole("STUDENT", "USER", "INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN", "ADMIN")
 
                         // ============== INSTRUCTOR/ADMIN ENDPOINTS ==============
+                        // GET course students (instructor/admin dashboard)
+                        .requestMatchers(HttpMethod.GET, "/api/v1/courses/*/students")
+                        .hasAnyRole("INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN", "ADMIN")
                         // Create course
                         .requestMatchers(HttpMethod.POST, "/api/v1/courses", "/api/v1/courses/")
                         .hasAnyRole("INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN", "ADMIN")
@@ -115,4 +120,5 @@ public class SecurityConfig {
 
         return http.build();
     }
+
 }

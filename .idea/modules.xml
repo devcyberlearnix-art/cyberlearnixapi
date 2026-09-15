@@ -11,7 +11,6 @@
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/instructor-service/cyberlearnix.instructor-service.main.iml" filepath="$PROJECT_DIR$/.idea/modules/instructor-service/cyberlearnix.instructor-service.main.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/notification-service/cyberlearnix.notification-service.main.iml" filepath="$PROJECT_DIR$/.idea/modules/notification-service/cyberlearnix.notification-service.main.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/order-service/cyberlearnix.order-service.main.iml" filepath="$PROJECT_DIR$/.idea/modules/order-service/cyberlearnix.order-service.main.iml" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/payment-service/cyberlearnix.payment-service.main.iml" filepath="$PROJECT_DIR$/.idea/modules/payment-service/cyberlearnix.payment-service.main.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/review-service/cyberlearnix.review-service.main.iml" filepath="$PROJECT_DIR$/.idea/modules/review-service/cyberlearnix.review-service.main.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/user-service/cyberlearnix.user-service.main.iml" filepath="$PROJECT_DIR$/.idea/modules/user-service/cyberlearnix.user-service.main.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/wishlist-service/cyberlearnix.wishlist-service.main.iml" filepath="$PROJECT_DIR$/.idea/modules/wishlist-service/cyberlearnix.wishlist-service.main.iml" />

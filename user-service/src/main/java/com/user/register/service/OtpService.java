@@ -243,4 +243,34 @@ public class OtpService {
             throw new RuntimeException();
         }
     }
+
+    public record SessionInfo(String email, String otpType, String accountType) {}
+
+    public Optional<SessionInfo> resolveSessionInfo(String sessionId) {
+        // Try user session first
+        String userKey = OTP_SESSION_PREFIX + sessionId;
+        Object userEmail = redisTemplate.opsForHash().get(userKey, "email");
+        Object userType = redisTemplate.opsForHash().get(userKey, "otpType");
+        Object userVerified = redisTemplate.opsForHash().get(userKey, "verified");
+
+        if (userEmail != null && userType != null) {
+            if (!Boolean.parseBoolean(String.valueOf(userVerified))) {
+                return Optional.of(new SessionInfo(userEmail.toString(), userType.toString(), "USER"));
+            }
+        }
+
+        // Try admin session
+        String adminKey = "ADMIN:OTP:SESSION:" + sessionId;
+        Object adminEmail = redisTemplate.opsForHash().get(adminKey, "email");
+        Object adminType = redisTemplate.opsForHash().get(adminKey, "otpType");
+        Object adminVerified = redisTemplate.opsForHash().get(adminKey, "verified");
+
+        if (adminEmail != null && adminType != null) {
+            if (!Boolean.parseBoolean(String.valueOf(adminVerified))) {
+                return Optional.of(new SessionInfo(adminEmail.toString(), adminType.toString(), "ADMIN"));
+            }
+        }
+
+        return Optional.empty();
+    }
 }

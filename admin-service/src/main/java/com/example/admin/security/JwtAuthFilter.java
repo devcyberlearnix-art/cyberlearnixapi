@@ -95,6 +95,28 @@ public class JwtAuthFilter implements Filter {
         if (requestURI.equals("/api/v1/admin/password/reset") && "POST".equalsIgnoreCase(method)) {
             return true;
         }
+        if (requestURI.equals("/api/v1/admin/password/otp/resend") && "POST".equalsIgnoreCase(method)) {
+            return true;
+        }
+
+        // Login OTP endpoints (public - no auth required)
+        if (requestURI.equals("/api/v1/admin/login/otp/request") && "POST".equalsIgnoreCase(method)) {
+            return true;
+        }
+        if (requestURI.equals("/api/v1/admin/login/otp/verify") && "POST".equalsIgnoreCase(method)) {
+            return true;
+        }
+        if (requestURI.equals("/api/v1/admin/login/otp/resend") && "POST".equalsIgnoreCase(method)) {
+            return true;
+        }
+
+        // Admin registration and login endpoints (public - no auth required)
+        if (requestURI.equals("/api/v1/admin/register") && "POST".equalsIgnoreCase(method)) {
+            return true;
+        }
+        if (requestURI.equals("/api/v1/admin/login") && "POST".equalsIgnoreCase(method)) {
+            return true;
+        }
 
         // Course endpoints (public/internal)
 
@@ -220,6 +242,10 @@ public class JwtAuthFilter implements Filter {
 
         }
 
+        
+        System.out.println("[JwtAuthFilter] Authorization header present: " + (authHeader != null));
+        System.out.println("[JwtAuthFilter] Authorization header starts with Bearer: " + (authHeader != null && authHeader.regionMatches(true, 0, "Bearer ", 0, 7)));
+
         if (authHeader == null || !authHeader.regionMatches(true, 0, "Bearer ", 0, 7)) {
 
             SecurityContextHolder.clearContext();
@@ -231,7 +257,9 @@ public class JwtAuthFilter implements Filter {
 
 
         String token = authHeader.substring(7).trim();
-
+        String tokenFingerprint = token.substring(0, Math.min(8, token.length()));
+        System.out.println("[JwtAuthFilter] Token extracted, fingerprint: " + tokenFingerprint + ", length: " + token.length());
+        
         if (token.isBlank()) {
 
             SecurityContextHolder.clearContext();
@@ -252,8 +280,9 @@ public class JwtAuthFilter implements Filter {
         }
 
         try {
-
+            System.out.println("[JwtAuthFilter] Starting token validation");
             UUID adminId = jwtService.extractAdminId(token);
+            System.out.println("[JwtAuthFilter] Extracted adminId: " + adminId);
 
             // Check if password was changed after token issuance
             try {
@@ -274,12 +303,16 @@ public class JwtAuthFilter implements Filter {
             }
 
             String role = jwtService.extractRole(token);
+            System.out.println("[JwtAuthFilter] Extracted role: " + role);
 
             String adminType = jwtService.extractAdminType(token);
+            System.out.println("[JwtAuthFilter] Extracted adminType: " + adminType);
 
             String email = jwtService.extractEmail(token);
+            System.out.println("[JwtAuthFilter] Extracted email: " + email);
 
             AssignedService assignedService = jwtService.extractAssignedService(token);
+            System.out.println("[JwtAuthFilter] Extracted assignedService: " + assignedService);
 
 
 
@@ -295,7 +328,8 @@ public class JwtAuthFilter implements Filter {
 
             }
 
-
+            System.out.println("[JwtAuthFilter] Final role: " + role + ", adminType: " + adminType);
+            System.out.println("[JwtAuthFilter] Creating AdminPrincipal and setting authentication");
 
             AdminPrincipal principal = new AdminPrincipal(adminId, email, role, adminType, assignedService, token);
 
@@ -305,10 +339,12 @@ public class JwtAuthFilter implements Filter {
 
             SecurityContextHolder.getContext().setAuthentication(authentication);
 
+            System.out.println("[JwtAuthFilter] Authentication set successfully");
             return true;
 
         } catch (Exception e) {
-
+            System.err.println("[JwtAuthFilter] Token validation failed: " + e.getMessage());
+            e.printStackTrace();
             SecurityContextHolder.clearContext();
 
             return false;

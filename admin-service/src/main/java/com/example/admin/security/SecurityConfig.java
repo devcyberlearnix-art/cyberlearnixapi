@@ -18,6 +18,10 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.util.Arrays;
+
+import java.util.List;
+
 
 
 @Configuration
@@ -42,6 +46,8 @@ public class SecurityConfig {
 
         http
 
+                .cors(cors -> cors.disable()) // Disable CORS - handled by API Gateway
+
                 .csrf(csrf -> csrf.disable())
 
                 .authorizeHttpRequests(auth -> auth
@@ -54,8 +60,10 @@ public class SecurityConfig {
                                 "/api/v1/admin/login",
                                 "/api/v1/admin/login/otp/request",
                                 "/api/v1/admin/login/otp/verify",
+                                "/api/v1/admin/login/otp/resend",
                                 "/api/v1/admin/password/forgot",
                                 "/api/v1/admin/password/verify-otp",
+                                "/api/v1/admin/password/otp/resend",
                                 "/api/v1/admin/password/reset"
                         ).permitAll()
 

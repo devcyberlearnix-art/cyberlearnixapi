@@ -11,6 +11,9 @@ import org.springframework.web.client.RestTemplate;
 
 import com.example.notification.security.JwtAuthenticationFilter;
 
+import java.util.Arrays;
+import java.util.List;
+
 @Configuration
 public class SecurityConfig {
 
@@ -26,6 +29,8 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 
         http
+                // Disable CORS - handled by API Gateway
+                .cors(cors -> cors.disable())
                 // Disable CSRF (important for APIs)
                 .csrf(csrf -> csrf.disable())
 
@@ -44,7 +49,9 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/announcements/**").permitAll()
                         .requestMatchers("/api/v1/users/**").authenticated()
                         .requestMatchers("/api/v1/push/**").permitAll()
-                        .anyRequest().permitAll()
+                        .requestMatchers("/api/v1/notifications/**").authenticated()
+                        .requestMatchers("/api/v1/admin/**").authenticated()
+                        .anyRequest().authenticated()
                 )
 
                 // Add JWT filter before Spring Security's auth filter
@@ -53,9 +60,10 @@ public class SecurityConfig {
 
         return http.build();
     }
+
     @Bean
     public RestTemplate restTemplate(RestTemplateBuilder builder) {
         return builder.build();
     }
 }
-
+

@@ -22,4 +22,5 @@ public class CartItem {
     private String courseName;
     private Double price;
     private Integer quantity;    // Used for the "Minase" (Minus) logic
+    private String couponCode;   // Applied coupon code for this cart
 }

@@ -7,6 +7,7 @@ import com.lms.review.client.StudentNameResolver;
 import com.lms.review.dto.request.CreateReviewRequest;
 import com.lms.review.dto.response.MyReviewResponse;
 import com.lms.review.entity.Review;
+import com.lms.review.enums.ReviewStatus;
 import com.lms.review.exception.BusinessException;
 import com.lms.review.repository.ReviewRepository;
 import org.junit.jupiter.api.Test;
@@ -27,6 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static com.lms.review.client.EnrollmentCheckResponse.EnrollmentCheckData;
 
 @ExtendWith(MockitoExtension.class)
 class ReviewServiceTest {
@@ -49,7 +51,7 @@ class ReviewServiceTest {
     @Test
     void createReviewRejectsDuplicateReview() {
         UUID userId = UUID.randomUUID();
-        Long courseId = 100L;
+        Long courseId = 1L;
         CreateReviewRequest request = CreateReviewRequest.builder()
                 .courseId(courseId)
                 .rating(5)
@@ -57,7 +59,11 @@ class ReviewServiceTest {
                 .build();
 
         when(reviewRepository.findByUserIdAndCourseId(userId, courseId))
-                .thenReturn(Optional.of(Review.builder().build()));
+                .thenReturn(Optional.of(Review.builder()
+                        .userId(userId)
+                        .courseId(courseId)
+                        .status(ReviewStatus.ACTIVE)
+                        .build()));
         when(courseClient.getCourseById(courseId))
                 .thenReturn(new com.lms.review.client.CourseCheckResponse(courseId, "Course"));
 
@@ -67,7 +73,7 @@ class ReviewServiceTest {
     @Test
     void createReviewRejectsWhenStudentIsNotEnrolled() {
         UUID userId = UUID.randomUUID();
-        Long courseId = 100L;
+        Long courseId = 1L;
         CreateReviewRequest request = CreateReviewRequest.builder()
                 .courseId(courseId)
                 .rating(4)
@@ -77,7 +83,13 @@ class ReviewServiceTest {
         when(reviewRepository.findByUserIdAndCourseId(userId, courseId)).thenReturn(Optional.empty());
         when(courseClient.getCourseById(courseId))
                 .thenReturn(new com.lms.review.client.CourseCheckResponse(courseId, "Course"));
-        when(enrollmentClient.checkEnrollment(courseId)).thenReturn(new EnrollmentCheckResponse(false));
+        when(enrollmentClient.checkEnrollment(courseId)).thenReturn(EnrollmentCheckResponse.builder()
+                .success(false)
+                .message("Not enrolled")
+                .data(EnrollmentCheckData.builder()
+                        .enrolled(false)
+                        .build())
+                .build());
 
         assertThrows(BusinessException.class, () -> reviewService.createReview(userId, request));
     }
@@ -85,7 +97,7 @@ class ReviewServiceTest {
     @Test
     void createReviewSavesWhenEnrolledAndCourseExists() {
         UUID userId = UUID.randomUUID();
-        Long courseId = 100L;
+        Long courseId = 1L;
         CreateReviewRequest request = CreateReviewRequest.builder()
                 .courseId(courseId)
                 .rating(5)
@@ -95,11 +107,19 @@ class ReviewServiceTest {
         when(reviewRepository.findByUserIdAndCourseId(userId, courseId)).thenReturn(Optional.empty());
         when(courseClient.getCourseById(courseId))
                 .thenReturn(new com.lms.review.client.CourseCheckResponse(courseId, "Course"));
-        when(enrollmentClient.checkEnrollment(courseId)).thenReturn(new EnrollmentCheckResponse(true));
+        when(enrollmentClient.checkEnrollment(courseId)).thenReturn(EnrollmentCheckResponse.builder()
+                .success(true)
+                .message("Enrolled")
+                .data(EnrollmentCheckData.builder()
+                        .enrolled(true)
+                        .build())
+                .build());
         when(reviewRepository.save(any(Review.class))).thenAnswer(invocation -> {
             Review saved = invocation.getArgument(0);
             saved.setId(1L);
+            saved.setUuid(UUID.fromString("8f4b9f1e-4c0a-4c18-9e74-2d5d9e6d1234"));
             saved.setCreatedAt(LocalDateTime.now());
+            saved.setStatus(ReviewStatus.ACTIVE);
             return saved;
         });
 
@@ -111,7 +131,7 @@ class ReviewServiceTest {
     @Test
     void createReviewSavesWhenCourseServiceIsUnavailable() {
         UUID userId = UUID.randomUUID();
-        Long courseId = 100L;
+        Long courseId = 1L;
         CreateReviewRequest request = CreateReviewRequest.builder()
                 .courseId(courseId)
                 .rating(5)
@@ -120,11 +140,19 @@ class ReviewServiceTest {
 
         when(reviewRepository.findByUserIdAndCourseId(userId, courseId)).thenReturn(Optional.empty());
         when(courseClient.getCourseById(courseId)).thenThrow(new RuntimeException("course service down"));
-        when(enrollmentClient.checkEnrollment(courseId)).thenReturn(new EnrollmentCheckResponse(true));
+        when(enrollmentClient.checkEnrollment(courseId)).thenReturn(EnrollmentCheckResponse.builder()
+                .success(true)
+                .message("Enrolled")
+                .data(EnrollmentCheckData.builder()
+                        .enrolled(true)
+                        .build())
+                .build());
         when(reviewRepository.save(any(Review.class))).thenAnswer(invocation -> {
             Review saved = invocation.getArgument(0);
             saved.setId(1L);
+            saved.setUuid(UUID.fromString("8f4b9f1e-4c0a-4c18-9e74-2d5d9e6d1234"));
             saved.setCreatedAt(LocalDateTime.now());
+            saved.setStatus(ReviewStatus.ACTIVE);
             return saved;
         });
 
@@ -135,7 +163,7 @@ class ReviewServiceTest {
     @Test
     void getMyReviewForCourseReturnsReview() {
         UUID userId = UUID.randomUUID();
-        Long courseId = 100L;
+        Long courseId = 1L;
         Review review = Review.builder()
                 .id(1L)
                 .uuid(UUID.fromString("8f4b9f1e-4c0a-4c18-9e74-2d5d9e6d1234"))
@@ -143,6 +171,7 @@ class ReviewServiceTest {
                 .courseId(courseId)
                 .rating(5)
                 .comment("Excellent course")
+                .status(ReviewStatus.ACTIVE)
                 .createdAt(LocalDateTime.of(2026, 6, 29, 10, 30, 15))
                 .updatedAt(LocalDateTime.of(2026, 6, 29, 10, 30, 15))
                 .build();
@@ -163,7 +192,7 @@ class ReviewServiceTest {
     @Test
     void getMyReviewForCourseThrowsNotFoundWhenMissing() {
         UUID userId = UUID.randomUUID();
-        Long courseId = 100L;
+        Long courseId = 1L;
 
         when(reviewRepository.findByUserIdAndCourseId(userId, courseId)).thenReturn(Optional.empty());
 
