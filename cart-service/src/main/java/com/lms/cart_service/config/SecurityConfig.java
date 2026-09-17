@@ -34,7 +34,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                     .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html", "/actuator/**").permitAll()
                     .requestMatchers("/api/v1/cart/internal/**").permitAll()
-                    .requestMatchers("/api/v1/cart/**").hasRole("STUDENT")
+                    .requestMatchers("/api/v1/cart/**").hasAnyRole("STUDENT", "MAIN_ADMIN", "SUB_ADMIN", "ADMIN")
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);

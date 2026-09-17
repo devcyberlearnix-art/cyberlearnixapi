@@ -85,13 +85,13 @@ public class SecurityConfig {
                         .hasAnyRole("INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN", "ADMIN")
                         // Update course (full)
                         .requestMatchers(HttpMethod.PUT, "/api/v1/courses/*")
-                        .hasAnyRole("INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN")
+                        .hasAnyRole("INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN", "ADMIN")
                         // Update course (partial)
                         .requestMatchers(HttpMethod.PATCH, "/api/v1/courses/*")
-                        .hasAnyRole("INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN")
+                        .hasAnyRole("INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN", "ADMIN")
                         // Delete course
                         .requestMatchers(HttpMethod.DELETE, "/api/v1/courses/*")
-                        .hasAnyRole("INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN")
+                        .hasAnyRole("INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN", "ADMIN")
 
                         // ============== SECTION MANAGEMENT ==============
                         // Create section

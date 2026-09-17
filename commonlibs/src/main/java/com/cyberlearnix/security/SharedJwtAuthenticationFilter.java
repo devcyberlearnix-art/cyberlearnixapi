@@ -42,33 +42,85 @@ public class SharedJwtAuthenticationFilter extends OncePerRequestFilter {
             String gatewayRole = request.getHeader("X-User-Role");
 
             if (gatewayUserId != null && gatewayRole != null) {
+
                 // Use API Gateway authentication
+
                 List<SimpleGrantedAuthority> authorities = new ArrayList<>();
-                authorities.add(new SimpleGrantedAuthority("ROLE_" + gatewayRole));
+
+                String authority = gatewayRole.startsWith("ROLE_") ? gatewayRole : "ROLE_" + gatewayRole;
+
+                authorities.add(new SimpleGrantedAuthority(authority));
+
+                if (gatewayRole.toUpperCase().contains("ADMIN")) {
+
+                    authorities.add(new SimpleGrantedAuthority("ROLE_ADMIN"));
+
+                    authorities.add(new SimpleGrantedAuthority("ROLE_MAIN_ADMIN"));
+
+                    authorities.add(new SimpleGrantedAuthority("ROLE_SUB_ADMIN"));
+
+                }
+
                 
+
                 UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
+
                         gatewayUserId,
+
                         null,
+
                         authorities
+
                 );
+
                 authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+
                 SecurityContextHolder.getContext().setAuthentication(authentication);
+
                 
+
                 log.debug("Set authentication from API Gateway for user: {} with role: {}", gatewayUserId, gatewayRole);
+
             } else {
+
                 // Fall back to JWT token validation
+
                 String jwt = extractJwtFromRequest(request);
 
+
+
                 if (StringUtils.hasText(jwt) && jwtValidator.isTokenValid(jwt)) {
+
                     String userId = jwtValidator.extractUserId(jwt);
+
                     String role = jwtValidator.extractRole(jwt);
+
                     String adminType = jwtValidator.extractAdminType(jwt);
+
                     String assignedService = jwtValidator.extractAssignedService(jwt);
 
+
+
                     // Build authorities
+
                     List<SimpleGrantedAuthority> authorities = new ArrayList<>();
+
                     if (role != null) {
-                        authorities.add(new SimpleGrantedAuthority("ROLE_" + role));
+
+                        String authority = role.startsWith("ROLE_") ? role : "ROLE_" + role;
+
+                        authorities.add(new SimpleGrantedAuthority(authority));
+
+                        if (role.toUpperCase().contains("ADMIN")) {
+
+                            authorities.add(new SimpleGrantedAuthority("ROLE_ADMIN"));
+
+                            authorities.add(new SimpleGrantedAuthority("ROLE_MAIN_ADMIN"));
+
+                            authorities.add(new SimpleGrantedAuthority("ROLE_SUB_ADMIN"));
+
+                        }
+
                     }
 
                     // Add admin type as authority if applicable
