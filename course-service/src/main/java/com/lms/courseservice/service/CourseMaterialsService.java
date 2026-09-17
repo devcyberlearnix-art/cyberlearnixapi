@@ -203,7 +203,19 @@ public class CourseMaterialsService {
     }
 
     private boolean isCourseOwner(Course course, UUID userId) {
-        // Admin can modify any course
+        // Check if user is admin by checking security context
+        org.springframework.security.core.Authentication auth = 
+            org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+        
+        if (auth != null && auth.getAuthorities() != null) {
+            for (org.springframework.security.core.GrantedAuthority authority : auth.getAuthorities()) {
+                String role = authority.getAuthority();
+                if (role.equals("ROLE_MAIN_ADMIN") || role.equals("ROLE_SUB_ADMIN")) {
+                    return true; // Admins can modify any course
+                }
+            }
+        }
+        
         // Instructors can only modify their own courses
         if (userId == null) {
             return false;

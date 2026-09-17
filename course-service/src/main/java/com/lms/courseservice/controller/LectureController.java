@@ -21,7 +21,7 @@ public class LectureController {
     private final LectureService lectureService;
 
     // ✅ Instructor/Admin only
-    @PreAuthorize("hasAnyRole('INSTRUCTOR','MAIN_ADMIN','SUB_ADMIN','ADMIN')")
+    @PreAuthorize("hasAnyRole('INSTRUCTOR','MAIN_ADMIN','SUB_ADMIN')")
     @PostMapping("/{sectionId}/lectures")
     public CreateLectureResponse createLecture(@PathVariable Long sectionId,
                                  @RequestBody Lecture lecture) {
@@ -49,7 +49,7 @@ public class LectureController {
     }
 
     // ✅ Instructor/Admin only
-    @PreAuthorize("hasAnyRole('INSTRUCTOR','MAIN_ADMIN','SUB_ADMIN','ADMIN')")
+    @PreAuthorize("hasAnyRole('INSTRUCTOR','MAIN_ADMIN','SUB_ADMIN')")
     @PatchMapping("/{sectionId}/lectures/{lectureId}")
     public Lecture updateLecture(@PathVariable Long sectionId,
                                  @PathVariable Long lectureId,
@@ -59,7 +59,7 @@ public class LectureController {
     }
 
     // ✅ Instructor/Admin only
-    @PreAuthorize("hasAnyRole('INSTRUCTOR','MAIN_ADMIN','SUB_ADMIN','ADMIN')")
+    @PreAuthorize("hasAnyRole('INSTRUCTOR','MAIN_ADMIN','SUB_ADMIN')")
     @DeleteMapping("/{sectionId}/lectures/{lectureId}")
     public DeleteLectureResponse deleteLecture(@PathVariable Long sectionId,
                                              @PathVariable Long lectureId) {

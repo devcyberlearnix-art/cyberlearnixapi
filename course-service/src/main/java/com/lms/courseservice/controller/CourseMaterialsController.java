@@ -33,7 +33,7 @@ public class CourseMaterialsController {
     /**
      * Create a course material (Instructor/Admin only)
      */
-    @PreAuthorize("hasAnyRole('INSTRUCTOR','MAIN_ADMIN','SUB_ADMIN','ADMIN')")
+    @PreAuthorize("hasAnyRole('INSTRUCTOR','MAIN_ADMIN','SUB_ADMIN')")
     @PostMapping("/{courseId}/materials")
     public ResponseEntity<CourseMaterialsResponse> createMaterial(
             @PathVariable Long courseId,
@@ -48,7 +48,7 @@ public class CourseMaterialsController {
     /**
      * Update a course material (Instructor/Admin only)
      */
-    @PreAuthorize("hasAnyRole('INSTRUCTOR','MAIN_ADMIN','SUB_ADMIN','ADMIN')")
+    @PreAuthorize("hasAnyRole('INSTRUCTOR','MAIN_ADMIN','SUB_ADMIN')")
     @PutMapping("/materials/{materialId}")
     public ResponseEntity<CourseMaterialsResponse> updateMaterial(
             @PathVariable Long materialId,
@@ -63,7 +63,7 @@ public class CourseMaterialsController {
     /**
      * Partially update a course material (Instructor/Admin only)
      */
-    @PreAuthorize("hasAnyRole('INSTRUCTOR','MAIN_ADMIN','SUB_ADMIN','ADMIN')")
+    @PreAuthorize("hasAnyRole('INSTRUCTOR','MAIN_ADMIN','SUB_ADMIN')")
     @PatchMapping("/materials/{materialId}")
     public ResponseEntity<CourseMaterialsResponse> updateMaterialPartial(
             @PathVariable Long materialId,
@@ -78,7 +78,7 @@ public class CourseMaterialsController {
     /**
      * Delete a course material (Instructor/Admin only)
      */
-    @PreAuthorize("hasAnyRole('INSTRUCTOR','MAIN_ADMIN','SUB_ADMIN','ADMIN')")
+    @PreAuthorize("hasAnyRole('INSTRUCTOR','MAIN_ADMIN','SUB_ADMIN')")
     @DeleteMapping("/materials/{materialId}")
     public ResponseEntity<CourseMaterialsResponse> deleteMaterial(
             @PathVariable Long materialId,

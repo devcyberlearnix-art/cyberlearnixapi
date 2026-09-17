@@ -8,9 +8,11 @@ import com.lms.courseservice.entity.CoursePreview;
 import com.lms.courseservice.service.CoursePreviewService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/courses")
@@ -22,10 +24,12 @@ public class CoursePreviewController {
     /**
      * Create Course Preview (Instructor/Admin only)
      */
+    @PreAuthorize("hasAnyRole('INSTRUCTOR','MAIN_ADMIN','SUB_ADMIN')")
     @PostMapping("/{courseId}/preview")
     public CreatePreviewResponse createPreview(@PathVariable Long courseId,
             @RequestBody CoursePreview preview) {
-        CoursePreview saved = previewService.createPreview(courseId, preview);
+        UUID userId = extractUserIdFromContext();
+        CoursePreview saved = previewService.createPreview(courseId, preview, userId);
 
         PreviewInfo info = new PreviewInfo(
                 saved.getId(),
@@ -66,12 +70,14 @@ public class CoursePreviewController {
      *   "duration": 180                     // optional — duration in seconds
      * }
      */
+    @PreAuthorize("hasAnyRole('INSTRUCTOR','MAIN_ADMIN','SUB_ADMIN')")
     @PatchMapping("/{courseId}/preview")
     public ResponseEntity<CreatePreviewResponse> updatePreview(
             @PathVariable Long courseId,
             @RequestBody UpdatePreviewRequest request) {
 
-        PreviewInfo updated = previewService.updatePreview(courseId, request);
+        UUID userId = extractUserIdFromContext();
+        PreviewInfo updated = previewService.updatePreview(courseId, request, userId);
 
         return ResponseEntity.ok(new CreatePreviewResponse(
                 true,
@@ -79,5 +85,17 @@ public class CoursePreviewController {
                 updated
         ));
     }
+
+    /**
+     * Extract userId from Spring Security context (set by JwtFilter)
+     */
+    private UUID extractUserIdFromContext() {
+        Object principal = org.springframework.security.core.context.SecurityContextHolder
+                .getContext().getAuthentication().getPrincipal();
+        if (principal == null || "anonymousUser".equals(principal)) {
+            return null;
+        }
+        return principal instanceof UUID ? (UUID) principal : UUID.fromString(principal.toString());
+    }
 }
-
+

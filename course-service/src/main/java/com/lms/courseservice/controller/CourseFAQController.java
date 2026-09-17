@@ -33,7 +33,7 @@ public class CourseFAQController {
     /**
      * Create a course FAQ (Instructor/Admin only)
      */
-    @PreAuthorize("hasAnyRole('INSTRUCTOR','MAIN_ADMIN','SUB_ADMIN','ADMIN')")
+    @PreAuthorize("hasAnyRole('INSTRUCTOR','MAIN_ADMIN','SUB_ADMIN')")
     @PostMapping("/{courseId}/faqs")
     public ResponseEntity<CourseFAQResponse> createFAQ(
             @PathVariable Long courseId,
@@ -48,7 +48,7 @@ public class CourseFAQController {
     /**
      * Update a course FAQ (Instructor/Admin only)
      */
-    @PreAuthorize("hasAnyRole('INSTRUCTOR','MAIN_ADMIN','SUB_ADMIN','ADMIN')")
+    @PreAuthorize("hasAnyRole('INSTRUCTOR','MAIN_ADMIN','SUB_ADMIN')")
     @PutMapping("/faqs/{faqId}")
     public ResponseEntity<CourseFAQResponse> updateFAQ(
             @PathVariable Long faqId,
@@ -63,7 +63,7 @@ public class CourseFAQController {
     /**
      * Partially update a course FAQ (Instructor/Admin only)
      */
-    @PreAuthorize("hasAnyRole('INSTRUCTOR','MAIN_ADMIN','SUB_ADMIN','ADMIN')")
+    @PreAuthorize("hasAnyRole('INSTRUCTOR','MAIN_ADMIN','SUB_ADMIN')")
     @PatchMapping("/faqs/{faqId}")
     public ResponseEntity<CourseFAQResponse> updateFAQPartial(
             @PathVariable Long faqId,
@@ -78,7 +78,7 @@ public class CourseFAQController {
     /**
      * Delete a course FAQ (Instructor/Admin only)
      */
-    @PreAuthorize("hasAnyRole('INSTRUCTOR','MAIN_ADMIN','SUB_ADMIN','ADMIN')")
+    @PreAuthorize("hasAnyRole('INSTRUCTOR','MAIN_ADMIN','SUB_ADMIN')")
     @DeleteMapping("/faqs/{faqId}")
     public ResponseEntity<CourseFAQResponse> deleteFAQ(
             @PathVariable Long faqId,

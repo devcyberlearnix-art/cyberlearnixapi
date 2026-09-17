@@ -33,7 +33,7 @@ public class CourseRequirementsController {
     /**
      * Create a course requirement (Instructor/Admin only)
      */
-    @PreAuthorize("hasAnyRole('INSTRUCTOR','MAIN_ADMIN','SUB_ADMIN','ADMIN')")
+    @PreAuthorize("hasAnyRole('INSTRUCTOR','MAIN_ADMIN','SUB_ADMIN')")
     @PostMapping("/{courseId}/requirements")
     public ResponseEntity<CourseRequirementsResponse> createRequirement(
             @PathVariable Long courseId,
@@ -48,7 +48,7 @@ public class CourseRequirementsController {
     /**
      * Update a course requirement (Instructor/Admin only)
      */
-    @PreAuthorize("hasAnyRole('INSTRUCTOR','MAIN_ADMIN','SUB_ADMIN','ADMIN')")
+    @PreAuthorize("hasAnyRole('INSTRUCTOR','MAIN_ADMIN','SUB_ADMIN')")
     @PutMapping("/requirements/{requirementId}")
     public ResponseEntity<CourseRequirementsResponse> updateRequirement(
             @PathVariable Long requirementId,
@@ -63,7 +63,7 @@ public class CourseRequirementsController {
     /**
      * Partially update a course requirement (Instructor/Admin only)
      */
-    @PreAuthorize("hasAnyRole('INSTRUCTOR','MAIN_ADMIN','SUB_ADMIN','ADMIN')")
+    @PreAuthorize("hasAnyRole('INSTRUCTOR','MAIN_ADMIN','SUB_ADMIN')")
     @PatchMapping("/requirements/{requirementId}")
     public ResponseEntity<CourseRequirementsResponse> updateRequirementPartial(
             @PathVariable Long requirementId,
@@ -78,7 +78,7 @@ public class CourseRequirementsController {
     /**
      * Delete a course requirement (Instructor/Admin only)
      */
-    @PreAuthorize("hasAnyRole('INSTRUCTOR','MAIN_ADMIN','SUB_ADMIN','ADMIN')")
+    @PreAuthorize("hasAnyRole('INSTRUCTOR','MAIN_ADMIN','SUB_ADMIN')")
     @DeleteMapping("/requirements/{requirementId}")
     public ResponseEntity<CourseRequirementsResponse> deleteRequirement(
             @PathVariable Long requirementId,
