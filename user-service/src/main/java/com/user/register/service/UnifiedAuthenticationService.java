@@ -1404,28 +1404,14 @@ public class UnifiedAuthenticationService {
 
         String email = request.getEmail();
 
-
-
-
-
-
-
         // Check if user exists in user database
-
-
-
         Optional<User> userOptional = userRepository.findByEmail(email);
         String otpSessionId = null;
         LocalDateTime otpSessionExpiresAt = null;
-
-
-
-
-
-
+        boolean userFound = false;
 
         if (userOptional.isPresent()) {
-
+            userFound = true;
             long cooldown = otpService.getCooldownSeconds(email, "password_reset");
             if (cooldown > 0) {
                 Map<String, Object> response = new HashMap<>();
@@ -1436,126 +1422,81 @@ public class UnifiedAuthenticationService {
                 return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).body(response);
             }
 
-
-
             // Generate OTP for password reset
-
-
-
             String otp = generateOTP();
-
-
-
-                OtpService.OtpSession otpSession = otpService.createSession(email, "password_reset", otp, 5, 5);
-                otpService.markCooldown(email, "password_reset", 30);
-                otpSessionId = otpSession.sessionId();
-                otpSessionExpiresAt = otpSession.expiresAt();
-
-
+            OtpService.OtpSession otpSession = otpService.createSession(email, "password_reset", otp, 5, 5);
+            otpService.markCooldown(email, "password_reset", 30);
+            otpSessionId = otpSession.sessionId();
+            otpSessionExpiresAt = otpSession.expiresAt();
 
             // Send OTP via email
             try {
                 emailService.sendPasswordResetOtp(email, otp);
             } catch (Exception e) {
-
                 log.error("Failed to send password reset OTP email to: {}", email, e);
-
             }
-
-
 
             log.info("Password reset OTP sent to user: {}", email);
 
-
-
         } else {
-
-
-
-            // Try admin service
-
-
-
+            // Try admin service if user is not in local user repository
             try {
-
-
-
-                if (adminServiceUrl != null && restTemplate != null) {
-
-
-
+                if (adminServiceUrl != null && !adminServiceUrl.isBlank() && restTemplate != null) {
                     Map<String, Object> adminRequest = new HashMap<>();
-
-
-
                     adminRequest.put("email", email);
 
-
-
                     String adminUrl = adminServiceUrl + "/api/v1/admin/password/forgot";
-
-
-
                     ResponseEntity<Map> adminResponse = restTemplate.postForEntity(adminUrl, adminRequest, Map.class);
 
-                    // Extract otpSessionId from admin response
                     if (adminResponse.getBody() != null) {
-                        Map<String, Object> adminData = (Map<String, Object>) adminResponse.getBody().get("data");
-                        if (adminData != null) {
-                            Object adminOtpSessionId = adminData.get("otpSessionId");
-                            if (adminOtpSessionId != null) {
-                                otpSessionId = adminOtpSessionId.toString();
-                                Object adminExpiresAt = adminData.get("expiresAt");
-                                if (adminExpiresAt != null) {
-                                    otpSessionExpiresAt = LocalDateTime.parse(adminExpiresAt.toString());
+                        Object successValue = adminResponse.getBody().get("success");
+                        boolean adminSuccess = Boolean.parseBoolean(String.valueOf(successValue));
+                        if (adminSuccess) {
+                            userFound = true;
+                            Map<String, Object> adminData = (Map<String, Object>) adminResponse.getBody().get("data");
+                            if (adminData != null) {
+                                Object adminOtpSessionId = adminData.get("otpSessionId");
+                                if (adminOtpSessionId != null) {
+                                    otpSessionId = adminOtpSessionId.toString();
+                                    Object adminExpiresAt = adminData.get("expiresAt");
+                                    if (adminExpiresAt != null) {
+                                        otpSessionExpiresAt = LocalDateTime.parse(adminExpiresAt.toString());
+                                    }
                                 }
+                            }
+                            log.info("Password reset OTP sent to admin: {}", email);
+                        } else {
+                            Object adminMessage = adminResponse.getBody().get("message");
+                            String safeMessage = adminMessage != null ? adminMessage.toString().toLowerCase(Locale.ROOT) : "";
+                            if (safeMessage.contains("does not exist") || safeMessage.contains("not found") || safeMessage.contains("not registered")) {
+                                userFound = false;
                             }
                         }
                     }
-
-                    log.info("Password reset OTP sent to admin: {}", email);
-
-
                 }
-
-
-
+            } catch (RestClientResponseException e) {
+                log.warn("Admin password reset request failed for email: {} with status {}", email, e.getStatusCode());
+                userFound = false;
+            } catch (ResourceAccessException e) {
+                log.warn("Admin OTP service unreachable for email: {}. Assuming user not found.", email);
+                userFound = false;
             } catch (Exception e) {
                 log.error("Failed to send password reset OTP to admin: {}", email, e);
-                // Return error when Admin Service fails - don't return success with null otpSessionId
-                Map<String, Object> errorResponse = new HashMap<>();
-                errorResponse.put("success", false);
-                errorResponse.put("message", "Failed to process password reset request. Please try again later.");
-                errorResponse.put("timestamp", LocalDateTime.now());
-                return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(errorResponse);
+                userFound = false;
             }
-
-
-
         }
 
-
-
-
-
-
-
-        // Always return success to prevent email enumeration
-
-
+        if (!userFound) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", "Email is not registered. Please register.");
+            response.put("timestamp", LocalDateTime.now());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+        }
 
         Map<String, Object> response = new HashMap<>();
-
-
-
         response.put("success", true);
-
-
-
-        response.put("message", "If the email exists, a password reset OTP has been sent");
-
-
-
+        response.put("message", "Password reset OTP has been sent");
         response.put("timestamp", LocalDateTime.now());
 
         if (otpSessionId != null) {
@@ -1566,12 +1507,6 @@ public class UnifiedAuthenticationService {
             response.put("cooldownSeconds", 30);
             response.put("sessionStartedAt", LocalDateTime.now());
         }
-
-
-
-
-
-
 
         return ResponseEntity.ok(response);
 
