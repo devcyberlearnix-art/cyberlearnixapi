@@ -30,7 +30,7 @@ public class SecurityConfig {
                             "FORBIDDEN", "Insufficient permissions")))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html", "/actuator/**").permitAll()
-                        .requestMatchers("/api/v1/wishlist/**").hasRole("STUDENT")
+                        .requestMatchers("/api/v1/wishlist/**").hasAnyRole("STUDENT", "MAIN_ADMIN", "SUB_ADMIN", "ADMIN")
                         .anyRequest().authenticated()
                 );
 

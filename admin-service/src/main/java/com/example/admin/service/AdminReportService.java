@@ -81,7 +81,7 @@ public class AdminReportService {
     public Map<String, Object> getRevenueReport(String token) {
         try {
             return restTemplate.exchange(
-                    paymentService + "/payments/revenue",
+                    paymentService + "/api/v1/payments/revenue",
                     HttpMethod.GET,
                     getEntity(token),
                     new ParameterizedTypeReference<Map<String, Object>>() {}
@@ -98,7 +98,7 @@ public class AdminReportService {
     public Map<String, Object> getOrderReport(String token) {
         try {
             return restTemplate.exchange(
-                    orderService + "/orders/analytics",
+                    orderService + "/api/v1/orders/analytics",
                     HttpMethod.GET,
                     getEntity(token),
                     new ParameterizedTypeReference<Map<String, Object>>() {}

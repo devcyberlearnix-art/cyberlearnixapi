@@ -49,6 +49,24 @@ public class PaymentService {
         return paymentRepository.findAll();
     }
 
+    public Map<String, Object> getRevenueReport() {
+        List<Payment> payments = paymentRepository.findAll();
+        double totalRevenue = payments.stream()
+                .filter(p -> p.getStatus() == PaymentStatus.SUCCESS)
+                .mapToDouble(p -> p.getAmount() != null ? p.getAmount() : 0.0)
+                .sum();
+        long successfulPayments = payments.stream()
+                .filter(p -> p.getStatus() == PaymentStatus.SUCCESS)
+                .count();
+        long totalPayments = payments.size();
+        
+        return Map.of(
+            "totalRevenue", totalRevenue,
+            "successfulPayments", successfulPayments,
+            "totalPayments", totalPayments
+        );
+    }
+
     public PaymentResponse createPayment(PaymentRequest request) {
 
         if (request.getAmount() != null) {

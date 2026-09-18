@@ -48,6 +48,11 @@ public class UnifiedJwtAuthenticationFilter extends OncePerRequestFilter {
                 // Handle role that may or may not already have ROLE_ prefix
                 String authority = gatewayRole.startsWith("ROLE_") ? gatewayRole : "ROLE_" + gatewayRole;
                 authorities.add(new SimpleGrantedAuthority(authority));
+                if (gatewayRole.toUpperCase().contains("ADMIN")) {
+                    authorities.add(new SimpleGrantedAuthority("ROLE_ADMIN"));
+                    authorities.add(new SimpleGrantedAuthority("ROLE_MAIN_ADMIN"));
+                    authorities.add(new SimpleGrantedAuthority("ROLE_SUB_ADMIN"));
+                }
                 
                 UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
                         gatewayUserId,
@@ -116,6 +121,11 @@ public class UnifiedJwtAuthenticationFilter extends OncePerRequestFilter {
                                 // Handle role that may or may not already have ROLE_ prefix
                                 String authority = role.startsWith("ROLE_") ? role : "ROLE_" + role;
                                 authorities.add(new SimpleGrantedAuthority(authority));
+                                if (role.toUpperCase().contains("ADMIN")) {
+                                    authorities.add(new SimpleGrantedAuthority("ROLE_ADMIN"));
+                                    authorities.add(new SimpleGrantedAuthority("ROLE_MAIN_ADMIN"));
+                                    authorities.add(new SimpleGrantedAuthority("ROLE_SUB_ADMIN"));
+                                }
                             }
 
 
