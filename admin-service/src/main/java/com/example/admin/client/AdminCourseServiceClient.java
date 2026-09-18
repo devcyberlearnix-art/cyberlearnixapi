@@ -105,19 +105,23 @@ public class AdminCourseServiceClient {
         }
     }
 
-    public boolean deleteCourse(Long courseId) {
+    public Map deleteCourse(Long courseId) {
         try {
             String url = courseServiceUrl + "/api/v1/courses/" + courseId;
-            restTemplate.exchange(url, org.springframework.http.HttpMethod.DELETE, new HttpEntity<>(createHeaders()), Void.class);
+            ResponseEntity<Map> response = restTemplate.exchange(url, org.springframework.http.HttpMethod.DELETE, new HttpEntity<>(createHeaders()), Map.class);
             System.out.println("✓ Course deleted: " + courseId);
-            return true;
+            Map result = response.getBody();
+            return result != null ? result : Map.of("deleted", true, "courseId", courseId);
+        } catch (HttpStatusCodeException e) {
+            System.err.println("✗ Failed to delete course: " + e.getStatusCode() + " - " + e.getResponseBodyAsString());
+            return null;
         } catch (RestClientException e) {
             System.err.println("✗ Failed to delete course: " + e.getMessage());
-            return false;
+            return null;
         }
     }
 
-    public List<CourseDTO> getCoursesByInstructor(Long instructorId) {
+    public List<CourseDTO> getCoursesByInstructor(String instructorId) {
         try {
             String courseUrl = courseServiceUrl + "/api/v1/courses?instructorId=" + instructorId;
             ResponseEntity<Object[]> response = restTemplate.exchange(
@@ -189,15 +193,19 @@ public class AdminCourseServiceClient {
         }
     }
 
-    public boolean deleteSection(Long sectionId) {
+    public Map deleteSection(Long sectionId) {
         try {
-            // course-service security expects DELETE on /courses/sections/{id}
             String url = courseServiceUrl + "/api/v1/courses/sections/" + sectionId;
-            restTemplate.exchange(url, org.springframework.http.HttpMethod.DELETE, new HttpEntity<>(createHeaders()), Void.class);
-            return true;
+            ResponseEntity<Map> response = restTemplate.exchange(url, org.springframework.http.HttpMethod.DELETE, new HttpEntity<>(createHeaders()), Map.class);
+            System.out.println("✓ Section deleted: " + sectionId);
+            Map result = response.getBody();
+            return result != null ? result : Map.of("deleted", true, "sectionId", sectionId);
+        } catch (HttpStatusCodeException e) {
+            System.err.println("✗ Failed to delete section: " + e.getStatusCode() + " - " + e.getResponseBodyAsString());
+            return null;
         } catch (RestClientException e) {
             System.err.println("✗ Failed to delete section: " + e.getMessage());
-            return false;
+            return null;
         }
     }
 
@@ -247,14 +255,19 @@ public class AdminCourseServiceClient {
         }
     }
 
-    public boolean deleteLecture(Long sectionId, Long lectureId) {
+    public Map deleteLecture(Long sectionId, Long lectureId) {
         try {
             String url = courseServiceUrl + "/api/v1/sections/" + sectionId + "/lectures/" + lectureId;
-            restTemplate.exchange(url, org.springframework.http.HttpMethod.DELETE, new HttpEntity<>(createHeaders()), Void.class);
-            return true;
+            ResponseEntity<Map> response = restTemplate.exchange(url, org.springframework.http.HttpMethod.DELETE, new HttpEntity<>(createHeaders()), Map.class);
+            System.out.println("✓ Lecture deleted: sectionId=" + sectionId + " lectureId=" + lectureId);
+            Map result = response.getBody();
+            return result != null ? result : Map.of("deleted", true, "sectionId", sectionId, "lectureId", lectureId);
+        } catch (HttpStatusCodeException e) {
+            System.err.println("✗ Failed to delete lecture: " + e.getStatusCode() + " - " + e.getResponseBodyAsString());
+            return null;
         } catch (RestClientException e) {
             System.err.println("✗ Failed to delete lecture: " + e.getMessage());
-            return false;
+            return null;
         }
     }
 

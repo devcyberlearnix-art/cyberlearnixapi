@@ -769,6 +769,20 @@ spring:
 
 
 
+        # ── Security Verification (email CTA links) ─────────────────
+
+        - id: notificationservice-security
+
+          uri: ${NOTIFICATIONSERVICE_URL:http://localhost:8093}
+
+          predicates:
+
+            - Path=/api/v1/security/**
+
+          filters:
+
+            - StripPrefix=0
+
 
 
 

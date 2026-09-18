@@ -245,10 +245,10 @@ public class RegistrationService {
 
         // ================= MOBILE VALIDATION =================
 
-        if (user.getMobile() == null || !user.getMobile().matches("\\d{6,12}")) {
-
-            throw new RuntimeException("Mobile number must be 6-12 digits");
-
+        int requiredLength = getMobileLengthForCountry(countryCode);
+        String mobilePattern = "\\d{" + requiredLength + "}";
+        if (user.getMobile() == null || !user.getMobile().matches(mobilePattern)) {
+            throw new RuntimeException("Mobile number must be exactly " + requiredLength + " digits for country " + countryCode);
         }
 
 
@@ -853,6 +853,30 @@ public class RegistrationService {
     }
 
 
+
+    /**
+     * Determines required mobile number length based on country code.
+     * Uses a predefined map for known country codes; defaults to 10 digits.
+     */
+    private static final java.util.Map<String, Integer> MOBILE_LENGTHS = java.util.Map.of(
+            "+91", 10,   // India
+            "+1", 10,    // USA / Canada
+            "+44", 10,   // United Kingdom
+            "+61", 9,    // Australia
+            "+49", 11,   // Germany (common length)
+            "+86", 11,   // China
+            "+33", 9,    // France
+            "+34", 9,    // Spain
+            "+81", 10,   // Japan
+            "+7", 10     // Russia
+    );
+
+    private int getMobileLengthForCountry(String countryCode) {
+        if (countryCode == null) {
+            return 10;
+        }
+        return MOBILE_LENGTHS.getOrDefault(countryCode, 10);
+    }
 
     // OTP emails are now sent via EmailService — no direct mail sending in this class.
 

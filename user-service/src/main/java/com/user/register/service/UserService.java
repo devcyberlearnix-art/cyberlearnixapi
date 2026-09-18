@@ -1,5 +1,7 @@
 package com.user.register.service;
 
+import com.user.register.service.SessionService;
+
 
 
 import org.springframework.security.core.Authentication;
@@ -102,6 +104,10 @@ public class UserService {
 
     private final Cloudinary cloudinary;
 
+    private final SessionService sessionService;
+
+    private final TokenBlacklistService tokenBlacklistService;
+
 
 
     @Value("${cloudinary.folder:cyberlearnix}")
@@ -120,7 +126,11 @@ public class UserService {
 
                        AuditLogRepository auditLogRepository,
 
-                       Cloudinary cloudinary) {
+                       Cloudinary cloudinary,
+
+                       SessionService sessionService,
+
+                       TokenBlacklistService tokenBlacklistService) {
 
         this.userRepository = userRepository;
 
@@ -133,6 +143,10 @@ public class UserService {
         this.auditLogRepository = auditLogRepository;
 
         this.cloudinary = cloudinary;
+
+        this.sessionService = sessionService;
+
+        this.tokenBlacklistService = tokenBlacklistService;
 
     }
 
@@ -219,6 +233,12 @@ public class UserService {
             // User exists in local database (students, instructors)
 
             User user = userOptional.get();
+
+            if (user.getStatus() == User.Status.SUSPENDED || user.getStatus() == User.Status.DELETED) {
+
+                throw new RuntimeException("Account has been deleted or suspended");
+
+            }
 
             return buildUserProfileFromUser(user);
 
@@ -457,6 +477,12 @@ public class UserService {
         User user = userRepository.findById(userId)
 
                 .orElseThrow(() -> new RuntimeException("User not found"));
+
+        if (user.getStatus() == User.Status.SUSPENDED || user.getStatus() == User.Status.DELETED) {
+
+            throw new RuntimeException("Account has been deleted or suspended");
+
+        }
 
         try {
 
@@ -782,13 +808,23 @@ public class UserService {
 
 
 
-        // 3️⃣ Soft delete: mark user as SUSPENDED (DB allowed value)
+        // 3️⃣ Soft delete: mark user as DELETED
 
-        user.setStatus(User.Status.SUSPENDED);
+        user.setStatus(User.Status.DELETED);
 
         user.setUpdatedAt(LocalDateTime.now());
 
         userRepository.save(user);
+
+        // 4️⃣ Immediately blacklist the current active token from request header
+        String authHeader = request.getHeader("Authorization");
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            String currentToken = authHeader.substring(7);
+            tokenBlacklistService.blacklistToken(currentToken);
+        }
+
+        // 5️⃣ Blacklist all sessions & tokens of this user
+        sessionService.invalidateAllSessionsForUser(user);
 
 
 

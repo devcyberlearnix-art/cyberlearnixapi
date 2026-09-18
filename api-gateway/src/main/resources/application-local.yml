@@ -200,6 +200,14 @@ spring:
 
         # ── Admin Service (8087) ─────────────────────────
 
+        - id: reviewservice-admin
+
+          uri: http://localhost:8089
+
+          predicates:
+
+            - Path=/api/v1/admin/reviews, /api/v1/admin/reviews/**
+
         - id: adminservice
 
           uri: http://localhost:8087
@@ -227,14 +235,6 @@ spring:
           predicates:
 
             - Path=/api/v1/reviews/**
-
-        - id: reviewservice-admin
-
-          uri: http://localhost:8089
-
-          predicates:
-
-            - Path=/api/v1/admin/reviews/**
 
         # ── Swagger / API Docs ──────────────────────────
 

@@ -11,6 +11,7 @@ import com.user.register.security.JwtUtil;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.transaction.Transactional;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -19,6 +20,7 @@ import java.util.UUID;
 
 @JsonInclude(JsonInclude.Include.NON_NULL) // ignore nulls
 
+@Slf4j
 @Service
 public class SessionService {
 
@@ -39,14 +41,17 @@ public class SessionService {
         this.blacklistService = blacklistService;
     }
 
-    // Create session at login
-    public void createSession(User user, HttpServletRequest request) {
+    // Create session at login with tokens
+    public void createSession(User user, HttpServletRequest request, String accessToken, String refreshToken) {
         UserSession session = new UserSession();
         session.setUser(user);
         session.setDeviceInfo(request.getHeader("User-Agent"));
         session.setIpAddress(getClientIp(request));
         session.setCreatedAt(LocalDateTime.now());
+        session.setAccessToken(accessToken);
+        session.setRefreshToken(refreshToken);
         sessionRepository.save(session);
+        log.info("Created session for user {} with token {}", user.getId(), accessToken);
     }
 
     public List<UserSession> getSessionsForUser(User user) {

@@ -74,6 +74,9 @@ public class User {
     private String browser;
     private String os;
 
+    @Column(name = "last_device")
+    private String lastDevice;
+
     @Column
     @JsonProperty("mobileNumber")
     private String mobile;

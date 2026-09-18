@@ -51,7 +51,7 @@ public class AdminInstructorServiceClient {
         }
     }
 
-    public InstructorDTO getInstructorById(Long instructorId) {
+    public InstructorDTO getInstructorById(String instructorId) {
         try {
             String url = instructorServiceUrl + "/api/v1/instructors/" + instructorId;
             ResponseEntity<Map> response = restTemplate.exchange(
@@ -67,7 +67,7 @@ public class AdminInstructorServiceClient {
         }
     }
 
-    public List<CourseDTO> getCoursesByInstructor(Long instructorId) {
+    public List<CourseDTO> getCoursesByInstructor(String instructorId) {
         try {
             String url = instructorServiceUrl + "/api/v1/instructors/" + instructorId + "/courses";
             ResponseEntity<Object[]> response = restTemplate.exchange(

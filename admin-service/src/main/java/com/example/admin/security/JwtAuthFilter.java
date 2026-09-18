@@ -48,43 +48,31 @@ public class JwtAuthFilter implements Filter {
 
 
     @Override
-
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
-
             throws IOException, ServletException {
 
-
-
         HttpServletRequest req = (HttpServletRequest) request;
-
         HttpServletResponse res = (HttpServletResponse) response;
 
-
-
-        String requestURI = req.getRequestURI();
-
-        String method = req.getMethod();
-
-        // Skip authentication for permitAll endpoints
-
-        boolean isPermitAll = isPermitAllEndpoint(requestURI, method);
-
-        if (!isPermitAll) {
-
-            authenticateBearer(req);
-
+        String authHeader = req.getHeader("Authorization");
+        if (authHeader == null || authHeader.isBlank()) {
+            authHeader = req.getHeader("authorization");
         }
 
-
+        // Always authenticate if Authorization header is present
+        if (authHeader != null && authHeader.regionMatches(true, 0, "Bearer ", 0, 7)) {
+            authenticateBearer(req);
+        } else {
+            boolean isPermitAll = isPermitAllEndpoint(req.getRequestURI(), req.getMethod());
+            if (!isPermitAll) {
+                authenticateBearer(req);
+            }
+        }
 
         chain.doFilter(request, response);
-
     }
 
-
-
     private boolean isPermitAllEndpoint(String requestURI, String method) {
-
         // Password recovery endpoints (public - no auth required)
         if (requestURI.equals("/api/v1/admin/password/forgot") && "POST".equalsIgnoreCase(method)) {
             return true;
@@ -118,116 +106,7 @@ public class JwtAuthFilter implements Filter {
             return true;
         }
 
-        // Course endpoints (public/internal)
-
-        if (requestURI.equals("/api/v1/admin/courses") && "GET".equalsIgnoreCase(method)) {
-
-            return true;
-
-        }
-
-
-
-        if (requestURI.matches("/api/v1/admin/courses/\\d+") && "GET".equalsIgnoreCase(method)) {
-
-            return true;
-
-        }
-
-
-
-        if (requestURI.matches("/api/v1/admin/courses/\\d+/approve") && "PUT".equalsIgnoreCase(method)) {
-
-            return true;
-
-        }
-
-
-
-        if (requestURI.matches("/api/v1/admin/courses/\\d+/reject") && "PUT".equalsIgnoreCase(method)) {
-
-            return true;
-
-        }
-
-
-
-        if (requestURI.matches("/api/v1/admin/courses/\\d+") && "DELETE".equalsIgnoreCase(method)) {
-
-            return true;
-
-        }
-
-
-
-        if (requestURI.matches("/api/v1/admin/instructors/\\d+/courses") && "GET".equalsIgnoreCase(method)) {
-
-            return true;
-
-        }
-
-
-
-        // Section & Lecture content endpoints (allow internal service calls without
-
-        // admin JWT)
-
-        if (requestURI.matches("/api/v1/admin/courses/\\d+/sections") && "POST".equalsIgnoreCase(method)) {
-
-            return true;
-
-        }
-
-        if (requestURI.matches("/api/v1/admin/sections/\\d+/lectures") && "POST".equalsIgnoreCase(method)) {
-
-            return true;
-
-        }
-
-        if (requestURI.matches("/api/v1/admin/sections/\\d+/lectures/\\d+/approve") && "PUT".equalsIgnoreCase(method)) {
-
-            return true;
-
-        }
-
-        if (requestURI.matches("/api/v1/admin/sections/\\d+/lectures/\\d+/reject") && "PUT".equalsIgnoreCase(method)) {
-
-            return true;
-
-        }
-
-        if (requestURI.matches("/api/v1/admin/sections/\\d+") && "DELETE".equalsIgnoreCase(method)) {
-
-            return true;
-
-        }
-
-        if (requestURI.matches("/api/v1/admin/sections/\\d+/lectures/\\d+") && "DELETE".equalsIgnoreCase(method)) {
-
-            return true;
-
-        }
-
-
-
-        // Admin API endpoints for orders, payments, and reviews
-
-        if (requestURI.equals("/api/v1/admin/payments") && "GET".equalsIgnoreCase(method)) {
-
-            return true;
-
-        }
-
-        if (requestURI.equals("/api/v1/admin/reviews") && "GET".equalsIgnoreCase(method)) {
-
-            return true;
-
-        }
-
-
-
         return false;
-
     }
 
 

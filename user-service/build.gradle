@@ -71,6 +71,8 @@ dependencies {
     implementation project(':commonlibs')
 
     // Test
+    implementation 'org.springframework.kafka:spring-kafka'
+    implementation project(':commonlibs')
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.springframework.security:spring-security-test'
 }

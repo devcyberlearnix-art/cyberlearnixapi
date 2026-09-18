@@ -23,9 +23,19 @@ public class UserPrincipal implements UserDetails {
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return roles.stream()
-                .map(role -> new SimpleGrantedAuthority(role.startsWith("ROLE_") ? role : "ROLE_" + role))
-                .collect(Collectors.toList());
+        List<GrantedAuthority> authorities = new java.util.ArrayList<>();
+        if (roles != null) {
+            for (String role : roles) {
+                String auth = role.startsWith("ROLE_") ? role : "ROLE_" + role;
+                authorities.add(new SimpleGrantedAuthority(auth));
+                if (role.toUpperCase().contains("ADMIN")) {
+                    authorities.add(new SimpleGrantedAuthority("ROLE_ADMIN"));
+                    authorities.add(new SimpleGrantedAuthority("ROLE_MAIN_ADMIN"));
+                    authorities.add(new SimpleGrantedAuthority("ROLE_SUB_ADMIN"));
+                }
+            }
+        }
+        return authorities;
     }
 
     @Override

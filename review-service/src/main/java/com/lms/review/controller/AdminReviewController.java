@@ -22,7 +22,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/admin/reviews")
+@RequestMapping("/api/v1/admin/reviews")
 @RequiredArgsConstructor
 @Tag(name = "Admin Reviews", description = "Admin moderation APIs")
 @SecurityRequirement(name = "bearerAuth")

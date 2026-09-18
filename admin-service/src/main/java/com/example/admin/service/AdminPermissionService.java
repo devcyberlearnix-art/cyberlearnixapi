@@ -15,8 +15,13 @@ public class AdminPermissionService {
                     "Main Admin Bearer token required. Login via POST /api/v1/auth/login then send "
                             + "Authorization: Bearer <accessToken>");
         }
-        boolean isMainAdmin = "MAIN_ADMIN".equalsIgnoreCase(principal.getRole())
-                || "MAIN_ADMIN".equalsIgnoreCase(principal.getAdminType());
+        String roleUpper = principal.getRole() != null ? principal.getRole().toUpperCase() : "";
+        String typeUpper = principal.getAdminType() != null ? principal.getAdminType().toUpperCase() : "";
+        boolean isMainAdmin = "MAIN_ADMIN".equals(roleUpper)
+                || "MAIN_ADMIN".equals(typeUpper)
+                || "SUPER_ADMIN".equals(roleUpper)
+                || "SUPER_ADMIN".equals(typeUpper)
+                || "ADMIN".equals(roleUpper);
         if (!isMainAdmin) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN,
                     "Only Main Admin can perform this action. Sub Admins cannot register other admins.");
@@ -30,25 +35,30 @@ public class AdminPermissionService {
             }
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authentication required");
         }
-        if ("MAIN_ADMIN".equalsIgnoreCase(principal.getRole())) {
+
+        String roleUpper = principal.getRole() != null ? principal.getRole().toUpperCase() : "";
+        String typeUpper = principal.getAdminType() != null ? principal.getAdminType().toUpperCase() : "";
+
+        // Main Admin & Super Admin have full access to everything
+        if ("MAIN_ADMIN".equals(roleUpper) || "MAIN_ADMIN".equals(typeUpper) || "SUPER_ADMIN".equals(roleUpper) || "SUPER_ADMIN".equals(typeUpper)) {
             return;
         }
-        // Check if user has admin role
-        if (!"MAIN_ADMIN".equalsIgnoreCase(principal.getRole()) && !"SUB_ADMIN".equalsIgnoreCase(principal.getRole())) {
+
+        // Check if user has any admin role
+        if (!roleUpper.contains("ADMIN") && !typeUpper.contains("ADMIN")) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN,
                     "User does not have access to admin endpoints");
         }
+
         AssignedService required = resolveServiceFromPath(requestPath);
         if (required == null) {
             return;
         }
-        if (principal.getAssignedService() == null) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
-                    "Sub Admin does not have an assigned service");
-        }
-        if (principal.getAssignedService() == AssignedService.ALL) {
+
+        if (principal.getAssignedService() == null || principal.getAssignedService() == AssignedService.ALL) {
             return;
         }
+
         if (principal.getAssignedService() != required) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN,
                     "Sub Admin does not have access to " + required.name());
@@ -59,7 +69,9 @@ public class AdminPermissionService {
         if (path == null) {
             return false;
         }
-        return path.startsWith("/api/v1/admin/courses") || path.startsWith("/api/v1/admin/content");
+        return path.startsWith("/api/v1/admin/courses")
+                || path.startsWith("/api/v1/admin/content")
+                || path.startsWith("/api/v1/admin/sections");
     }
 
     public AssignedService resolveServiceFromPath(String path) {

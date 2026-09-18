@@ -22,7 +22,7 @@ public class PaymentService {
     private final JwtService jwtService;
     private final ObjectMapper objectMapper;
 
-    @Value("${payment-service.url:http://localhost:8085/payments}")
+    @Value("${payment-service.url:http://localhost:8085/api/v1/payments}")
     private String paymentServiceUrl;
 
     private HttpHeaders createHeaders() {
@@ -30,7 +30,7 @@ public class PaymentService {
     }
 
     private HttpEntity<Void> createEntity() {
-        return new HttpEntity<>(null); // No auth headers since /payments is now public
+        return new HttpEntity<>(createHeaders());
     }
 
     public List<PaymentDto> getAllPayments() {

@@ -55,14 +55,14 @@ public class CourseService {
     /**
      * Delete course
      */
-    public boolean deleteCourse(Long courseId) {
+    public Map deleteCourse(Long courseId) {
         return courseServiceClient.deleteCourse(courseId);
     }
 
     /**
      * Get courses by instructor
      */
-    public List<CourseDTO> getCoursesByInstructor(Long instructorId) {
+    public List<CourseDTO> getCoursesByInstructor(String instructorId) {
         return courseServiceClient.getCoursesByInstructor(instructorId);
     }
 
@@ -75,7 +75,7 @@ public class CourseService {
         return courseServiceClient.createSection(courseId, sectionPayload);
     }
 
-    public boolean deleteSection(Long sectionId) {
+    public Map deleteSection(Long sectionId) {
         return courseServiceClient.deleteSection(sectionId);
     }
 
@@ -87,7 +87,7 @@ public class CourseService {
         return courseServiceClient.updateLecturePreview(sectionId, lectureId, previewEnabled);
     }
 
-    public boolean deleteLecture(Long sectionId, Long lectureId) {
+    public Map deleteLecture(Long sectionId, Long lectureId) {
         return courseServiceClient.deleteLecture(sectionId, lectureId);
     }
 }
