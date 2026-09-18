@@ -67,6 +67,10 @@ dependencyManagement {
     }
 }
 
+springBoot {
+    mainClass = 'com.lms.wishlist_service.WishlistServiceApplication'
+}
+
 tasks.named('test') {
     useJUnitPlatform()
 }
