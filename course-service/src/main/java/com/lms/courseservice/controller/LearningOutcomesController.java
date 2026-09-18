@@ -33,7 +33,7 @@ public class LearningOutcomesController {
     /**
      * Create a learning outcome (Instructor/Admin only)
      */
-    @PreAuthorize("hasAnyRole('INSTRUCTOR','MAIN_ADMIN','SUB_ADMIN','ADMIN')")
+    @PreAuthorize("hasAnyRole('INSTRUCTOR','MAIN_ADMIN','SUB_ADMIN')")
     @PostMapping("/{courseId}/outcomes")
     public ResponseEntity<LearningOutcomesResponse> createOutcome(
             @PathVariable Long courseId,
@@ -48,7 +48,7 @@ public class LearningOutcomesController {
     /**
      * Update a learning outcome (Instructor/Admin only)
      */
-    @PreAuthorize("hasAnyRole('INSTRUCTOR','MAIN_ADMIN','SUB_ADMIN','ADMIN')")
+    @PreAuthorize("hasAnyRole('INSTRUCTOR','MAIN_ADMIN','SUB_ADMIN')")
     @PutMapping("/outcomes/{outcomeId}")
     public ResponseEntity<LearningOutcomesResponse> updateOutcome(
             @PathVariable Long outcomeId,
@@ -63,7 +63,7 @@ public class LearningOutcomesController {
     /**
      * Partially update a learning outcome (Instructor/Admin only)
      */
-    @PreAuthorize("hasAnyRole('INSTRUCTOR','MAIN_ADMIN','SUB_ADMIN','ADMIN')")
+    @PreAuthorize("hasAnyRole('INSTRUCTOR','MAIN_ADMIN','SUB_ADMIN')")
     @PatchMapping("/outcomes/{outcomeId}")
     public ResponseEntity<LearningOutcomesResponse> updateOutcomePartial(
             @PathVariable Long outcomeId,
@@ -78,7 +78,7 @@ public class LearningOutcomesController {
     /**
      * Delete a learning outcome (Instructor/Admin only)
      */
-    @PreAuthorize("hasAnyRole('INSTRUCTOR','MAIN_ADMIN','SUB_ADMIN','ADMIN')")
+    @PreAuthorize("hasAnyRole('INSTRUCTOR','MAIN_ADMIN','SUB_ADMIN')")
     @DeleteMapping("/outcomes/{outcomeId}")
     public ResponseEntity<LearningOutcomesResponse> deleteOutcome(
             @PathVariable Long outcomeId,
