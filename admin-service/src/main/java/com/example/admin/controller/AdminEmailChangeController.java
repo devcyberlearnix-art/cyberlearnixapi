@@ -2,6 +2,7 @@ package com.example.admin.controller;
 
 import com.example.admin.dto.AdminEmailChangeRequestDto;
 import com.example.admin.dto.AdminEmailChangeResponse;
+import com.example.admin.dto.AdminResendEmailChangeOtpDto;
 import com.example.admin.dto.AdminVerifyNewEmailDto;
 import com.example.admin.dto.AdminVerifyOldEmailDto;
 import com.example.admin.dto.ApiResponse;
@@ -179,6 +180,43 @@ public class AdminEmailChangeController {
                 true,
                 "Email address successfully changed. Your session has been revoked. "
               + "Please log in again with your new email address.",
+                response,
+                LocalDateTime.now().toString()));
+    }
+
+    // =========================================================================
+    // STEP 4 — Resend OTP
+    // =========================================================================
+
+    /**
+     * Resends OTP code(s) for a pending admin email change request.
+     * Can optionally target "OLD", "NEW", or "ALL" (default: all unverified).
+     *
+     * <p><b>Request body:</b>
+     * <pre>
+     * {
+     *   "sessionId": "uuid-from-step-1",
+     *   "target": "ALL" // optional: OLD, NEW, ALL
+     * }
+     * </pre>
+     *
+     * @param httpRequest the HTTP request
+     * @param dto         the resend payload
+     * @return 200 with refreshed expiry and status
+     */
+    @PostMapping({"/resend-otp", "/change-request/resend-otp"})
+    public ResponseEntity<ApiResponse<AdminEmailChangeResponse>> resendEmailChangeOtp(
+            HttpServletRequest httpRequest,
+            @Valid @RequestBody AdminResendEmailChangeOtpDto dto) {
+
+        log.info("[AdminEmailChangeController] POST /resend-otp — resending admin email change OTP, sessionId={}",
+                dto != null ? dto.resolveSessionId() : null);
+
+        AdminEmailChangeResponse response = adminEmailChangeService.resendEmailChangeOtp(httpRequest, dto);
+
+        return ResponseEntity.ok(new ApiResponse<>(
+                true,
+                response.getMessage() != null ? response.getMessage() : "A new verification code has been sent.",
                 response,
                 LocalDateTime.now().toString()));
     }

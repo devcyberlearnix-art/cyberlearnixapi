@@ -2904,7 +2904,7 @@ public class UnifiedAuthenticationService {
 
             // Send email FIRST
             try {
-                emailService.sendOtpEmail(email, newOtp);
+                emailService.sendLoginOtp(email, newOtp);
             } catch (Exception ex) {
                 Map<String, Object> response = new HashMap<>();
                 response.put("success", false);
@@ -3009,7 +3009,7 @@ public class UnifiedAuthenticationService {
 
             // Send email FIRST
             try {
-                emailService.sendOtpEmail(email, newOtp);
+                emailService.sendPasswordResetOtp(email, newOtp);
             } catch (Exception ex) {
                 Map<String, Object> response = new HashMap<>();
                 response.put("success", false);
@@ -3165,7 +3165,13 @@ public class UnifiedAuthenticationService {
 
         // Send email FIRST
         try {
-            emailService.sendOtpEmail(email, newOtp);
+            if ("login".equalsIgnoreCase(otpType)) {
+                emailService.sendLoginOtp(email, newOtp);
+            } else if ("password_reset".equalsIgnoreCase(otpType)) {
+                emailService.sendPasswordResetOtp(email, newOtp);
+            } else {
+                emailService.sendOtpEmail(email, newOtp);
+            }
         } catch (Exception ex) {
             log.error("Failed to resend OTP email to: {}", email, ex);
             Map<String, Object> response = new HashMap<>();

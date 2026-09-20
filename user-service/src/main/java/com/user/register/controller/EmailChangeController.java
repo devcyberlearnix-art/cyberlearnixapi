@@ -3,6 +3,7 @@ package com.user.register.controller;
 import com.user.register.dto.ApiResponse;
 import com.user.register.dto.EmailChangeRequestDto;
 import com.user.register.dto.EmailChangeResponse;
+import com.user.register.dto.ResendEmailChangeOtpDto;
 import com.user.register.dto.VerifyNewEmailDto;
 import com.user.register.dto.VerifyOldEmailDto;
 import com.user.register.service.EmailChangeService;
@@ -180,6 +181,43 @@ public class EmailChangeController {
                 true,
                 "Email address successfully changed. All sessions have been invalidated. "
               + "Please log in again with your new email address.",
+                response,
+                LocalDateTime.now()));
+    }
+
+    // =========================================================================
+    // STEP 4 — Resend OTP
+    // =========================================================================
+
+    /**
+     * Resends OTP code(s) for a pending email change request.
+     * Can optionally target "OLD", "NEW", or "ALL" (default: all unverified).
+     *
+     * <p><b>Request body:</b>
+     * <pre>
+     * {
+     *   "sessionId": "uuid-from-step-1",
+     *   "target": "ALL" // optional: OLD, NEW, ALL
+     * }
+     * </pre>
+     *
+     * @param httpRequest the HTTP request
+     * @param dto         the resend payload
+     * @return 200 with refreshed expiry and status
+     */
+    @PostMapping({"/resend-otp", "/change-request/resend-otp"})
+    public ResponseEntity<ApiResponse<EmailChangeResponse>> resendEmailChangeOtp(
+            HttpServletRequest httpRequest,
+            @Valid @RequestBody ResendEmailChangeOtpDto dto) {
+
+        log.info("[EmailChangeController] POST /resend-otp — resending email change OTP, sessionId={}",
+                dto != null ? dto.resolveSessionId() : null);
+
+        EmailChangeResponse response = emailChangeService.resendEmailChangeOtp(httpRequest, dto);
+
+        return ResponseEntity.ok(new ApiResponse<>(
+                true,
+                response.getMessage() != null ? response.getMessage() : "A new verification code has been sent.",
                 response,
                 LocalDateTime.now()));
     }

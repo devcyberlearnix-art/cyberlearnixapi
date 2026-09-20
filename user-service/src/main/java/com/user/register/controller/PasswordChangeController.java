@@ -3,6 +3,7 @@ package com.user.register.controller;
 import com.user.register.dto.ApiResponse;
 import com.user.register.dto.PasswordChangeDto;
 import com.user.register.dto.PasswordChangeResponse;
+import com.user.register.dto.ResendPasswordOtpDto;
 import com.user.register.dto.VerifyPasswordOtpDto;
 import com.user.register.service.PasswordChangeService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -74,6 +75,27 @@ public class PasswordChangeController {
         return ResponseEntity.ok(new ApiResponse<>(
                 true,
                 "Password successfully changed. All active sessions have been invalidated.",
+                response,
+                LocalDateTime.now()));
+    }
+
+    /**
+     * Resends the password change OTP.
+     * Mapped to /api/v1/users/change-password/resend-otp (and /otp/resend)
+     */
+    @PostMapping({"/resend-otp", "/otp/resend"})
+    public ResponseEntity<ApiResponse<PasswordChangeResponse>> resendPasswordOtp(
+            HttpServletRequest httpRequest,
+            @Valid @RequestBody ResendPasswordOtpDto dto) {
+
+        log.info("[PasswordChangeController] POST /api/v1/users/change-password/resend-otp — resending OTP");
+
+        UUID userId = getAuthenticatedUserId();
+        PasswordChangeResponse response = passwordChangeService.resendPasswordOtp(httpRequest, userId, dto);
+
+        return ResponseEntity.ok(new ApiResponse<>(
+                true,
+                "A new verification code has been sent to your email. Please verify within 5 minutes.",
                 response,
                 LocalDateTime.now()));
     }

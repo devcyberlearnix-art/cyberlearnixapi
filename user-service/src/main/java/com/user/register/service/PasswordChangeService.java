@@ -2,6 +2,7 @@ package com.user.register.service;
 
 import com.user.register.dto.PasswordChangeDto;
 import com.user.register.dto.PasswordChangeResponse;
+import com.user.register.dto.ResendPasswordOtpDto;
 import com.user.register.dto.VerifyPasswordOtpDto;
 import com.user.register.entity.AuditLog;
 import com.user.register.entity.PasswordHistory;
@@ -46,6 +47,7 @@ public class PasswordChangeService {
     private final EmailService emailService;
     private final BCryptPasswordEncoder passwordEncoder;
     private final StringRedisTemplate redisTemplate;
+    private final OtpService otpService;
 
     private static final String USER_PWD_CHANGE_PREFIX = "USER:PASSWORD_CHANGE_TIME:";
 
@@ -255,6 +257,67 @@ public class PasswordChangeService {
                 .status("VERIFIED")
                 .requiresReLogin(true)
                 .message("Password changed successfully. You have been logged out of all devices. Please login again.")
+                .build();
+    }
+
+    @Transactional
+    public PasswordChangeResponse resendPasswordOtp(HttpServletRequest request, UUID userId, ResendPasswordOtpDto dto) {
+        log.info("[PasswordChange] Resending OTP for userId={}", userId);
+
+        String sessionId = dto != null ? dto.resolveSessionId() : null;
+        if (sessionId == null || sessionId.isBlank()) {
+            throw PasswordChangeException.badRequest("Session ID is required.");
+        }
+
+        UUID sessionUuid;
+        try {
+            sessionUuid = UUID.fromString(sessionId);
+        } catch (IllegalArgumentException e) {
+            throw PasswordChangeException.badRequest("Invalid session ID format.");
+        }
+
+        PasswordOtp passwordOtp = passwordOtpRepository.findByIdAndUserId(sessionUuid, userId)
+                .orElseThrow(() -> PasswordChangeException.notFound("Password change session not found or access denied."));
+
+        if (passwordOtp.getStatus() == PasswordOtp.Status.VERIFIED) {
+            throw PasswordChangeException.badRequest("This password change request has already been completed.");
+        }
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> PasswordChangeException.notFound("User not found."));
+
+        // Rate limit and cooldown check via OtpService
+        OtpService.OtpSendClaim claim = otpService.claimOtpSend(user.getEmail(), "PASSWORD_CHANGE", 30, 5, 3600);
+        if (!claim.allowed()) {
+            if (claim.hourlyLimitReached()) {
+                throw PasswordChangeException.tooManyRequests(
+                        "You have reached the maximum number of OTP requests. Please try again after " + claim.retryAfterSeconds() + " seconds.");
+            }
+            throw PasswordChangeException.tooManyRequests(
+                    "Please wait " + claim.retryAfterSeconds() + " seconds before requesting another OTP.");
+        }
+
+        // Generate new OTP and hash
+        String rawOtp = generateNumericOtp();
+        String hashedOtp = hashSha256(rawOtp);
+
+        // Send email FIRST
+        emailService.sendPasswordChangeOtp(user.getEmail(), rawOtp);
+
+        // Update verification session state
+        passwordOtp.setOtpHash(hashedOtp);
+        passwordOtp.setAttempts(0);
+        passwordOtp.setStatus(PasswordOtp.Status.PENDING);
+        passwordOtp.setExpiryTime(LocalDateTime.now().plusMinutes(5));
+        passwordOtpRepository.save(passwordOtp);
+
+        log.info("[PasswordChange] Password change OTP resent successfully for sessionId={}", passwordOtp.getId());
+
+        return PasswordChangeResponse.builder()
+                .sessionId(passwordOtp.getId().toString())
+                .status("PENDING")
+                .expiresAt(passwordOtp.getExpiryTime())
+                .message("A new verification code has been sent to your email. Please verify within 5 minutes.")
                 .build();
     }
 

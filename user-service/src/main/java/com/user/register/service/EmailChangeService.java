@@ -2,6 +2,7 @@ package com.user.register.service;
 
 import com.user.register.dto.EmailChangeRequestDto;
 import com.user.register.dto.EmailChangeResponse;
+import com.user.register.dto.ResendEmailChangeOtpDto;
 import com.user.register.dto.VerifyNewEmailDto;
 import com.user.register.dto.VerifyOldEmailDto;
 import com.user.register.entity.EmailChangeAuditLog;
@@ -288,6 +289,88 @@ public class EmailChangeService {
                 .expiresAt(request.getExpiryTime())
                 .message("Email address successfully changed. Please log in again with your new email.")
                 .requiresReLogin(true)
+                .build();
+    }
+
+    // =========================================================================
+    // STEP 4 — Resend OTP (Old, New, or Both)
+    // =========================================================================
+
+    /**
+     * Resends OTP code(s) for a pending email change request.
+     * Respects cooldown and rate limiting.
+     */
+    @Transactional
+    public EmailChangeResponse resendEmailChangeOtp(HttpServletRequest httpRequest,
+                                                    ResendEmailChangeOtpDto dto) {
+
+        User user = extractAuthenticatedUser(httpRequest);
+        String sessionId = dto != null ? dto.resolveSessionId() : null;
+        if (sessionId == null || sessionId.isBlank()) {
+            throw EmailChangeException.badRequest("Session ID is required.");
+        }
+
+        EmailChangeRequest request = resolveAndValidateSession(sessionId, user.getId());
+
+        String target = dto.getTarget() != null ? dto.getTarget().trim().toUpperCase() : "ALL";
+        boolean resendOld = ("ALL".equals(target) || "OLD".equals(target)) && !request.isOldEmailVerified();
+        boolean resendNew = ("ALL".equals(target) || "NEW".equals(target)) && !request.isNewEmailVerified();
+
+        if (!resendOld && !resendNew) {
+            if ("OLD".equals(target) && request.isOldEmailVerified()) {
+                throw EmailChangeException.badRequest("Current email OTP has already been verified.");
+            }
+            if ("NEW".equals(target) && request.isNewEmailVerified()) {
+                throw EmailChangeException.badRequest("New email OTP has already been verified.");
+            }
+            throw EmailChangeException.badRequest("Both email addresses for this request have already been verified.");
+        }
+
+        // Check rate limits first before generating any OTP or sending
+        if (resendOld) {
+            checkOtpSendRateLimit(user.getEmail(), OTP_TYPE_OLD);
+        }
+        if (resendNew) {
+            checkOtpSendRateLimit(request.getNewEmail(), OTP_TYPE_NEW);
+        }
+
+        if (resendOld) {
+            String newOldOtp = otpService.generateOtp();
+            emailService.sendEmailChangeOtp(user.getEmail(), newOldOtp);
+            OtpService.OtpSession newOldSession = otpService.createSession(
+                    user.getEmail(), OTP_TYPE_OLD, newOldOtp, OTP_VALID_MINUTES, OTP_MAX_ATTEMPTS);
+            otpService.deleteSession(request.getOldOtpSessionId());
+            request.setOldOtpSessionId(newOldSession.sessionId());
+            log.info("[EmailChange] Resent OTP to current email: {}", user.getEmail());
+        }
+
+        if (resendNew) {
+            String newNewOtp = otpService.generateOtp();
+            emailService.sendEmailChangeOtp(request.getNewEmail(), newNewOtp);
+            OtpService.OtpSession newNewSession = otpService.createSession(
+                    request.getNewEmail(), OTP_TYPE_NEW, newNewOtp, OTP_VALID_MINUTES, OTP_MAX_ATTEMPTS);
+            otpService.deleteSession(request.getNewOtpSessionId());
+            request.setNewOtpSessionId(newNewSession.sessionId());
+            log.info("[EmailChange] Resent OTP to new email: {}", maskEmail(request.getNewEmail()));
+        }
+
+        // Reset request expiry time
+        request.setExpiryTime(LocalDateTime.now().plusMinutes(REQUEST_EXPIRY_MINUTES));
+        emailChangeRequestRepository.save(request);
+
+        String message = (resendOld && resendNew)
+                ? "New OTP codes sent to both your current and new email addresses."
+                : (resendOld)
+                ? "A new verification code has been sent to your current email address."
+                : "A new verification code has been sent to your new email address.";
+
+        return EmailChangeResponse.builder()
+                .sessionId(request.getId().toString())
+                .oldEmailVerified(request.isOldEmailVerified())
+                .newEmailVerified(request.isNewEmailVerified())
+                .status(request.getStatus().name())
+                .expiresAt(request.getExpiryTime())
+                .message(message)
                 .build();
     }
 

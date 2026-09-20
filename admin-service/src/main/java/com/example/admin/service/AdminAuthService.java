@@ -1181,7 +1181,7 @@ public class AdminAuthService {
 
         // Send email FIRST
         try {
-            emailService.sendOtp(admin.getEmail(), newOtp);
+            emailService.sendPasswordResetOtp(admin.getEmail(), newOtp);
         } catch (RuntimeException ex) {
             // Email failed: keep S1, do not create S2, do not delete S1, do not apply new cooldown
             throw new ResponseStatusException(

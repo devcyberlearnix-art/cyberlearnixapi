@@ -2,6 +2,7 @@ package com.example.admin.controller;
 
 import com.example.admin.dto.AdminPasswordChangeDto;
 import com.example.admin.dto.AdminPasswordChangeResponse;
+import com.example.admin.dto.AdminResendPasswordOtpDto;
 import com.example.admin.dto.ApiResponse;
 import com.example.admin.dto.VerifyAdminPasswordOtpDto;
 import com.example.admin.security.AdminPrincipal;
@@ -73,6 +74,27 @@ public class AdminPasswordChangeController {
         return ResponseEntity.ok(new ApiResponse<>(
                 true,
                 "Password successfully changed. All active sessions have been invalidated.",
+                response,
+                LocalDateTime.now().toString()));
+    }
+
+    /**
+     * Resends the admin password change OTP.
+     * Mapped to /api/v1/admin/change-password/resend-otp (and /otp/resend)
+     */
+    @PostMapping({"/resend-otp", "/otp/resend"})
+    public ResponseEntity<ApiResponse<AdminPasswordChangeResponse>> resendPasswordOtp(
+            HttpServletRequest httpRequest,
+            @Valid @RequestBody AdminResendPasswordOtpDto dto) {
+
+        log.info("[AdminPasswordChangeController] POST /api/v1/admin/change-password/resend-otp — resending OTP");
+
+        UUID adminId = getAuthenticatedAdminId();
+        AdminPasswordChangeResponse response = adminPasswordChangeService.resendPasswordOtp(httpRequest, adminId, dto);
+
+        return ResponseEntity.ok(new ApiResponse<>(
+                true,
+                "A new verification code has been sent to your email. Please verify within 5 minutes.",
                 response,
                 LocalDateTime.now().toString()));
     }
