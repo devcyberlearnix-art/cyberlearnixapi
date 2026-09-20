@@ -46,6 +46,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.multipart.MultipartHttpServletRequest;
 
 import org.springframework.web.server.ResponseStatusException;
 
@@ -111,81 +112,189 @@ public class RegistrationController {
 
     private final String encryptionKey = "my-secret-key";
 
-
-
-
+    @InitBinder
+    public void initBinder(org.springframework.web.bind.WebDataBinder binder) {
+        binder.registerCustomEditor(String.class, "profilePhoto", new java.beans.PropertyEditorSupport() {
+            @Override
+            public void setValue(Object value) {
+                if (value instanceof MultipartFile) {
+                    super.setValue(null);
+                } else if (value != null) {
+                    super.setValue(value.toString());
+                } else {
+                    super.setValue(null);
+                }
+            }
+        });
+    }
 
     /**
-
-     * Register user and send OTP
-
+     * Register user and send OTP - JSON body with optional profilePhoto in request params
      */
+    @PostMapping(value = "/register", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<?> registerJson(
+            @Valid @RequestBody RegisterRequest registerRequest,
+            @RequestParam(value = "profilePhoto", required = false) MultipartFile profilePhotoFile,
+            @RequestParam(value = "file", required = false) MultipartFile fileParam,
+            @RequestParam(value = "profilePhotoUrl", required = false) String profilePhotoUrlParam,
+            HttpServletRequest request
+    ) {
+        return processRegistration(registerRequest, profilePhotoFile, fileParam, profilePhotoUrlParam, request);
+    }
 
-    @PostMapping("/register")
+    /**
+     * Register user and send OTP - Multipart form data (browser upload)
+     * Supports JSON body part (data, user, body, registerRequest) + profilePhoto file/param
+     */
+    @PostMapping(value = "/register", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<?> registerMultipart(
+            @RequestParam(value = "data", required = false) String dataParam,
+            @RequestParam(value = "user", required = false) String userParam,
+            @RequestParam(value = "body", required = false) String bodyParam,
+            @RequestParam(value = "registerRequest", required = false) String requestParam,
+            @ModelAttribute RegisterRequest formPart,
+            @RequestParam(value = "profilePhoto", required = false) MultipartFile profilePhotoFile,
+            @RequestParam(value = "file", required = false) MultipartFile fileParam,
+            @RequestParam(value = "profilePhotoUrl", required = false) String profilePhotoUrlParam,
+            HttpServletRequest request
+    ) {
+        RegisterRequest registerRequest = null;
+        com.fasterxml.jackson.databind.ObjectMapper om = new com.fasterxml.jackson.databind.ObjectMapper();
 
-    public ResponseEntity<?> register(@Valid @RequestBody RegisterRequest registerRequest, HttpServletRequest request) {
-
-        String normalizedProfilePhoto = registrationService.ensureCloudinaryProfilePhotoUrl(registerRequest.getProfilePhoto());
-
-        User user = new User();
-        user.setEmail(registerRequest.getEmail());
-        user.setPassword(registerRequest.getPassword());
-        user.setConfirmPassword(registerRequest.getConfirmPassword());
-        user.setFirstName(registerRequest.getFirstName());
-        user.setLastName(registerRequest.getLastName());
-        user.setMobile(registerRequest.getMobileNumber());
-        user.setCountryCode(registerRequest.getCountryCode());
-        user.setDob(registerRequest.getDob());
-        user.setProfilePhoto(normalizedProfilePhoto);
-        user.setCity(registerRequest.getCity());
-        user.setState(registerRequest.getState());
-        user.setCountry(registerRequest.getCountry());
-        user.setPreferredLanguage(registerRequest.getPreferredLanguage());
-        user.setOrganization(registerRequest.getOrganization());
-        if (registerRequest.getSkillsAsList().isEmpty()) {
-            throw new IllegalArgumentException("At least one skill is required");
+        for (String jsonCandidate : new String[]{userParam, dataParam, bodyParam, requestParam}) {
+            if (jsonCandidate != null && !jsonCandidate.trim().isEmpty()) {
+                try {
+                    registerRequest = om.readValue(jsonCandidate, RegisterRequest.class);
+                    break;
+                } catch (Exception ignored) {}
+            }
         }
-        user.setSkills(registerRequest.getSkillsAsString());
-        user.setFieldOfStudy(registerRequest.getFieldOfStudy());
-        user.setHighestQualification(registerRequest.getHighestQualification());
 
-        System.out.println("=== REGISTER CONTROLLER CALLED ===");
+        if (registerRequest == null && request instanceof MultipartHttpServletRequest multipartRequest) {
+            for (String partName : new String[]{"user", "data", "body", "registerRequest"}) {
+                MultipartFile file = multipartRequest.getFile(partName);
+                if (file != null && !file.isEmpty()) {
+                    try {
+                        registerRequest = om.readValue(file.getInputStream(), RegisterRequest.class);
+                        break;
+                    } catch (Exception ignored) {}
+                }
+            }
+        }
 
-        System.out.println("Email: " + user.getEmail());
+        if (registerRequest == null || (registerRequest.getEmail() == null && formPart != null && formPart.getEmail() != null)) {
+            registerRequest = formPart;
+        }
 
-        System.out.println("Mobile: " + user.getMobile());
+        return processRegistration(registerRequest, profilePhotoFile, fileParam, profilePhotoUrlParam, request);
+    }
 
-        System.out.println("CountryCode: " + user.getCountryCode());
+    /**
+     * Register user and send OTP - Form URL Encoded
+     */
+    @PostMapping(value = "/register", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
+    public ResponseEntity<?> registerFormUrlEncoded(
+            @Valid @ModelAttribute RegisterRequest registerRequest,
+            @RequestParam(value = "profilePhoto", required = false) MultipartFile profilePhotoFile,
+            @RequestParam(value = "file", required = false) MultipartFile fileParam,
+            @RequestParam(value = "profilePhotoUrl", required = false) String profilePhotoUrlParam,
+            HttpServletRequest request
+    ) {
+        return processRegistration(registerRequest, profilePhotoFile, fileParam, profilePhotoUrlParam, request);
+    }
 
+    private ResponseEntity<?> processRegistration(
+            RegisterRequest registerRequest,
+            MultipartFile profilePhotoFile,
+            MultipartFile fileParam,
+            String profilePhotoUrlParam,
+            HttpServletRequest request
+    ) {
         try {
+            // Determine profile photo source and upload to Cloudinary if needed
+            String normalizedProfilePhoto = null;
 
+            MultipartFile fileToUpload = (profilePhotoFile != null && !profilePhotoFile.isEmpty()) ? profilePhotoFile
+                    : (fileParam != null && !fileParam.isEmpty()) ? fileParam : null;
 
-
-            // Force role to STUDENT
-
-            user.setRole(User.Role.STUDENT);
-
-            user.setIsInstructorApproved(false);
-
-
-
-            // Ensure profile photo is set if provided
-
-            if (user.getProfilePhoto() != null && !user.getProfilePhoto().isBlank()) {
-
-                user.setProfilePhoto(user.getProfilePhoto());
-
+            if (fileToUpload == null && request instanceof MultipartHttpServletRequest multipartRequest) {
+                String[] possibleFileNames = {"profilePhoto", "profile_photo", "profile photo", "photo", "file"};
+                for (String fileName : possibleFileNames) {
+                    MultipartFile file = multipartRequest.getFile(fileName);
+                    if (file != null && !file.isEmpty()) {
+                        fileToUpload = file;
+                        break;
+                    }
+                }
             }
 
+            if (fileToUpload != null) {
+                normalizedProfilePhoto = registrationService.uploadProfilePhoto(fileToUpload);
+            } else {
+                String photoParam = null;
+                if (request != null) {
+                    String[] possibleNames = {"profilePhoto", "profile_photo", "profile photo", "profilePhotoUrl", "photo", "file"};
+                    for (String name : possibleNames) {
+                        String val = request.getParameter(name);
+                        if (val != null && !val.isBlank()) {
+                            photoParam = val;
+                            break;
+                        }
+                    }
+                }
+                if (photoParam == null || photoParam.isBlank()) {
+                    photoParam = (profilePhotoUrlParam != null && !profilePhotoUrlParam.isBlank())
+                            ? profilePhotoUrlParam
+                            : (registerRequest != null) ? registerRequest.getProfilePhoto() : null;
+                }
+                if (photoParam != null && !photoParam.isBlank()) {
+                    normalizedProfilePhoto = registrationService.ensureCloudinaryProfilePhotoUrl(photoParam);
+                }
+            }
 
+            if (registerRequest == null || registerRequest.getEmail() == null || registerRequest.getEmail().isBlank()) {
+                return ResponseEntity.badRequest().body(Map.of(
+                        "success", false,
+                        "message", "User details (email, password, etc.) are required for registration.",
+                        "timestamp", LocalDateTime.now().toString()
+                ));
+            }
+
+            User user = new User();
+            user.setEmail(registerRequest.getEmail());
+            user.setPassword(registerRequest.getPassword());
+            user.setConfirmPassword(registerRequest.getConfirmPassword());
+            user.setFirstName(registerRequest.getFirstName());
+            user.setLastName(registerRequest.getLastName());
+            user.setMobile(registerRequest.getMobileNumber());
+            user.setCountryCode(registerRequest.getCountryCode());
+            user.setDob(registerRequest.getDob());
+            user.setProfilePhoto(normalizedProfilePhoto);
+            user.setCity(registerRequest.getCity());
+            user.setState(registerRequest.getState());
+            user.setCountry(registerRequest.getCountry());
+            user.setPreferredLanguage(registerRequest.getPreferredLanguage());
+            user.setOrganization(registerRequest.getOrganization());
+            if (registerRequest.getSkillsAsList().isEmpty()) {
+                throw new IllegalArgumentException("At least one skill is required");
+            }
+            user.setSkills(registerRequest.getSkillsAsString());
+            user.setFieldOfStudy(registerRequest.getFieldOfStudy());
+            user.setHighestQualification(registerRequest.getHighestQualification());
+
+            System.out.println("=== REGISTER CONTROLLER CALLED ===");
+            System.out.println("Email: " + user.getEmail());
+            System.out.println("Mobile: " + user.getMobile());
+            System.out.println("CountryCode: " + user.getCountryCode());
+            System.out.println("ProfilePhoto: " + user.getProfilePhoto());
+
+            // Force role to STUDENT
+            user.setRole(User.Role.STUDENT);
+            user.setIsInstructorApproved(false);
 
             // Pass request to service
-
             User savedUser = registrationService.register(user, request);
-
             Map<String, Object> otpMeta = registrationService.getRegistrationOtpMetadata(savedUser.getEmail());
-
-
 
             Map<String, Object> responseData = new HashMap<>();
             responseData.put("id", savedUser.getId());
@@ -195,107 +304,50 @@ public class RegistrationController {
             responseData.put("countryCode", savedUser.getCountryCode());
             responseData.put("effectiveRole", savedUser.getEffectiveRole());
             responseData.put("skills", registerRequest.getSkillsAsList());
-            responseData.put("profilePhoto", normalizedProfilePhoto);
+            responseData.put("profilePhoto", savedUser.getProfilePhoto() != null ? savedUser.getProfilePhoto() : normalizedProfilePhoto);
             responseData.putAll(otpMeta);
 
             ApiResponse<Map<String, Object>> response = new ApiResponse<>(
-
                     true,
-
                     "User registered successfully. OTP has been sent to email.",
-
                     responseData,
-
                     LocalDateTime.now()
-
             );
-
-
-
-            // 201 → resource created
 
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
 
-
-
         } catch (IllegalArgumentException e) {
-
-
-
             ApiResponse<Object> response = new ApiResponse<>(
-
                     false,
-
                     e.getMessage(),
-
                     null,
-
                     LocalDateTime.now()
-
             );
-
-
-
-            // 400 → validation error
-
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
 
-
-
         } catch (RuntimeException e) {
-
             e.printStackTrace();
-
             System.out.println("=== REGISTRATION RUNTIME EXCEPTION ===");
-
             System.out.println("Message: " + e.getMessage());
-
             System.out.println("Cause: " + e.getCause());
-
             ApiResponse<Object> response = new ApiResponse<>(
-
                     false,
-
                     e.getMessage(),
-
                     null,
-
                     LocalDateTime.now()
-
             );
-
-
-
-            // 409 → conflict (email/mobile already exists)
-
             return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
 
-
-
         } catch (Exception e) {
-
-
-
+            e.printStackTrace();
             ApiResponse<Object> response = new ApiResponse<>(
-
                     false,
-
                     "Internal server error",
-
                     null,
-
                     LocalDateTime.now()
-
             );
-
-
-
-            // 500 → server error
-
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
-
         }
-
     }
 
         @PostMapping("/register/resend-otp")

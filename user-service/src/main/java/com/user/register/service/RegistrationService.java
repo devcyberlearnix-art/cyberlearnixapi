@@ -303,6 +303,11 @@ public class RegistrationService {
                     throw new RuntimeException("Mobile number already registered");
                 }
 
+                if (normalizedProfilePhoto != null && !normalizedProfilePhoto.isBlank()) {
+                    mobileUser.setProfilePhoto(normalizedProfilePhoto);
+                    userRepository.save(mobileUser);
+                }
+
                 enforceRegistrationOtpSendLimit(mobileUser.getEmail());
                 String otp = generateOTP();
 
@@ -629,6 +634,49 @@ public class RegistrationService {
         String normalized = profilePhoto.trim();
         if (normalized.contains("res.cloudinary.com")) {
             return normalized;
+        }
+
+        // Handle local file paths directly on disk (e.g. C:\path\to\image.jpg or /path/to/image.png)
+        try {
+            java.io.File diskFile = new java.io.File(normalized);
+            if (diskFile.exists() && diskFile.isFile()) {
+                byte[] fileBytes = java.nio.file.Files.readAllBytes(diskFile.toPath());
+                Map<?, ?> options = ObjectUtils.asMap(
+                        "folder", folder,
+                        "resource_type", "image"
+                );
+                Map<?, ?> uploadResult = cloudinary.uploader().upload(fileBytes, options);
+                Object secureUrl = uploadResult.get("secure_url");
+                if (secureUrl != null && !secureUrl.toString().isBlank()) {
+                    return secureUrl.toString();
+                }
+            }
+        } catch (Exception ignored) {
+        }
+
+        // If URL points to local uploads directory, read the local file and upload to Cloudinary
+        if (normalized.contains("/uploads/") || normalized.contains("\\uploads\\")) {
+            try {
+                String filename = normalized.substring(Math.max(normalized.lastIndexOf('/'), normalized.lastIndexOf('\\')) + 1);
+                java.io.File localFile = new java.io.File("uploads", filename);
+                if (!localFile.exists()) {
+                    localFile = new java.io.File(filename);
+                }
+                if (localFile.exists()) {
+                    byte[] fileBytes = java.nio.file.Files.readAllBytes(localFile.toPath());
+                    Map<?, ?> options = ObjectUtils.asMap(
+                            "folder", folder,
+                            "resource_type", "image"
+                    );
+                    Map<?, ?> uploadResult = cloudinary.uploader().upload(fileBytes, options);
+                    Object secureUrl = uploadResult.get("secure_url");
+                    if (secureUrl != null && !secureUrl.toString().isBlank()) {
+                        return secureUrl.toString();
+                    }
+                }
+            } catch (Exception e) {
+                log.warn("Failed to upload local uploads file to Cloudinary: {}", normalized, e);
+            }
         }
 
         // If this is likely a web page (not a direct image), keep the URL as-is.

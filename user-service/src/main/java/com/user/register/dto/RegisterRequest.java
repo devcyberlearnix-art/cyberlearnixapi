@@ -35,6 +35,10 @@ public class RegisterRequest {
     @Pattern(regexp = "^\\d{6,12}$", message = "Mobile number must be 6-12 digits")
     private String mobileNumber;
 
+    public void setMobile(String mobile) {
+        this.mobileNumber = mobile;
+    }
+
     @NotBlank(message = "Country code is required")
     private String countryCode;
 
