@@ -181,9 +181,6 @@ public class SecurityConfig {
                         // Upload banner image (Admin only)
                         .requestMatchers(HttpMethod.POST, "/api/v1/admin/banners/upload-image")
                         .hasAnyRole("MAIN_ADMIN", "SUB_ADMIN")
-                        // Validate banner image (Admin only)
-                        .requestMatchers(HttpMethod.POST, "/api/v1/admin/banners/validate-image")
-                        .hasAnyRole("MAIN_ADMIN", "SUB_ADMIN")
 
                         // ============== BANNER MANAGEMENT (ADMIN) ==============
                         // Banner CRUD operations (Admin only)
@@ -200,10 +197,6 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.DELETE, "/api/v1/admin/banners/*")
                         .hasAnyRole("MAIN_ADMIN", "SUB_ADMIN")
                         .requestMatchers(HttpMethod.PATCH, "/api/v1/admin/banners/reorder")
-                        .hasAnyRole("MAIN_ADMIN", "SUB_ADMIN")
-                        .requestMatchers(HttpMethod.PATCH, "/api/v1/admin/banners/*/status")
-                        .hasAnyRole("MAIN_ADMIN", "SUB_ADMIN")
-                        .requestMatchers(HttpMethod.POST, "/api/v1/admin/banners/*/restore")
                         .hasAnyRole("MAIN_ADMIN", "SUB_ADMIN")
                         .requestMatchers(HttpMethod.GET, "/api/v1/admin/banners/*/analytics")
                         .hasAnyRole("MAIN_ADMIN", "SUB_ADMIN")
