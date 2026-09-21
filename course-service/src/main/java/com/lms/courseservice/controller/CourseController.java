@@ -227,7 +227,7 @@ public class CourseController {
     public EnrollCourseResponse enroll(@PathVariable Long courseId) {
         UUID userId = extractUserIdFromContext();
         courseService.enrollFreeCourse(courseId, userId);
-        
+
         Course course = courseService.getCourseById(courseId);
         EnrollmentInfo info = new EnrollmentInfo(
                 course.getId(),
@@ -237,7 +237,7 @@ public class CourseController {
                 "Enrolled",
                 java.time.LocalDateTime.now().toString()
         );
-        
+
         return new EnrollCourseResponse(true,
             "Student enrolled in the course successfully.",
             info);

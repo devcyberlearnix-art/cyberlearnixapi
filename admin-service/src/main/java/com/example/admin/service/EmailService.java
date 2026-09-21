@@ -118,9 +118,9 @@ public class EmailService {
     }
 
     public void sendEmailChangeNotification(String toEmail, String subject, String body) {
-        // Since the template is strictly OTP formatted, we either create a new template or reuse a simpler plain text. 
-        // We will keep plain text for notifications if it doesn't fit the OTP template, but to be safe and use HTML, 
-        // we can just send it as plain text as requested by the original code signature, 
+        // Since the template is strictly OTP formatted, we either create a new template or reuse a simpler plain text.
+        // We will keep plain text for notifications if it doesn't fit the OTP template, but to be safe and use HTML,
+        // we can just send it as plain text as requested by the original code signature,
         // or wrap it in a simple HTML body. We will stick to plain text for this non-OTP method.
         try {
             org.springframework.mail.SimpleMailMessage message = new org.springframework.mail.SimpleMailMessage();

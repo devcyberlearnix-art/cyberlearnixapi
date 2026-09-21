@@ -7,6 +7,8 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.time.Instant;
+import java.util.HashMap;
+import java.util.Map;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -49,5 +51,40 @@ public class GlobalExceptionHandler {
             .timestamp(Instant.now().toString())
             .build();
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
+    }
+
+    @ExceptionHandler(BannerException.class)
+    public ResponseEntity<ApiResponse<Void>> handleBannerException(BannerException ex) {
+        ApiResponse<Void> response = ApiResponse.<Void>builder()
+            .success(false)
+            .message(ex.getMessage())
+            .timestamp(Instant.now().toString())
+            .build();
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+    }
+
+    @ExceptionHandler(org.springframework.web.bind.MethodArgumentNotValidException.class)
+    public ResponseEntity<Map<String, Object>> handleValidationException(
+            org.springframework.web.bind.MethodArgumentNotValidException ex) {
+        Map<String, Object> response = new HashMap<>();
+        response.put("success", false);
+        response.put("message", "Validation failed");
+        response.put("errorCode", "VALIDATION_ERROR");
+
+        java.util.List<Map<String, String>> errors = ex.getBindingResult()
+            .getFieldErrors()
+            .stream()
+            .map(error -> {
+                Map<String, String> errorMap = new HashMap<>();
+                errorMap.put("field", error.getField());
+                errorMap.put("message", error.getDefaultMessage());
+                return errorMap;
+            })
+            .collect(java.util.stream.Collectors.toList());
+
+        response.put("errors", errors);
+        response.put("timestamp", Instant.now().toString());
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
     }
 }

@@ -21,7 +21,7 @@ import java.util.UUID;
 public class EnrollmentClient {
 
     private final RestTemplate restTemplate;
-    
+
     @Value("${course-service.url:http://localhost:8083}")
     private String courseServiceUrl;
 
@@ -36,7 +36,7 @@ public class EnrollmentClient {
     public void enrollStudentAfterPayment(Long courseId, UUID studentId) {
         try {
             String url = courseServiceUrl + "/api/v1/enrollments/internal/enroll";
-            
+
             EnrollmentRequest request = new EnrollmentRequest(courseId, studentId);
             HttpHeaders headers = createHeaders();
             HttpEntity<EnrollmentRequest> entity = new HttpEntity<>(request, headers);

@@ -86,7 +86,7 @@ public class LoginEventConsumer {
                     if (activeTokens != null && !activeTokens.isEmpty()) {
                         log.info("Dispatching FCM push notification to {} active device(s) for userId={}",
                                 activeTokens.size(), event.userId());
-                        
+
                         String verifyUrl = (trackingService != null)
                                 ? trackingService.generateSignedVerificationUrl(event.eventId(), event.userId())
                                 : "";

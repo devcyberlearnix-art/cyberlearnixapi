@@ -18,7 +18,6 @@ import java.util.List;
 public class SecurityConfig {
 
 
-
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
     public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter) {

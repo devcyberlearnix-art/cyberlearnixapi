@@ -1,6 +1,6 @@
 plugins {
 	id 'java'
-	id 'org.springframework.boot' version '4.0.3'
+	id 'org.springframework.boot' version '3.4.3'
 	id 'io.spring.dependency-management' version '1.1.7'
 }
 group = 'com.user'
@@ -27,10 +27,10 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
 
     // PostgreSQL
-    runtimeOnly 'org.postgresql:postgresql'
+    runtimeOnly "org.postgresql:postgresql:${postgresqlVersion}"
 
     // H2 in-memory DB (local/dev testing without Docker)
-    runtimeOnly 'com.h2database:h2'
+    testRuntimeOnly "com.h2database:h2:${h2Version}"
 
     // Redis
     implementation 'org.springframework.boot:spring-boot-starter-data-redis'
@@ -44,25 +44,20 @@ dependencies {
 
     // JWT (Nimbus - RS256 support)
     implementation 'org.springframework.boot:spring-boot-starter-oauth2-resource-server'
-    implementation 'eu.bitwalker:UserAgentUtils:1.21'
+    implementation "eu.bitwalker:UserAgentUtils:${userAgentUtilsVersion}"
 
     // Bucket4j Rate Limiting
-    implementation 'com.bucket4j:bucket4j-core:8.7.0'
-    implementation 'com.fasterxml.jackson.core:jackson-databind:2.15.2'
-    implementation 'org.jasypt:jasypt:1.9.3'
+    implementation "com.bucket4j:bucket4j-core:${bucket4jVersion}"
+    implementation "com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}"
+    implementation "org.jasypt:jasypt:${jasyptVersion}"
     // Lombok
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
-    // JWT (JJWT)
-    implementation 'io.jsonwebtoken:jjwt-api:0.11.5'
-    runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.11.5'
-    runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.11.5'
-    
     // Cloudinary SDK
-    implementation 'com.cloudinary:cloudinary-http5:2.3.2'
+    implementation "com.cloudinary:cloudinary-http5:${cloudinaryVersion}"
 
     // SpringDoc OpenAPI
-    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.3.0'
+    implementation "org.springdoc:springdoc-openapi-starter-webmvc-ui:${springdocVersion}"
 
     // Actuator
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
@@ -70,9 +65,13 @@ dependencies {
     // Common Libraries (for shared utilities)
     implementation project(':commonlibs')
 
+    // JWT dependencies for custom JWT service
+    implementation "io.jsonwebtoken:jjwt-api:${jjwtVersion}"
+    implementation "io.jsonwebtoken:jjwt-impl:${jjwtVersion}"
+    implementation "io.jsonwebtoken:jjwt-jackson:${jjwtVersion}"
+
     // Test
     implementation 'org.springframework.kafka:spring-kafka'
-    implementation project(':commonlibs')
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.springframework.security:spring-security-test'
 }

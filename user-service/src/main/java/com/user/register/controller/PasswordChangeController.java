@@ -46,7 +46,7 @@ public class PasswordChangeController {
             @Valid @RequestBody PasswordChangeDto dto) {
 
         log.info("[PasswordChangeController] POST /api/v1/users/change-password — initiating password change");
-        
+
         UUID userId = getAuthenticatedUserId();
         PasswordChangeResponse response = passwordChangeService.initiatePasswordChange(httpRequest, userId, dto);
 

@@ -11,10 +11,10 @@ import jakarta.validation.constraints.NotNull;
  */
 @Data
 public class RedeemCouponRequest {
-    
+
     @NotBlank(message = "Coupon code is required")
     private String couponCode;
-    
+
     @NotNull(message = "Course ID is required")
     private Long courseId;
 }

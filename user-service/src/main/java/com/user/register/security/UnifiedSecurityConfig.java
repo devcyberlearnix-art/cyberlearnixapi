@@ -1,7 +1,6 @@
 package com.user.register.security;
 
 
-
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.context.annotation.Bean;
@@ -23,9 +22,6 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 
-
-
-
 @Configuration
 
 @EnableWebSecurity
@@ -37,12 +33,10 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 public class UnifiedSecurityConfig {
 
 
-
     private final UnifiedJwtAuthenticationFilter unifiedJwtAuthenticationFilter;
 
     private final UnifiedJwtAuthenticationEntryPoint unauthorizedHandler;
     private final ServiceAuthFilter serviceAuthFilter;
-
 
 
     @Bean
@@ -82,13 +76,11 @@ public class UnifiedSecurityConfig {
 
                         .requestMatchers("/api/v1/auth/switch-role").permitAll()
 
-                        
 
                         // OAuth2 endpoints
 
                         .requestMatchers("/oauth2/**").permitAll()
 
-                        
 
                         // Health check endpoints
 
@@ -96,7 +88,6 @@ public class UnifiedSecurityConfig {
 
                         .requestMatchers("/actuator/info").permitAll()
 
-                        
 
                         // Swagger documentation
 
@@ -104,19 +95,16 @@ public class UnifiedSecurityConfig {
 
                         .requestMatchers("/v3/api-docs/**").permitAll()
 
-                        
 
                         // H2 console
 
                         .requestMatchers("/h2-console/**").permitAll()
 
-                        
 
                         // Public profile endpoints
 
                         .requestMatchers("/api/v1/public/**").permitAll()
 
-                        
 
                         // User management endpoints (require authentication)
 
@@ -131,7 +119,7 @@ public class UnifiedSecurityConfig {
 
                         // Password change — requires authentication
                         .requestMatchers("/api/v1/users/change-password/**").authenticated()
-                        
+
                         // Admin user management endpoints (require admin role or service token)
 
                         .requestMatchers("/api/v1/users/stats").hasAnyRole("MAIN_ADMIN", "SUB_ADMIN")
@@ -144,7 +132,6 @@ public class UnifiedSecurityConfig {
 
                         .requestMatchers("/api/v1/users/{id}/**").permitAll()
 
-                        
 
                         // Instructor application endpoints
 
@@ -152,19 +139,16 @@ public class UnifiedSecurityConfig {
 
                         .requestMatchers("/api/v1/instructors/applications/me").authenticated()
 
-                        
 
                         // Student endpoints
 
                         .requestMatchers("/api/v1/students/**").hasAnyRole("STUDENT", "INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN")
 
-                        
 
                         // Instructor endpoints
 
                         .requestMatchers("/api/v1/instructors/**").hasAnyRole("INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN")
 
-                        
 
                         // Admin endpoints
 
@@ -172,25 +156,21 @@ public class UnifiedSecurityConfig {
 
                         .requestMatchers("/api/v1/admin/instructors/**").authenticated()  // Business logic handles role check
 
-                        
 
                         // Super Admin only endpoints
 
                         .requestMatchers("/api/v1/super-admin/**").hasRole("MAIN_ADMIN")
 
-                        
 
                         // Course management
 
                         .requestMatchers("/api/v1/courses/**").authenticated()
 
-                        
 
                         // Payment endpoints
 
                         .requestMatchers("/api/v1/payments/**").authenticated()
 
-                        
 
                         // Any other request requires authentication
 
@@ -202,15 +182,9 @@ public class UnifiedSecurityConfig {
                 .addFilterBefore(unifiedJwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
 
-
         return http.build();
 
     }
-
-
-
-
-
 
 
     @Bean

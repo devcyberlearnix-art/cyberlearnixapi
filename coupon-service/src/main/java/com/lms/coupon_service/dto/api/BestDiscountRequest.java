@@ -11,10 +11,10 @@ import jakarta.validation.constraints.Positive;
  */
 @Data
 public class BestDiscountRequest {
-    
+
     @NotNull(message = "Course ID is required")
     private Long courseId;
-    
+
     @NotNull(message = "Price is required")
     @Positive(message = "Price must be positive")
     private Double price;

@@ -55,7 +55,7 @@ public class JwtUtil {
         if (upper.startsWith("ROLE_")) {
             upper = upper.substring(5);
         }
-        
+
         if ("USER".equals(upper) || "STUDENT".equals(upper)) {
             return "STUDENT";
         }

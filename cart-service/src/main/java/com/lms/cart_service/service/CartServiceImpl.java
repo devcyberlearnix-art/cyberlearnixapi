@@ -126,7 +126,7 @@ public class CartServiceImpl implements CartService {
         if (discountPercentage != null && discountPercentage > 0) {
             discountAmount = (response.getTotalCartPrice() * discountPercentage) / 100;
             response.setTotalCartPrice(response.getTotalCartPrice() - discountAmount);
-            
+
             // Store coupon code in all cart items for this user
             List<CartItem> items = cartRepository.findAllByUserId(userId);
             items.forEach(item -> item.setCouponCode(couponCode));
@@ -140,12 +140,12 @@ public class CartServiceImpl implements CartService {
     @Transactional
     public CouponApplyResponse removeCouponFromCart(String userId) {
         CartResponse response = buildCartResponse(userId);
-        
+
         // Clear coupon code from all cart items for this user
         List<CartItem> items = cartRepository.findAllByUserId(userId);
         items.forEach(item -> item.setCouponCode(null));
         cartRepository.saveAll(items);
-        
+
         return new CouponApplyResponse(null, 0.0, response.getTotalCartPrice());
     }
 
@@ -168,14 +168,14 @@ public class CartServiceImpl implements CartService {
         List<Long> courseIds = response.getItems().stream()
                 .map(com.lms.cart_service.dto.CartItem::getCourseId)
                 .toList();
-        
+
         // Retrieve coupon code from cart items (if any was applied)
         String couponCode = null;
         List<CartItem> cartItems = cartRepository.findAllByUserId(userId);
         if (!cartItems.isEmpty() && cartItems.get(0).getCouponCode() != null) {
             couponCode = cartItems.get(0).getCouponCode();
         }
-        
+
         OrderClient.OrderApiResponse orderResponse = orderClient.createOrder(
                 authorization, new OrderClient.OrderCreateRequest(courseIds, couponCode));
         if (orderResponse == null || !orderResponse.success() || orderResponse.data() == null) {

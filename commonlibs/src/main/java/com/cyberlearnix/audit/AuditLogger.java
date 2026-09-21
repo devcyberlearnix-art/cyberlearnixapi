@@ -10,7 +10,7 @@ import java.util.UUID;
 @Slf4j
 public class AuditLogger {
 
-    public void logEvent(String eventType, String userId, String service, String action, 
+    public void logEvent(String eventType, String userId, String service, String action,
                         String resource, String details, String ipAddress, String status) {
         AuditEvent event = AuditEvent.builder()
                 .eventId(UUID.randomUUID())
@@ -26,17 +26,17 @@ public class AuditLogger {
                 .build();
 
         log.info("AUDIT_EVENT: {}", event);
-        
+
         // In production, this would be sent to a centralized audit service or database
         // For now, we log it which can be collected by log aggregation tools
     }
 
-    public void logSuccess(String eventType, String userId, String service, String action, 
+    public void logSuccess(String eventType, String userId, String service, String action,
                           String resource, String details, String ipAddress) {
         logEvent(eventType, userId, service, action, resource, details, ipAddress, "SUCCESS");
     }
 
-    public void logFailure(String eventType, String userId, String service, String action, 
+    public void logFailure(String eventType, String userId, String service, String action,
                           String resource, String details, String ipAddress) {
         logEvent(eventType, userId, service, action, resource, details, ipAddress, "FAILURE");
     }

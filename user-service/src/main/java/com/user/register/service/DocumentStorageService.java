@@ -31,7 +31,7 @@ public class DocumentStorageService {
         String safeName = (original != null && !original.isBlank())
                 ? original.replaceAll("[^a-zA-Z0-9._-]", "_")
                 : "file";
-        
+
         // Use a unique name including fieldName, userId, and timestamp to avoid conflicts in that folder
         String publicId = userId.toString() + "_" + fieldName + "_" + System.currentTimeMillis() + "_" + safeName;
         // Strip file extension from publicId since Cloudinary handles extensions automatically

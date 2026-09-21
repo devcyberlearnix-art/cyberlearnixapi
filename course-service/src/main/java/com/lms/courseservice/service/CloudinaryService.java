@@ -45,5 +45,28 @@ public class CloudinaryService {
             throw new RuntimeException("Failed to upload video to Cloudinary: " + e.getMessage(), e);
         }
     }
+
+    /**
+     * Uploads an image file to Cloudinary under "{folder}/banners/" subfolder.
+     *
+     * @param file the multipart image file
+     * @return the secure HTTPS URL of the uploaded image
+     */
+    @SuppressWarnings("unchecked")
+    public String uploadImage(MultipartFile file) {
+        try {
+            Map<String, Object> uploadResult = cloudinary.uploader().upload(
+                    file.getBytes(),
+                    ObjectUtils.asMap(
+                            "resource_type", "image",
+                            "folder",        folder + "/banners",
+                            "overwrite",     true
+                    )
+            );
+            return (String) uploadResult.get("secure_url");
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to upload image to Cloudinary: " + e.getMessage(), e);
+        }
+    }
 }
 

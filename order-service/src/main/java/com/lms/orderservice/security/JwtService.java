@@ -1,13 +1,11 @@
 package com.lms.orderservice.security;
 
 
-
 import com.cyberlearnix.security.SharedJwtValidator;
 
 import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.stereotype.Service;
-
 
 
 @Service
@@ -17,9 +15,7 @@ import org.springframework.stereotype.Service;
 public class JwtService {
 
 
-
     private final SharedJwtValidator sharedJwtValidator;
-
 
 
     public JwtService(SharedJwtValidator sharedJwtValidator) {
@@ -29,13 +25,11 @@ public class JwtService {
     }
 
 
-
     public String extractUserId(String token) {
 
         return sharedJwtValidator.extractUserId(cleanToken(token));
 
     }
-
 
 
     public String extractRole(String token) {
@@ -45,13 +39,11 @@ public class JwtService {
     }
 
 
-
     public boolean isTokenValid(String token) {
 
         return sharedJwtValidator.isTokenValid(cleanToken(token));
 
     }
-
 
 
     private String cleanToken(String token) {

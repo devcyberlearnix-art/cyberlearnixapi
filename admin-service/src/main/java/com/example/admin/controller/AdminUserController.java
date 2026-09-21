@@ -131,14 +131,14 @@ public class AdminUserController {
                     .build()
             );
         }
-        
+
         AdminInstructorApplicationsResponse response;
         if (status != null && !status.isBlank()) {
             response = adminUserService.getInstructorApplicationsByStatusPaginated(authorization, status, page, size);
         } else {
             response = adminUserService.getAllInstructorApplicationsPaginated(authorization, page, size);
         }
-        
+
         return ResponseEntity
                 .status(response.isSuccess() ? 200 : 500)
                 .body(response);
@@ -147,7 +147,7 @@ public class AdminUserController {
     /**
      * Deprecated: Use GET /instructors/applications?status={status} instead
      * This endpoint is kept for backward compatibility
-     * 
+     *
      * @deprecated Use query parameter version: GET /instructors/applications?status={status}
      */
     @Deprecated

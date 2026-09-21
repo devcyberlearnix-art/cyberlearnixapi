@@ -27,9 +27,9 @@ public class SessionManagementController {
     public Mono<ResponseEntity<SessionManagementResponseDTO>> getUserSessions(
             @RequestHeader("X-User-Id") String userId,
             @RequestHeader("X-Session-Id") String sessionId) {
-        
+
         log.info("Fetching sessions for user: {}", userId);
-        
+
         return webClientBuilder.build()
                 .get()
                 .uri(userServiceUrl + "/api/consumer/sessions")
@@ -52,9 +52,9 @@ public class SessionManagementController {
             @RequestHeader("X-User-Id") String userId,
             @RequestHeader("X-Session-Id") String currentSessionId,
             @PathVariable String sessionId) {
-        
+
         log.info("Deactivating session {} for user: {}", sessionId, userId);
-        
+
         return webClientBuilder.build()
                 .delete()
                 .uri(userServiceUrl + "/api/consumer/sessions/{sessionId}", sessionId)
@@ -76,9 +76,9 @@ public class SessionManagementController {
     public Mono<ResponseEntity<SessionManagementResponseDTO>> deactivateOtherSessions(
             @RequestHeader("X-User-Id") String userId,
             @RequestHeader("X-Session-Id") String currentSessionId) {
-        
+
         log.info("Deactivating other sessions for user: {}", userId);
-        
+
         return webClientBuilder.build()
                 .post()
                 .uri(userServiceUrl + "/api/consumer/sessions/deactivate-others")
@@ -99,9 +99,9 @@ public class SessionManagementController {
     @PostMapping("/deactivate-all")
     public Mono<ResponseEntity<SessionManagementResponseDTO>> deactivateAllSessions(
             @RequestHeader("X-User-Id") String userId) {
-        
+
         log.info("Deactivating all sessions for user: {}", userId);
-        
+
         return webClientBuilder.build()
                 .post()
                 .uri(userServiceUrl + "/api/consumer/sessions/deactivate-all")

@@ -47,7 +47,7 @@ public class SimpleJwtTokenProvider {
         // Create secret keys (support both raw and Base64-encoded secrets)
         byte[] accessBytes = decodeIfBase64(accessSecret);
         byte[] refreshBytes = decodeIfBase64(refreshSecret);
-        log.info("[SimpleJwtTokenProvider] Access key length: {}, Refresh key length: {}", 
+        log.info("[SimpleJwtTokenProvider] Access key length: {}, Refresh key length: {}",
             accessBytes.length, refreshBytes.length);
         this.accessTokenSecret = Keys.hmacShaKeyFor(accessBytes);
         this.refreshTokenSecret = Keys.hmacShaKeyFor(refreshBytes);

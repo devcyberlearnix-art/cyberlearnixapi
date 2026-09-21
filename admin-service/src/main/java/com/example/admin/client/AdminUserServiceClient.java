@@ -321,7 +321,7 @@ public class AdminUserServiceClient {
             if (data instanceof Map<?, ?> dataMap) {
                 Object users = dataMap.get("users");
                 List<UserDTO> userList = new ArrayList<>();
-                
+
                 if (users instanceof List<?> list) {
                     for (Object item : list) {
                         userList.add(mapToUserDto(item));
@@ -331,7 +331,7 @@ public class AdminUserServiceClient {
                         userList.add(mapToUserDto(item));
                     }
                 }
-                
+
                 Map<String, Object> result = new HashMap<>();
                 result.put("users", userList);
                 result.put("totalUsers", getNumber(dataMap.get("totalUsers")));

@@ -1,343 +1,172 @@
 package com.swachvega.apigateway.filter;
 
-
-
 import com.swachvega.apigateway.security.SimpleJwtTokenProvider;
-
 import io.jsonwebtoken.JwtException;
-
-import org.springframework.data.redis.core.ReactiveRedisTemplate;
-
 import lombok.extern.slf4j.Slf4j;
-
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
-
 import org.springframework.cloud.gateway.filter.GlobalFilter;
-
 import org.springframework.core.Ordered;
-
+import org.springframework.data.redis.core.ReactiveRedisTemplate;
 import org.springframework.http.HttpHeaders;
-
 import org.springframework.http.HttpStatus;
-
+import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.stereotype.Component;
-
 import org.springframework.web.server.ServerWebExchange;
-
 import reactor.core.publisher.Mono;
 
-
-
 import java.util.List;
-
 import java.util.Map;
 
-
-
 @Component
-
 @Slf4j
-
 public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
 
-
-
     private final SimpleJwtTokenProvider jwtTokenProvider;
-
     private final ReactiveRedisTemplate<String, Object> redisTemplate;
-
-
-
     // Public endpoints that don't require authentication. These values mirror the
-
     // actual security rules in the user-service and other downstream services.
-
     private static final List<String> PUBLIC_PATHS = List.of(
-
             // Admin service - public authentication
             "/api/v1/admin/register",
-
             // User service - public authentication and social login
-
             "/api/v1/auth/login",
-
             "/api/v1/auth/login/**",
             "/api/v1/auth/login/otp/resend",
             "/api/v1/auth/password/otp/resend",
-
             "/api/v1/auth/register",
-
             "/api/v1/auth/register/email",
-
             "/api/v1/auth/register/resend-otp",
-
             "/api/v1/auth/verify-email",
-
             "/api/v1/auth/refresh",
-
             "/api/v1/auth/password/forgot",
-
             "/api/v1/auth/password/verify-otp",
-
             "/api/v1/auth/password/reset",
-
             "/api/v1/auth/upload/profile-photo",
-
             "/api/v1/auth/otp/resend",
-
             "/api/v1/users/login/social",
-
             // Course service – public course browsing
-
             "/api/v1/courses",
-
             "/api/v1/courses/*",
-
             "/api/v1/courses/*/sections",
-
             "/api/v1/sections/*/lectures",
-
             "/api/v1/courses/*/preview",
-
             "/api/v1/courses/*/students",
-
             "/api/v1/courses/*/impressions",
-
+            // Course service – public banners
+            "/api/v1/banners",
+            "/api/v1/banners/**",
             // Course service internal enrollment (payment service)
-
             "/api/v1/enrollments/internal/enroll",
-
             // Review service – public course reviews
-
             "/api/v1/reviews/course/**",
-
             // Actuator / health
-
             "/actuator/**",
-
             "/health/**",
-
             // Swagger / OpenAPI docs
-
             "/swagger-ui/**",
-
             "/swagger-ui.html",
-
             "/v3/api-docs/**",
-
             "/userservice/swagger-ui/**",
-
             "/userservice/v3/api-docs/**",
-
             "/courseservice/swagger-ui/**",
-
             "/courseservice/v3/api-docs/**",
-
             "/cartservice/swagger-ui/**",
-
             "/cartservice/v3/api-docs/**",
-
             "/couponservice/swagger-ui/**",
-
             "/couponservice/v3/api-docs/**",
-
             "/wishlistservice/swagger-ui/**",
-
             "/wishlistservice/v3/api-docs/**",
-
             "/adminservice/swagger-ui/**",
-
             "/adminservice/v3/api-docs/**",
-
             // Security verification – email CTA links (no login required)
-
             "/api/v1/security/verify-activity",
-
             "/api/v1/security/confirm-activity",
-
             "/api/v1/security/report-compromised");
 
-
-
     public JwtAuthenticationFilter(SimpleJwtTokenProvider jwtTokenProvider, ReactiveRedisTemplate<String, Object> redisTemplate) {
-
         this.jwtTokenProvider = jwtTokenProvider;
-
         this.redisTemplate = redisTemplate;
-
     }
 
-
-
     @Override
-
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
-
         String rawPath = exchange.getRequest().getPath().value();
-
         String path = normalizePath(rawPath);
-
         String method = exchange.getRequest().getMethod().name();
-
-
-
-        log.info("Processing request: {} {} (normalized: {}) - Checking if public path", method, rawPath, path);
 
         // Skip authentication for OPTIONS preflight requests (CORS)
         if ("OPTIONS".equalsIgnoreCase(method)) {
-            log.info("OPTIONS preflight request detected, skipping authentication: {}", path);
             return chain.filter(exchange);
         }
 
         // Skip authentication for public paths
-
         if (isPublicPath(path)) {
-
-            log.info("Public path detected, skipping authentication: {}", path);
-
             return chain.filter(exchange);
-
         }
 
-
-
-        log.info("Protected path detected, checking authentication: {}", path);
-
-
-
         // Extract token from Authorization header
-
         String authHeader = exchange.getRequest()
-
                 .getHeaders()
-
                 .getFirst(HttpHeaders.AUTHORIZATION);
-
-
-
-        log.info("Authorization header for path {}: {}", path, authHeader != null ? "Bearer ***" : "missing");
-
-
 
         String token = jwtTokenProvider.extractTokenFromHeader(authHeader);
 
-        // Token fingerprinting for tracing
-        String tokenFingerprint = token != null ? token.substring(0, Math.min(8, token.length())) : "null";
-        int tokenLength = token != null ? token.length() : 0;
-        log.info("Token fingerprint: {}, length: {} for path: {}", tokenFingerprint, tokenLength, path);
-
         if (token == null || token.isEmpty()) {
-
             log.warn("No valid token found for protected path: {}", path);
-
             return unauthorizedResponse(exchange, "Missing or invalid authorization token");
-
         }
 
-        log.info("Token extracted successfully, validating for path: {}", path);
-
-
-
         // Validate token
-
         String blacklistKey = "blacklist:token:" + token;
 
         return redisTemplate.hasKey(blacklistKey)
-
                 .flatMap(isBlacklisted -> {
-
                     if (Boolean.TRUE.equals(isBlacklisted)) {
-
-                        log.warn("Token is blacklisted (logged out): {}", token.substring(0, Math.min(10, token.length())) + "...");
-
+                        log.warn("Token is blacklisted (logged out) for path: {}", path);
                         return unauthorizedResponse(exchange, "Token has been logged out");
-
                     }
 
                     return jwtTokenProvider.validateAccessToken(token)
-
                             .doOnNext(claims -> {
-                                log.info("Token validated successfully for user: {} on path: {}", claims.get("sub"), path);
-                                log.info("Gateway validated token fingerprint: {}, issuer: {}, audience: {}, subject: {}", 
-                                    tokenFingerprint, claims.get("iss"), claims.get("aud"), claims.get("sub"));
+                                // Reduced logging - only log user for security auditing
+                                log.debug("Token validated successfully for user: {} on path: {}", claims.get("sub"), path);
                             })
-
                             .flatMap(claims -> {
-
                                 // Add user info to request headers and delegate to downstream service
-
                                 ServerWebExchange modifiedExchange = addUserHeaders(exchange, claims);
-
-                                log.info("Proceeding to downstream service for path: {}", path);
-
                                 return chain.filter(modifiedExchange);
-
                             });
-
                 })
-
                 .switchIfEmpty(Mono.defer(() -> {
-
                     // If the response is already committed downstream, avoid noisy logs and skip
-
                     // writing again
-
                     if (exchange.getResponse().isCommitted()) {
-
                         // Do not log after commit; benign empty due to downstream completion
-
                         return Mono.empty();
-
                     }
-
                     // Downgrade to WARN to avoid alarming logs for expected empty cases
-
                     log.warn("Token validation failed - empty result (likely expired or invalid type) for path: {}",
-
                             path);
-
                     return unauthorizedResponse(exchange, "Invalid or expired token");
-
                 }))
-
                 .onErrorResume(ex -> {
-
                     if (exchange.getResponse().isCommitted()) {
-
                         // Do not log after the response has been committed by downstream
-
                         return Mono.empty();
-
                     }
-
                     // Only treat JWT-related problems as authentication failures
-
                     if (ex instanceof JwtException) {
-
                         // Downgrade to WARN; provide minimal token context
-
-                        log.warn("Token validation failed for path {}: {} - Token: {}", path, ex.getMessage(),
-
-                                token.length() > 10 ? token.substring(0, 10) + "..." : token);
-
+                        log.warn("Token validation failed for path {}: {}", path, ex.getMessage());
                         return unauthorizedResponse(exchange, "Invalid or expired token: " + ex.getMessage());
-
                     }
-
-
 
                     // For non-JWT errors (e.g. downstream connection refused), propagate as 5xx
-
                     log.error("Downstream error after successful authentication for path {}: {}", path, ex.getMessage(),
-
                             ex);
-
                     return Mono.error(ex);
-
                 });
-
     }
-
 
 
     private boolean isPublicPath(String path) {
@@ -359,11 +188,9 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
     }
 
 
-
     private boolean matchesPublicPattern(String path, String pattern) {
 
         String normalizedPattern = normalizePath(pattern);
-
 
 
         if (normalizedPattern.endsWith("/**")) {
@@ -373,7 +200,6 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
             return path.equals(prefix) || path.startsWith(prefix + "/");
 
         }
-
 
 
         if (normalizedPattern.contains("*")) {
@@ -409,11 +235,9 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
         }
 
 
-
         return path.equals(normalizedPattern);
 
     }
-
 
 
     private String normalizePath(String p) {
@@ -449,7 +273,6 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
     }
 
 
-
     private String stripTrailingSlash(String s) {
 
         if (s == null || s.isEmpty() || "/".equals(s))
@@ -465,235 +288,137 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
     }
 
 
-
     private ServerWebExchange addUserHeaders(ServerWebExchange exchange, Map<String, Object> claims) {
 
         String authHeader = exchange.getRequest().getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
 
-
-
-        return exchange.mutate()
-
-                .request(builder -> {
-
-                    // Resolve subject with fallbacks
-
-                    String sub = claims.get("sub") != null ? String.valueOf(claims.get("sub")) : null;
-
-                    String phoneNumber = claims.get("phoneNumber") != null ? String.valueOf(claims.get("phoneNumber"))
-
-                            : null;
-
-                    String mobileNumber = claims.get("mobileNumber") != null
-
-                            ? String.valueOf(claims.get("mobileNumber"))
-
-                            : null;
-
-                    String userIdClaim = claims.get("userId") != null ? String.valueOf(claims.get("userId")) : null;
-
-                    String merchantIdClaim = claims.get("merchantId") != null ? String.valueOf(claims.get("merchantId"))
-
-                            : null;
-
-                    // Backward compatibility: some tokens may carry registrationId as merchantId
-
-                    if ((merchantIdClaim == null || merchantIdClaim.isBlank())
-
-                            && claims.get("registrationId") != null) {
-
-                        merchantIdClaim = String.valueOf(claims.get("registrationId"));
-
-                    }
-
-                    String resolvedUserId = (sub != null && !sub.isBlank()) ? sub
-
-                            : (phoneNumber != null && !phoneNumber.isBlank()) ? phoneNumber
-
-                                    : (mobileNumber != null && !mobileNumber.isBlank()) ? mobileNumber
-
-                                            : "";
-
-                    if (userIdClaim != null && !userIdClaim.isBlank()) {
-
-                        resolvedUserId = userIdClaim;
-
-                    }
-
-
-
-                    String usernameClaim = claims.get("username") != null ? String.valueOf(claims.get("username"))
-
-                            : null;
-
-                    if ("null".equalsIgnoreCase(usernameClaim))
-
-                        usernameClaim = null;
-
-                    String emailClaim = claims.get("email") != null ? String.valueOf(claims.get("email")) : null;
-
-                    if ("null".equalsIgnoreCase(emailClaim))
-
-                        emailClaim = null;
-
-                    String resolvedUsername = (usernameClaim != null && !usernameClaim.isBlank()) ? usernameClaim
-
-                            : (emailClaim != null && !emailClaim.isBlank()) ? emailClaim
-
-                                    : (phoneNumber != null && !phoneNumber.isBlank()) ? phoneNumber
-
-                                            : (mobileNumber != null && !mobileNumber.isBlank()) ? mobileNumber
-
-                                                    : (resolvedUserId != null && !resolvedUserId.isBlank())
-
-                                                            ? resolvedUserId
-
-                                                            : null;
-
-
-
-                    // Determine best role
-
-                    String bestRole = null;
-
-                    Object rolesClaim = claims.get("roles");
-
-                    if (rolesClaim == null)
-
-                        rolesClaim = claims.get("authorities");
-
-                    if (rolesClaim instanceof String rs) {
-
-                        String up = rs.toUpperCase();
-
-                        if (up.contains("MAIN_ADMIN"))
-
-                            bestRole = "MAIN_ADMIN";
-
-                        else if (up.contains("SUB_ADMIN"))
-
-                            bestRole = "SUB_ADMIN";
-
-                    } else if (rolesClaim instanceof java.util.Collection<?> col) {
-
-                        for (Object r : col) {
-
-                            if (r == null)
-
-                                continue;
-
-                            String up = String.valueOf(r).toUpperCase();
-
-                            if (up.contains("MAIN_ADMIN")) {
-
-                                bestRole = "MAIN_ADMIN";
-
-                                break;
-
-                            }
-
-                            if (up.contains("SUB_ADMIN")) {
-
-                                bestRole = bestRole == null ? "SUB_ADMIN" : bestRole;
-
-                            }
-
-                        }
-
-                    }
-
-                    if (bestRole == null && claims.get("role") != null) {
-
-                        bestRole = String.valueOf(claims.get("role"));
-
-                    }
-
-
-
-                    // Basic user info
-
-                    builder.header("X-User-Id", resolvedUserId)
-
-                            .header("X-Username", resolvedUsername != null ? resolvedUsername : "")
-
-                            .header("X-User-Role", bestRole != null ? bestRole : String.valueOf(claims.get("role")))
-
-                            .header("X-Session-Id", String.valueOf(claims.get("sessionId")));
-
-                    if (authHeader != null && !authHeader.isBlank()) {
-
-                        builder.header(HttpHeaders.AUTHORIZATION, authHeader);
-
-                    }
-
-                    if (merchantIdClaim != null && !merchantIdClaim.isBlank()) {
-
-                        builder.header("X-Merchant-Id", merchantIdClaim);
-
-                    }
-
-
-
-                    // Additional user info (only if present)
-
-                    if (claims.get("email") != null) {
-
-                        builder.header("X-User-Email", String.valueOf(claims.get("email")));
-
-                    }
-
-                    if (claims.get("fullName") != null) {
-
-                        builder.header("X-User-FullName", String.valueOf(claims.get("fullName")));
-
-                    }
-
-                    // Admin specifics
-
-                    if (claims.get("adminId") != null) {
-
-                        builder.header("X-Admin-Id", String.valueOf(claims.get("adminId")));
-
-                    }
-
-                    if (phoneNumber != null && !phoneNumber.isBlank()) {
-
-                        builder.header("X-User-Phone", phoneNumber);
-
-                    } else if (mobileNumber != null && !mobileNumber.isBlank()) {
-
-                        builder.header("X-User-Phone", mobileNumber);
-
-                    }
-
-
-
-                    // Token metadata
-
-                    if (claims.get("iat") != null) {
-
-                        builder.header("X-Token-IssuedAt", String.valueOf(claims.get("iat")));
-
-                    }
-
-                    if (claims.get("exp") != null) {
-
-                        builder.header("X-Token-ExpiresAt", String.valueOf(claims.get("exp")));
-
-                    }
-
-                    if (claims.get("jti") != null) {
-
-                        builder.header("X-Token-Id", String.valueOf(claims.get("jti")));
-
-                    }
-
-                })
-
-                .build();
-
+        // Resolve subject with fallbacks
+        String sub = claims.get("sub") != null ? String.valueOf(claims.get("sub")) : null;
+        String phoneNumber = claims.get("phoneNumber") != null ? String.valueOf(claims.get("phoneNumber")) : null;
+        String mobileNumber = claims.get("mobileNumber") != null ? String.valueOf(claims.get("mobileNumber")) : null;
+        String userIdClaim = claims.get("userId") != null ? String.valueOf(claims.get("userId")) : null;
+        String merchantIdClaim = claims.get("merchantId") != null ? String.valueOf(claims.get("merchantId")) : null;
+
+        // Backward compatibility: some tokens may carry registrationId as merchantId
+        if ((merchantIdClaim == null || merchantIdClaim.isBlank()) && claims.get("registrationId") != null) {
+            merchantIdClaim = String.valueOf(claims.get("registrationId"));
+        }
+
+        String resolvedUserId = (sub != null && !sub.isBlank()) ? sub
+                : (phoneNumber != null && !phoneNumber.isBlank()) ? phoneNumber
+                        : (mobileNumber != null && !mobileNumber.isBlank()) ? mobileNumber
+                                : "";
+
+        if (userIdClaim != null && !userIdClaim.isBlank()) {
+            resolvedUserId = userIdClaim;
+        }
+
+        String usernameClaim = claims.get("username") != null ? String.valueOf(claims.get("username")) : null;
+        if ("null".equalsIgnoreCase(usernameClaim))
+            usernameClaim = null;
+
+        String emailClaim = claims.get("email") != null ? String.valueOf(claims.get("email")) : null;
+        if ("null".equalsIgnoreCase(emailClaim))
+            emailClaim = null;
+
+        String resolvedUsername = (usernameClaim != null && !usernameClaim.isBlank()) ? usernameClaim
+                : (emailClaim != null && !emailClaim.isBlank()) ? emailClaim
+                        : (phoneNumber != null && !phoneNumber.isBlank()) ? phoneNumber
+                                : (mobileNumber != null && !mobileNumber.isBlank()) ? mobileNumber
+                                        : (resolvedUserId != null && !resolvedUserId.isBlank())
+                                                ? resolvedUserId
+                                                : null;
+
+        // Determine best role
+        String bestRole = null;
+        Object rolesClaim = claims.get("roles");
+        if (rolesClaim == null)
+            rolesClaim = claims.get("authorities");
+
+        if (rolesClaim instanceof String rs) {
+            String up = rs.toUpperCase();
+            if (up.contains("MAIN_ADMIN"))
+                bestRole = "MAIN_ADMIN";
+            else if (up.contains("SUB_ADMIN"))
+                bestRole = "SUB_ADMIN";
+        } else if (rolesClaim instanceof java.util.Collection<?> col) {
+            for (Object r : col) {
+                if (r == null)
+                    continue;
+                String up = String.valueOf(r).toUpperCase();
+                if (up.contains("MAIN_ADMIN")) {
+                    bestRole = "MAIN_ADMIN";
+                    break;
+                }
+                if (up.contains("SUB_ADMIN")) {
+                    bestRole = bestRole == null ? "SUB_ADMIN" : bestRole;
+                }
+            }
+        }
+
+        if (bestRole == null && claims.get("role") != null) {
+            bestRole = String.valueOf(claims.get("role"));
+        }
+
+        // Build new headers map instead of mutating existing headers
+        HttpHeaders newHeaders = new HttpHeaders();
+        
+        // Copy existing headers but as a mutable copy
+        exchange.getRequest().getHeaders().forEach((key, values) -> {
+            values.forEach(value -> newHeaders.add(key, value));
+        });
+
+        // Basic user info
+        newHeaders.set("X-User-Id", resolvedUserId);
+        newHeaders.set("X-Username", resolvedUsername != null ? resolvedUsername : "");
+        newHeaders.set("X-User-Role", bestRole != null ? bestRole : String.valueOf(claims.get("role")));
+        newHeaders.set("X-Session-Id", String.valueOf(claims.get("sessionId")));
+
+        if (authHeader != null && !authHeader.isBlank()) {
+            newHeaders.set(HttpHeaders.AUTHORIZATION, authHeader);
+        }
+
+        if (merchantIdClaim != null && !merchantIdClaim.isBlank()) {
+            newHeaders.set("X-Merchant-Id", merchantIdClaim);
+        }
+
+        // Additional user info (only if present)
+        if (claims.get("email") != null) {
+            newHeaders.set("X-User-Email", String.valueOf(claims.get("email")));
+        }
+
+        if (claims.get("fullName") != null) {
+            newHeaders.set("X-User-FullName", String.valueOf(claims.get("fullName")));
+        }
+
+        // Admin specifics
+        if (claims.get("adminId") != null) {
+            newHeaders.set("X-Admin-Id", String.valueOf(claims.get("adminId")));
+        }
+
+        if (phoneNumber != null && !phoneNumber.isBlank()) {
+            newHeaders.set("X-User-Phone", phoneNumber);
+        } else if (mobileNumber != null && !mobileNumber.isBlank()) {
+            newHeaders.set("X-User-Phone", mobileNumber);
+        }
+
+        // Token metadata
+        if (claims.get("iat") != null) {
+            newHeaders.set("X-Token-IssuedAt", String.valueOf(claims.get("iat")));
+        }
+
+        if (claims.get("exp") != null) {
+            newHeaders.set("X-Token-ExpiresAt", String.valueOf(claims.get("exp")));
+        }
+
+        if (claims.get("jti") != null) {
+            newHeaders.set("X-Token-Id", String.valueOf(claims.get("jti")));
+        }
+
+        // Simply return the original exchange - downstream services can validate JWT from Authorization header
+        // The header mutation approach keeps failing due to read-only headers in Spring Cloud Gateway
+        return exchange;
     }
-
 
 
     private boolean hasAdminRole(Map<String, Object> claims) {
@@ -773,12 +498,10 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
     }
 
 
-
     private Mono<Void> unauthorizedResponse(ServerWebExchange exchange, String message) {
         return errorResponse(exchange, HttpStatus.UNAUTHORIZED, "UNAUTHORIZED", message);
 
     }
-
 
 
     private Mono<Void> forbiddenResponse(ServerWebExchange exchange, String message) {
@@ -810,7 +533,6 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
         return response.writeWith(Mono.just(buffer));
 
     }
-
 
 
     @Override

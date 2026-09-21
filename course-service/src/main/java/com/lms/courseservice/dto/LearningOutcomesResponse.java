@@ -13,7 +13,7 @@ public class LearningOutcomesResponse {
     private boolean success;
     private String message;
     private LearningOutcomesData data;
-    
+
     @Data
     @Builder
     @NoArgsConstructor

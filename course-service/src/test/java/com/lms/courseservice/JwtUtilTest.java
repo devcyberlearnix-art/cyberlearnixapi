@@ -23,7 +23,7 @@ class JwtUtilTest {
 
         // Test token validation (will fail with invalid token, but tests the method)
         assertNotNull(jwtUtil);
-        
+
         // Test role conversion utility
         assertEquals("MAIN_ADMIN", JwtUtil.toSpringSecurityRole("MAIN_ADMIN"));
         assertEquals("STUDENT", JwtUtil.toSpringSecurityRole("USER"));

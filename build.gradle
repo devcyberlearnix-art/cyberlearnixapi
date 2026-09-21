@@ -1,5 +1,6 @@
 plugins {
     id 'base'
+    id 'io.spring.dependency-management' version '1.1.7' apply false
 }
 
 group = 'com.cyberlearnix'
@@ -9,5 +10,27 @@ allprojects {
     repositories {
         mavenCentral()
     }
+
+    // Apply common Java configuration to all Java projects
+    plugins.withType(JavaPlugin) {
+        java {
+            toolchain {
+                languageVersion = JavaLanguageVersion.of(21)
+            }
+        }
+    }
+}
+
+// Build optimization tasks
+tasks.register('cleanAll') {
+    description = 'Clean all subprojects'
+    group = 'build'
+    dependsOn subprojects.collect { it.tasks.named('clean') }
+}
+
+tasks.register('buildAll') {
+    description = 'Build all subprojects'
+    group = 'build'
+    dependsOn subprojects.collect { it.tasks.matching { it.name == 'build' } }
 }
 

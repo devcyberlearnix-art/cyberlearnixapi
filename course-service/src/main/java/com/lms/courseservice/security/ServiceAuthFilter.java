@@ -29,12 +29,12 @@ public class ServiceAuthFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, java.io.IOException {
-        
+
         // Prevent service auth from being disabled in production
         if (!serviceAuthEnabled) {
             if (activeProfile.contains("prod") || activeProfile.contains("production")) {
                 log.error("CRITICAL: Service authentication is disabled in production profile!");
-                response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, 
+                response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
                         "Service authentication must be enabled in production");
                 return;
             }
@@ -47,7 +47,7 @@ public class ServiceAuthFilter extends OncePerRequestFilter {
         String path = request.getRequestURI();
         if (isInternalEndpoint(path)) {
             String authHeader = request.getHeader(serviceAuthUtil.getAuthHeaderName());
-            
+
             if (authHeader == null || authHeader.isEmpty()) {
                 log.warn("Missing service auth header for internal endpoint: {}", path);
                 response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Missing service authentication");

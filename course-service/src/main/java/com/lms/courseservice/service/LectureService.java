@@ -1,7 +1,6 @@
 package com.lms.courseservice.service;
 
 
-
 import com.lms.courseservice.entity.Lecture;
 
 import com.lms.courseservice.entity.Section;
@@ -13,9 +12,7 @@ import com.lms.courseservice.repository.SectionRepository;
 import com.lms.courseservice.repository.EnrollmentRepository;
 
 
-
 import lombok.RequiredArgsConstructor;
-
 
 
 import org.springframework.security.access.AccessDeniedException;
@@ -25,11 +22,9 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 
-
 import java.util.List;
 
 import java.util.UUID;
-
 
 
 @Service
@@ -37,7 +32,6 @@ import java.util.UUID;
 @RequiredArgsConstructor
 
 public class LectureService {
-
 
 
     private final LectureRepository lectureRepository;
@@ -49,12 +43,10 @@ public class LectureService {
     private final SectionService sectionService;
 
 
-
     // 🔒 Common method to validate enrollment
     // Temporarily disabled for testing - re-enable entire method for production
 
     private void validateEnrollment(Long sectionId) {
-
 
 
         // 🔥 Get UUID from JWT
@@ -76,15 +68,12 @@ public class LectureService {
         UUID studentId = UUID.fromString(userId);
 
 
-
         Long courseId = sectionService.getCourseIdBySection(sectionId);
-
 
 
         boolean enrolled = enrollmentRepository
 
             .existsByStudentIdAndCourseId(studentId, courseId);
-
 
 
         if (!enrolled) {
@@ -98,17 +87,14 @@ public class LectureService {
     }
 
 
-
     // ✅ Create Lecture
 
     public Lecture createLecture(Long sectionId, Lecture lecture) {
 
 
-
         Section section = sectionRepository.findById(sectionId)
 
                 .orElseThrow(() -> new RuntimeException("Section not found"));
-
 
 
         // Prevent duplicate lecture title in same section
@@ -122,15 +108,12 @@ public class LectureService {
                 });
 
 
-
         lecture.setSection(section);
-
 
 
         return lectureRepository.save(lecture);
 
     }
-
 
 
     // 🔒 Get Lectures by Section (ONLY ENROLLED USERS)
@@ -139,9 +122,7 @@ public class LectureService {
     public List<Lecture> getLecturesBySection(Long sectionId) {
 
 
-
         // validateEnrollment(sectionId); // Temporarily disabled for testing
-
 
 
         return lectureRepository.findBySectionId(sectionId);
@@ -149,11 +130,9 @@ public class LectureService {
     }
 
 
-
     // 🔒 Update Lecture (OPTIONAL: restrict to enrolled or admin/instructor)
 
     public Lecture updateLecture(Long lectureId, Lecture updatedLecture) {
-
 
 
         Lecture lecture = lectureRepository.findById(lectureId)
@@ -161,11 +140,9 @@ public class LectureService {
                 .orElseThrow(() -> new RuntimeException("Lecture not found"));
 
 
-
         if (updatedLecture.getTitle() != null)
 
             lecture.setTitle(updatedLecture.getTitle());
-
 
 
         if (updatedLecture.getDescription() != null)
@@ -173,11 +150,9 @@ public class LectureService {
             lecture.setDescription(updatedLecture.getDescription());
 
 
-
         if (updatedLecture.getVideoUrl() != null)
 
             lecture.setVideoUrl(updatedLecture.getVideoUrl());
-
 
 
         if (updatedLecture.getDuration() != null)
@@ -185,11 +160,9 @@ public class LectureService {
             lecture.setDuration(updatedLecture.getDuration());
 
 
-
         return lectureRepository.save(lecture);
 
     }
-
 
 
     // 🔒 Delete Lecture

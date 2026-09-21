@@ -64,7 +64,7 @@ public class ServiceAuthUtil {
             // Check if token is not too old (5 minutes)
             long currentTime = System.currentTimeMillis() / 1000;
             if (currentTime - timestamp > TOKEN_EXPIRY_SECONDS) {
-                log.warn("Service token expired ({} seconds old, issuer: {})", 
+                log.warn("Service token expired ({} seconds old, issuer: {})",
                         currentTime - timestamp, issuer);
                 return false;
             }

@@ -39,20 +39,20 @@ public class AuthService {
                 .flatMap(userInfo -> {
                     // Step 2: Generate session and tokens
                     String sessionId = UUID.randomUUID().toString();
-                    
+
                     // Step 3: Generate tokens
                     String accessToken = jwtTokenProvider.generateAccessToken(
-                            userInfo.getUserId(), 
-                            userInfo.getUsername(), 
-                            sessionId, 
+                            userInfo.getUserId(),
+                            userInfo.getUsername(),
+                            sessionId,
                             userInfo.getRole()
                     );
-                    
+
                     String refreshToken = jwtTokenProvider.generateRefreshToken(
-                            userInfo.getUserId(), 
+                            userInfo.getUserId(),
                             sessionId
                     );
-                    
+
                     // Step 4: Store session info
                     return sessionService.createSession(sessionId, userInfo, authRequest.getDeviceId(), authRequest.getDeviceName())
                             .then(Mono.just(AuthResponse.builder()
@@ -78,7 +78,7 @@ public class AuthService {
                 .flatMap(claims -> {
                     String sessionId = (String) claims.get("sessionId");
                     String userId = (String) claims.get("sub");
-                    
+
                     // Verify session is still active
                     return sessionService.getSession(sessionId)
                             .switchIfEmpty(Mono.error(new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Session expired")))
@@ -90,7 +90,7 @@ public class AuthService {
                                         sessionId,
                                         sessionInfo.getRole()
                                 );
-                                
+
                                 return Mono.just(AuthResponse.builder()
                                         .success(true)
                                         .message("Token refreshed")
@@ -139,7 +139,7 @@ public class AuthService {
                 .uri(userServiceUrl + "/api/consumer/auth/login")
                 .bodyValue(authRequest)
                 .retrieve()
-                .onStatus(HttpStatus.UNAUTHORIZED::equals, 
+                .onStatus(HttpStatus.UNAUTHORIZED::equals,
                     response -> Mono.error(new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid credentials")))
                 .bodyToMono(UserServiceAuthResponse.class)
                 .map(response -> AuthResponse.UserInfo.builder()
@@ -148,7 +148,7 @@ public class AuthService {
                         .email(response.getEmail())
                         .role(response.getRole())
                         .build())
-                .onErrorMap(Exception.class, ex -> 
+                .onErrorMap(Exception.class, ex ->
                     new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authentication failed", ex));
     }
 
@@ -158,17 +158,17 @@ public class AuthService {
         private String username;
         private String email;
         private String role;
-        
+
         // Getters and setters
         public String getUserId() { return userId; }
         public void setUserId(String userId) { this.userId = userId; }
-        
+
         public String getUsername() { return username; }
         public void setUsername(String username) { this.username = username; }
-        
+
         public String getEmail() { return email; }
         public void setEmail(String email) { this.email = email; }
-        
+
         public String getRole() { return role; }
         public void setRole(String role) { this.role = role; }
     }

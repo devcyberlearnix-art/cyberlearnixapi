@@ -1,7 +1,7 @@
 plugins {
     id 'java'
-    id 'org.springframework.boot' version '3.2.5'
-    id 'io.spring.dependency-management' version '1.1.4'
+    id 'org.springframework.boot' version '3.3.5'
+    id 'io.spring.dependency-management' version '1.1.7'
 }
 
 group = 'com.example'
@@ -18,48 +18,20 @@ repositories {
 }
 
 dependencies {
-
-    // 🌐 Web
     implementation 'org.springframework.boot:spring-boot-starter-web'
-
-    // 🔐 Security (JWT support)
     implementation 'org.springframework.boot:spring-boot-starter-security'
     implementation 'org.springframework.boot:spring-boot-starter-oauth2-resource-server'
-
-    // 🗄️ JPA + Hibernate
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
-
-    // 🧾 Validation
     implementation 'org.springframework.boot:spring-boot-starter-validation'
-
-    // 🐘 PostgreSQL
-    runtimeOnly 'org.postgresql:postgresql'
-
-    // 🔥 Lombok
-    compileOnly 'org.projectlombok:lombok'
-    annotationProcessor 'org.projectlombok:lombok'
-
-    implementation 'com.google.firebase:firebase-admin:9.2.0'
-
-    // ⚡ Kafka
+    runtimeOnly "org.postgresql:postgresql:${postgresqlVersion}"
+    compileOnly "org.projectlombok:lombok:${lombokVersion}"
+    annotationProcessor "org.projectlombok:lombok:${lombokVersion}"
+    implementation "com.google.firebase:firebase-admin:${firebaseAdminVersion}"
     implementation 'org.springframework.kafka:spring-kafka'
-
-    // 🚀 Redis (caching / queue)
     implementation 'org.springframework.boot:spring-boot-starter-data-redis'
-
-    // 🔔 WebSocket (real-time notifications)
     implementation 'org.springframework.boot:spring-boot-starter-websocket'
-    implementation 'io.jsonwebtoken:jjwt-api:0.11.5'
-    runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.11.5'
-    runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.11.5'
-
-    // Commonlibs for shared JWT validator
     implementation project(':commonlibs')
-
-    // 📧 Email (SMTP / SES)
     implementation 'org.springframework.boot:spring-boot-starter-mail'
-
-    // 🧪 Testing
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
 }
 

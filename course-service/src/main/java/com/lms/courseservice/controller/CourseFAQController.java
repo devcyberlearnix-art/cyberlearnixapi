@@ -39,7 +39,7 @@ public class CourseFAQController {
             @PathVariable Long courseId,
             @Valid @RequestBody CourseFAQDTO dto,
             @RequestHeader(value = "X-Forwarded-For", required = false) String ipAddress) {
-        
+
         UUID userId = extractUserIdFromContext();
         CourseFAQResponse response = courseFAQService.createFAQ(courseId, dto, userId, ipAddress);
         return ResponseEntity.ok(response);
@@ -54,7 +54,7 @@ public class CourseFAQController {
             @PathVariable Long faqId,
             @Valid @RequestBody CourseFAQDTO dto,
             @RequestHeader(value = "X-Forwarded-For", required = false) String ipAddress) {
-        
+
         UUID userId = extractUserIdFromContext();
         CourseFAQResponse response = courseFAQService.updateFAQ(faqId, dto, userId, ipAddress);
         return ResponseEntity.ok(response);
@@ -69,7 +69,7 @@ public class CourseFAQController {
             @PathVariable Long faqId,
             @RequestBody CourseFAQDTO dto,
             @RequestHeader(value = "X-Forwarded-For", required = false) String ipAddress) {
-        
+
         UUID userId = extractUserIdFromContext();
         CourseFAQResponse response = courseFAQService.updateFAQ(faqId, dto, userId, ipAddress);
         return ResponseEntity.ok(response);
@@ -83,7 +83,7 @@ public class CourseFAQController {
     public ResponseEntity<CourseFAQResponse> deleteFAQ(
             @PathVariable Long faqId,
             @RequestHeader(value = "X-Forwarded-For", required = false) String ipAddress) {
-        
+
         UUID userId = extractUserIdFromContext();
         CourseFAQResponse response = courseFAQService.deleteFAQ(faqId, userId, ipAddress);
         return ResponseEntity.ok(response);

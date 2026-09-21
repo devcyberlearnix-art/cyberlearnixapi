@@ -3,7 +3,6 @@ package com.user.register.service;
 import com.user.register.service.SessionService;
 
 
-
 import org.springframework.security.core.Authentication;
 
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -43,7 +42,6 @@ import org.springframework.web.multipart.MultipartFile;
 import com.cloudinary.Cloudinary;
 
 
-
 import java.util.ArrayList;
 
 import com.cloudinary.utils.ObjectUtils;
@@ -51,7 +49,6 @@ import com.cloudinary.utils.ObjectUtils;
 import org.springframework.beans.factory.annotation.Value;
 
 import java.io.ByteArrayOutputStream;
-
 
 
 import javax.imageio.ImageIO;
@@ -81,11 +78,9 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 
-
 @Service
 
 public class UserService {
-
 
 
     private final UserRepository userRepository;
@@ -109,11 +104,9 @@ public class UserService {
     private final TokenBlacklistService tokenBlacklistService;
 
 
-
     @Value("${cloudinary.folder:cyberlearnix}")
 
     private String folder;
-
 
 
     public UserService(UserRepository userRepository,
@@ -151,7 +144,6 @@ public class UserService {
     }
 
 
-
     /**
 
      * Resolves the authenticated user's UUID.
@@ -183,7 +175,6 @@ public class UserService {
         }
 
 
-
         // 2️⃣ Fallback: parse JWT from Authorization header using UnifiedJwtService
 
         String authHeader = request.getHeader("Authorization");
@@ -207,11 +198,9 @@ public class UserService {
         }
 
 
-
         throw new RuntimeException("Missing authentication: no SecurityContext or Authorization header");
 
     }
-
 
 
     public UserProfileResponse getLoggedInUserProfile(HttpServletRequest request) {
@@ -220,13 +209,11 @@ public class UserService {
 
         UUID userId = resolveAuthenticatedUserId(request);
 
-        
 
         // 2️⃣ Try to fetch user from local DB first
 
         Optional<User> userOptional = userRepository.findById(userId);
 
-        
 
         if (userOptional.isPresent()) {
 
@@ -252,7 +239,6 @@ public class UserService {
 
     }
 
-    
 
     private UserProfileResponse buildUserProfileFromUser(User user) {
 
@@ -273,9 +259,6 @@ public class UserService {
         String country = decrypt(user.getCountry());
 
         String organization = decrypt(user.getOrganization());
-
-
-
 
 
         List<SessionDto> activeSessions = sessionRepository.findByUser(user)
@@ -352,7 +335,6 @@ public class UserService {
 
     }
 
-    
 
     private UserProfileResponse fetchAdminProfileFromAdminService(UUID userId, HttpServletRequest request) {
 
@@ -370,7 +352,6 @@ public class UserService {
 
             String token = authHeader.substring(7);
 
-            
 
             // Extract email from JWT
 
@@ -382,7 +363,6 @@ public class UserService {
 
             String assignedService = unifiedJwtService.extractAssignedService(token);
 
-            
 
             // Build profile response from JWT claims (admin data is in admin database)
 
@@ -441,7 +421,6 @@ public class UserService {
     }
 
 
-
     // ----------------------------
 
     // Decrypt helper using your SecurityUtils
@@ -463,7 +442,6 @@ public class UserService {
         }
 
     }
-
 
 
     public UserProfileResponse updateUserProfile(HttpServletRequest request, UpdateUserProfileRequest updateRequest) {
@@ -527,7 +505,6 @@ public class UserService {
         }
 
 
-
         // 4️⃣ Update other fields
 
         if (updateRequest.getPreferredLanguage() != null)
@@ -545,11 +522,9 @@ public class UserService {
             user.setHighestQualification(updateRequest.getHighestQualification());
 
 
-
         // 5️⃣ Save user
 
         userRepository.save(user);
-
 
 
         // 6️⃣ Build simplified response (decrypted fields only)
@@ -611,7 +586,6 @@ public class UserService {
     }
 
 
-
     public UserProfileResponse uploadProfilePhoto(HttpServletRequest request, MultipartFile file) {
 
         // 1️⃣ Get authenticated user ID
@@ -623,7 +597,6 @@ public class UserService {
         User user = userRepository.findById(userId)
 
                 .orElseThrow(() -> new RuntimeException("User not found"));
-
 
 
         // 3️⃣ Validate file
@@ -639,7 +612,6 @@ public class UserService {
             throw new RuntimeException("File size exceeds 5MB limit");
 
         }
-
 
 
         String contentType = file.getContentType();
@@ -674,14 +646,12 @@ public class UserService {
 
             String filename = UUID.randomUUID().toString();
 
-            
 
             ByteArrayOutputStream os = new ByteArrayOutputStream();
 
             ImageIO.write(resizedImage, extension, os);
 
             byte[] fileBytes = os.toByteArray();
-
 
 
             Map<?, ?> options = ObjectUtils.asMap(
@@ -697,7 +667,6 @@ public class UserService {
             Map<?, ?> uploadResult = cloudinary.uploader().upload(fileBytes, options);
 
             String fileUrl = (String) uploadResult.get("secure_url");
-
 
 
             // 6️⃣ Update user
@@ -721,7 +690,6 @@ public class UserService {
                             s.getId(),
 
                             user.getId(),
-
 
 
                             s.getDeviceInfo(),
@@ -793,7 +761,6 @@ public class UserService {
     }
 
 
-
     public ApiResponse<UserProfileResponse> softDeleteUser(HttpServletRequest request) {
 
         // 1️⃣ Get authenticated user ID
@@ -805,7 +772,6 @@ public class UserService {
         User user = userRepository.findById(userId)
 
                 .orElseThrow(() -> new RuntimeException("User not found"));
-
 
 
         // 3️⃣ Soft delete: mark user as DELETED
@@ -825,7 +791,6 @@ public class UserService {
 
         // 5️⃣ Blacklist all sessions & tokens of this user
         sessionService.invalidateAllSessionsForUser(user);
-
 
 
         UserProfileResponse profile = new UserProfileResponse(
@@ -875,7 +840,6 @@ public class UserService {
         );
 
 
-
         // 5️⃣ Return detailed ApiResponse
 
         return new ApiResponse<>(
@@ -893,7 +857,6 @@ public class UserService {
     }
 
 
-
     public User socialLogin(String email, String provider) {
 
         // 1️⃣ Check if user exists
@@ -901,7 +864,6 @@ public class UserService {
         Optional<User> userOpt = userRepository.findByEmail(email);
 
         User user;
-
 
 
         if (userOpt.isPresent()) {
@@ -917,15 +879,12 @@ public class UserService {
             user.setEmail(email);
 
 
-
             // Use an existing status like PENDING_VERIFICATION or create SOCIAL_LOGIN in enum
 
             user.setStatus(User.Status.PENDING_VERIFICATION);
 
 
-
             user.setRole(User.Role.STUDENT);
-
 
 
             // Store the provider (Google, GitHub, LinkedIn)
@@ -933,11 +892,9 @@ public class UserService {
             user.setProvider(provider);
 
 
-
             userRepository.save(user);
 
         }
-
 
 
         // 3️⃣ Return user object (later JWT or session can be generated)
@@ -947,13 +904,11 @@ public class UserService {
     }
 
 
-
     public List<User> getAllUsers() {
 
         return userRepository.findAll();
 
     }
-
 
 
     public List<UserProfileResponse> getAllUsersProfiles() {
@@ -1011,7 +966,7 @@ public class UserService {
     public Map<String, Object> getAllUsersProfilesPaginated(int page, int size) {
         org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(page, size);
         org.springframework.data.domain.Page<User> userPage = userRepository.findAll(pageable);
-        
+
         List<UserProfileResponse> users = userPage.stream()
                 .map(user -> UserProfileResponse.builder()
                         .userId(user.getId())
@@ -1036,17 +991,16 @@ public class UserService {
                         .lastLogin(user.getLastLoginAt())
                         .build())
                 .collect(Collectors.toList());
-        
+
         Map<String, Object> response = new HashMap<>();
         response.put("users", users);
         response.put("currentPage", userPage.getNumber());
         response.put("totalPages", userPage.getTotalPages());
         response.put("totalUsers", userPage.getTotalElements());
         response.put("pageSize", userPage.getSize());
-        
+
         return response;
     }
-
 
 
     public List<User> getAllInstructors() {
@@ -1056,13 +1010,11 @@ public class UserService {
     }
 
 
-
     public UserProfileResponse getUserById(UUID id) {
 
         User user = userRepository.findById(id)
 
                 .orElseThrow(() -> new RuntimeException("User not found with id: " + id));
-
 
 
         return UserProfileResponse.builder()
@@ -1136,11 +1088,9 @@ public class UserService {
     public void deleteUserById(UUID id) {
 
 
-
         User user = userRepository.findById(id)
 
                 .orElseThrow(() -> new RuntimeException("User not found with id: " + id));
-
 
 
         sessionRepository.deleteByUser(user);   // ✅
@@ -1148,11 +1098,9 @@ public class UserService {
         auditLogRepository.deleteByUser(user);  // ✅
 
 
-
         userRepository.delete(user);            // ✅ now works
 
     }
-
 
 
     private void syncInstructorApplication(UUID userId, InstructorApplication.ApplicationStatus status) {
@@ -1172,7 +1120,6 @@ public class UserService {
     }
 
 
-
     public Map<String, Object> getUserStats() {
 
         long totalUsers = userRepository.count();
@@ -1189,7 +1136,6 @@ public class UserService {
 
         long deletedUsers = userRepository.countByStatus(User.Status.DELETED);
 
-        
 
         long totalStudents = userRepository.countByRole(User.Role.STUDENT);
         long totalInstructors = userRepository.countByRole(User.Role.INSTRUCTOR);
@@ -1198,13 +1144,11 @@ public class UserService {
         long totalAdmins = totalMainAdmins + totalSubAdmins;
 
 
-
         // Calculate new users this month
 
         LocalDateTime startOfMonth = LocalDateTime.now().withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0);
 
         long newUsersThisMonth = userRepository.countByCreatedAtAfter(startOfMonth);
-
 
 
         return Map.of(

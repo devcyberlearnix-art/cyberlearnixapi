@@ -31,8 +31,8 @@ public class SharedJwtAuthenticationFilter extends OncePerRequestFilter {
     }
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request, 
-                                   HttpServletResponse response, 
+    protected void doFilterInternal(HttpServletRequest request,
+                                   HttpServletResponse response,
                                    FilterChain filterChain)
             throws ServletException, IOException {
 
@@ -61,7 +61,6 @@ public class SharedJwtAuthenticationFilter extends OncePerRequestFilter {
 
                 }
 
-                
 
                 UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
 
@@ -77,7 +76,6 @@ public class SharedJwtAuthenticationFilter extends OncePerRequestFilter {
 
                 SecurityContextHolder.getContext().setAuthentication(authentication);
 
-                
 
                 log.debug("Set authentication from API Gateway for user: {} with role: {}", gatewayUserId, gatewayRole);
 
@@ -86,7 +84,6 @@ public class SharedJwtAuthenticationFilter extends OncePerRequestFilter {
                 // Fall back to JWT token validation
 
                 String jwt = extractJwtFromRequest(request);
-
 
 
                 if (StringUtils.hasText(jwt) && jwtValidator.isTokenValid(jwt)) {
@@ -98,7 +95,6 @@ public class SharedJwtAuthenticationFilter extends OncePerRequestFilter {
                     String adminType = jwtValidator.extractAdminType(jwt);
 
                     String assignedService = jwtValidator.extractAssignedService(jwt);
-
 
 
                     // Build authorities
@@ -156,7 +152,7 @@ public class SharedJwtAuthenticationFilter extends OncePerRequestFilter {
 
     /**
      * Extract JWT token from Authorization header.
-     * 
+     *
      * @param request HTTP request
      * @return JWT token or null
      */

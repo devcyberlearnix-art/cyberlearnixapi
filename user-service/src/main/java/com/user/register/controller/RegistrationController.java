@@ -1,7 +1,6 @@
 package com.user.register.controller;
 
 
-
 import com.user.register.dto.*;
 
 import com.user.register.entity.User;
@@ -58,7 +57,6 @@ import org.springframework.beans.factory.annotation.Value;
 import java.io.ByteArrayOutputStream;
 
 
-
 import javax.imageio.ImageIO;
 
 import javax.security.auth.login.AccountLockedException;
@@ -76,7 +74,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import java.util.UUID;
-
 
 
 @RestController
@@ -102,17 +99,12 @@ public class RegistrationController {
     private final Cloudinary cloudinary;
 
 
-
     @Value("${cloudinary.folder:cyberlearnix}")
 
     private String folder;
 
 
-
     private final String encryptionKey = "my-secret-key";
-
-
-
 
 
     /**
@@ -160,13 +152,11 @@ public class RegistrationController {
         try {
 
 
-
             // Force role to STUDENT
 
             user.setRole(User.Role.STUDENT);
 
             user.setIsInstructorApproved(false);
-
 
 
             // Ensure profile photo is set if provided
@@ -178,13 +168,11 @@ public class RegistrationController {
             }
 
 
-
             // Pass request to service
 
             User savedUser = registrationService.register(user, request);
 
             Map<String, Object> otpMeta = registrationService.getRegistrationOtpMetadata(savedUser.getEmail());
-
 
 
             Map<String, Object> responseData = new HashMap<>();
@@ -211,15 +199,12 @@ public class RegistrationController {
             );
 
 
-
             // 201 → resource created
 
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
 
 
-
         } catch (IllegalArgumentException e) {
-
 
 
             ApiResponse<Object> response = new ApiResponse<>(
@@ -235,11 +220,9 @@ public class RegistrationController {
             );
 
 
-
             // 400 → validation error
 
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
-
 
 
         } catch (RuntimeException e) {
@@ -265,15 +248,12 @@ public class RegistrationController {
             );
 
 
-
             // 409 → conflict (email/mobile already exists)
 
             return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
 
 
-
         } catch (Exception e) {
-
 
 
             ApiResponse<Object> response = new ApiResponse<>(
@@ -287,7 +267,6 @@ public class RegistrationController {
                     LocalDateTime.now()
 
             );
-
 
 
             // 500 → server error
@@ -326,7 +305,6 @@ public class RegistrationController {
         }
 
 
-
     @PostMapping("/verify-email")
 
     public ResponseEntity<?> verifyEmail(
@@ -338,13 +316,11 @@ public class RegistrationController {
             HttpServletResponse response) {
 
 
-
         String email = body.getEmail();
 
         String otp = body.getOtp();
 
         String otpSessionId = body.getOtpSessionId();
-
 
 
         try {
@@ -380,7 +356,6 @@ public class RegistrationController {
         } catch (RuntimeException e) {
 
 
-
             Map<String, Object> errorResponse = new HashMap<>();
 
             errorResponse.put("success", false);
@@ -398,11 +373,9 @@ public class RegistrationController {
             errorResponse.put("timestamp", LocalDateTime.now());
 
 
-
             String msg = e.getMessage().toLowerCase();
 
             HttpStatus status;
-
 
 
             if (msg.contains("locked")) {
@@ -432,7 +405,6 @@ public class RegistrationController {
         }
 
     }
-
 
 
     // Disabled - using unified authentication endpoint instead
@@ -866,7 +838,6 @@ public class RegistrationController {
     // }
 
 
-
     private String encryptNullable(String value) throws Exception {
 
         if (value == null) {
@@ -878,7 +849,6 @@ public class RegistrationController {
         return SecurityUtils.encrypt(value, encryptionKey);
 
     }
-
 
 
     // Disabled - using unified authentication endpoint instead
@@ -924,7 +894,6 @@ public class RegistrationController {
     //     }
 
     // }
-
 
 
     // Disabled - using unified authentication endpoint instead
@@ -988,7 +957,6 @@ public class RegistrationController {
     //     return ResponseEntity.status(status).body(response);
 
     // }
-
 
 
     // Disabled - using unified authentication endpoint instead
@@ -1066,7 +1034,6 @@ public class RegistrationController {
     // }
 
 
-
     // ================= FORGOT PASSWORD =================
 
     // Disabled - using unified authentication endpoint instead
@@ -1090,7 +1057,6 @@ public class RegistrationController {
     //     }
 
     // }
-
 
 
     // Disabled - using unified authentication endpoint instead
@@ -1130,7 +1096,6 @@ public class RegistrationController {
     //     }
 
     // }
-
 
 
     // Disabled - using unified authentication endpoint instead
@@ -1178,7 +1143,6 @@ public class RegistrationController {
     //     }
 
     // }
-
 
 
     // Disabled - using unified authentication endpoint instead
@@ -1274,7 +1238,6 @@ public class RegistrationController {
     //     );
 
     // }
-
 
 
     // Disabled - using unified authentication endpoint instead

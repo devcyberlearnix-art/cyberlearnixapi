@@ -150,9 +150,8 @@ public class AdminCourseServiceClient {
         } catch (RestClientException e) {
             System.err.println("✗ Failed to get enrollments for user: " + e.getMessage());
             return List.of();
-    }
+        }
 }
-    
 
 
     public List<Object> getCourseContent(Long courseId) {
@@ -177,8 +176,6 @@ public class AdminCourseServiceClient {
             return List.of();
         }
     }
-
-
 
 
     // --- Section & Lecture management ---
@@ -358,6 +355,218 @@ public class AdminCourseServiceClient {
         HttpHeaders headers = jwtService.createServiceAuthHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         return headers;
+    }
+
+    // --- Banner Management ---
+    public Map createBanner(Map<String, Object> bannerPayload) {
+        try {
+            String url = courseServiceUrl + "/api/v1/admin/banners";
+            ResponseEntity<Map> response = restTemplate.postForEntity(url, new HttpEntity<>(bannerPayload, createHeaders()), Map.class);
+            return response.getBody();
+        } catch (RestClientException e) {
+            System.err.println("✗ Failed to create banner: " + e.getMessage());
+            return null;
+        }
+    }
+
+    public List<Map> getAllBanners() {
+        try {
+            String url = courseServiceUrl + "/api/v1/admin/banners";
+            ResponseEntity<Map> response = restTemplate.exchange(url, org.springframework.http.HttpMethod.GET, new HttpEntity<>(createHeaders()), Map.class);
+            Map body = response.getBody();
+            if (body != null && body.get("data") instanceof List) {
+                return (List<Map>) body.get("data");
+            }
+            return List.of();
+        } catch (RestClientException e) {
+            System.err.println("✗ Failed to get banners: " + e.getMessage());
+            return List.of();
+        }
+    }
+
+    public Map getBannerById(Long bannerId) {
+        try {
+            String url = courseServiceUrl + "/api/v1/admin/banners/" + bannerId;
+            ResponseEntity<Map> response = restTemplate.exchange(url, org.springframework.http.HttpMethod.GET, new HttpEntity<>(createHeaders()), Map.class);
+            return response.getBody();
+        } catch (RestClientException e) {
+            System.err.println("✗ Failed to get banner: " + e.getMessage());
+            return null;
+        }
+    }
+
+    public Map updateBanner(Long bannerId, Map<String, Object> bannerPayload) {
+        try {
+            String url = courseServiceUrl + "/api/v1/admin/banners/" + bannerId;
+            ResponseEntity<Map> response = restTemplate.exchange(url, org.springframework.http.HttpMethod.PUT, new HttpEntity<>(bannerPayload, createHeaders()), Map.class);
+            return response.getBody();
+        } catch (RestClientException e) {
+            System.err.println("✗ Failed to update banner: " + e.getMessage());
+            return null;
+        }
+    }
+
+    public Map partialUpdateBanner(Long bannerId, Map<String, Object> bannerPayload) {
+        try {
+            String url = courseServiceUrl + "/api/v1/admin/banners/" + bannerId;
+            ResponseEntity<Map> response = restTemplate.exchange(url, org.springframework.http.HttpMethod.PATCH, new HttpEntity<>(bannerPayload, createHeaders()), Map.class);
+            return response.getBody();
+        } catch (RestClientException e) {
+            System.err.println("✗ Failed to partially update banner: " + e.getMessage());
+            return null;
+        }
+    }
+
+    public Map updateBannerStatus(Long bannerId, Map<String, Object> statusPayload) {
+        try {
+            String url = courseServiceUrl + "/api/v1/admin/banners/" + bannerId + "/status";
+            ResponseEntity<Map> response = restTemplate.exchange(url, org.springframework.http.HttpMethod.PATCH, new HttpEntity<>(statusPayload, createHeaders()), Map.class);
+            return response.getBody();
+        } catch (RestClientException e) {
+            System.err.println("✗ Failed to update banner status: " + e.getMessage());
+            return null;
+        }
+    }
+
+    public List<Map> reorderBanners(Map<String, Object> reorderPayload) {
+        try {
+            String url = courseServiceUrl + "/api/v1/admin/banners/reorder";
+            ResponseEntity<Map> response = restTemplate.exchange(url, org.springframework.http.HttpMethod.PATCH, new HttpEntity<>(reorderPayload, createHeaders()), Map.class);
+            Map body = response.getBody();
+            if (body != null && body.get("data") instanceof List) {
+                return (List<Map>) body.get("data");
+            }
+            return List.of();
+        } catch (RestClientException e) {
+            System.err.println("✗ Failed to reorder banners: " + e.getMessage());
+            return List.of();
+        }
+    }
+
+    public Map deleteBanner(Long bannerId) {
+        try {
+            String url = courseServiceUrl + "/api/v1/admin/banners/" + bannerId;
+            ResponseEntity<Map> response = restTemplate.exchange(url, org.springframework.http.HttpMethod.DELETE, new HttpEntity<>(createHeaders()), Map.class);
+            System.out.println("✓ Banner deleted: " + bannerId);
+            Map result = response.getBody();
+            return result != null ? result : Map.of("deleted", true, "bannerId", bannerId);
+        } catch (RestClientException e) {
+            System.err.println("✗ Failed to delete banner: " + e.getMessage());
+            return null;
+        }
+    }
+
+    public Map getBannerAnalytics(Long bannerId) {
+        try {
+            String url = courseServiceUrl + "/api/v1/admin/banners/" + bannerId + "/analytics";
+            ResponseEntity<Map> response = restTemplate.exchange(url, org.springframework.http.HttpMethod.GET, new HttpEntity<>(createHeaders()), Map.class);
+            return response.getBody();
+        } catch (RestClientException e) {
+            System.err.println("✗ Failed to get banner analytics: " + e.getMessage());
+            return null;
+        }
+    }
+
+    public String getCourseServiceUrl() {
+        return courseServiceUrl;
+    }
+
+    // --- New Banner Features ---
+
+    public Map uploadBannerImage(byte[] imageData, String imageType) {
+        try {
+            String url = courseServiceUrl + "/api/v1/admin/banners/upload-image?imageType=" + imageType;
+
+            HttpHeaders headers = createHeaders();
+            headers.setContentType(org.springframework.http.MediaType.APPLICATION_JSON);
+
+            // Create a simple JSON payload for now
+            Map<String, Object> payload = new java.util.HashMap<>();
+            payload.put("imageData", java.util.Base64.getEncoder().encodeToString(imageData));
+            payload.put("imageType", imageType);
+
+            org.springframework.http.HttpEntity<Map<String, Object>> requestEntity =
+                    new org.springframework.http.HttpEntity<>(payload, headers);
+
+            ResponseEntity<Map> response = restTemplate.postForEntity(url, requestEntity, Map.class);
+            return response.getBody();
+        } catch (RestClientException e) {
+            System.err.println("✗ Failed to upload banner image: " + e.getMessage());
+            return null;
+        }
+    }
+
+    public Map validateBannerImage(byte[] imageData) {
+        try {
+            String url = courseServiceUrl + "/api/v1/admin/banners/validate-image";
+
+            HttpHeaders headers = createHeaders();
+            headers.setContentType(org.springframework.http.MediaType.APPLICATION_JSON);
+
+            Map<String, Object> payload = new java.util.HashMap<>();
+            payload.put("imageData", java.util.Base64.getEncoder().encodeToString(imageData));
+
+            org.springframework.http.HttpEntity<Map<String, Object>> requestEntity =
+                    new org.springframework.http.HttpEntity<>(payload, headers);
+
+            ResponseEntity<Map> response = restTemplate.postForEntity(url, requestEntity, Map.class);
+            return response.getBody();
+        } catch (RestClientException e) {
+            System.err.println("✗ Failed to validate banner image: " + e.getMessage());
+            return null;
+        }
+    }
+
+    public List<Map> getDeletedBanners() {
+        try {
+            String url = courseServiceUrl + "/api/v1/admin/banners/deleted";
+            ResponseEntity<Map> response = restTemplate.exchange(url, org.springframework.http.HttpMethod.GET, new HttpEntity<>(createHeaders()), Map.class);
+            Map body = response.getBody();
+            if (body != null && body.get("data") instanceof List) {
+                return (List<Map>) body.get("data");
+            }
+            return List.of();
+        } catch (RestClientException e) {
+            System.err.println("✗ Failed to get deleted banners: " + e.getMessage());
+            return List.of();
+        }
+    }
+
+    public Map restoreBanner(Long bannerId) {
+        try {
+            String url = courseServiceUrl + "/api/v1/admin/banners/" + bannerId + "/restore";
+            ResponseEntity<Map> response = restTemplate.exchange(url, org.springframework.http.HttpMethod.POST, new HttpEntity<>(createHeaders()), Map.class);
+            return response.getBody();
+        } catch (RestClientException e) {
+            System.err.println("✗ Failed to restore banner: " + e.getMessage());
+            return null;
+        }
+    }
+
+    public List<Map> getActiveBannersByTargetType(String targetType) {
+        try {
+            String url = courseServiceUrl + "/api/v1/banners/target/" + targetType;
+            ResponseEntity<Map> response = restTemplate.exchange(url, org.springframework.http.HttpMethod.GET, new HttpEntity<>(createHeaders()), Map.class);
+            Map body = response.getBody();
+            if (body != null && body.get("data") instanceof List) {
+                return (List<Map>) body.get("data");
+            }
+            return List.of();
+        } catch (RestClientException e) {
+            System.err.println("✗ Failed to get banners by target type: " + e.getMessage());
+            return List.of();
+        }
+    }
+
+    public Map trackBannerConversion(Long bannerId) {
+        try {
+            String url = courseServiceUrl + "/api/v1/banners/" + bannerId + "/conversion";
+            ResponseEntity<Map> response = restTemplate.exchange(url, org.springframework.http.HttpMethod.POST, new HttpEntity<>(createHeaders()), Map.class);
+            return response.getBody();
+        } catch (RestClientException e) {
+            System.err.println("✗ Failed to track banner conversion: " + e.getMessage());
+            return null;
+        }
     }
 
     @Data

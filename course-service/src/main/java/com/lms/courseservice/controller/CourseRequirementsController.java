@@ -39,7 +39,7 @@ public class CourseRequirementsController {
             @PathVariable Long courseId,
             @Valid @RequestBody CourseRequirementsDTO dto,
             @RequestHeader(value = "X-Forwarded-For", required = false) String ipAddress) {
-        
+
         UUID userId = extractUserIdFromContext();
         CourseRequirementsResponse response = courseRequirementsService.createRequirement(courseId, dto, userId, ipAddress);
         return ResponseEntity.ok(response);
@@ -54,7 +54,7 @@ public class CourseRequirementsController {
             @PathVariable Long requirementId,
             @Valid @RequestBody CourseRequirementsDTO dto,
             @RequestHeader(value = "X-Forwarded-For", required = false) String ipAddress) {
-        
+
         UUID userId = extractUserIdFromContext();
         CourseRequirementsResponse response = courseRequirementsService.updateRequirement(requirementId, dto, userId, ipAddress);
         return ResponseEntity.ok(response);
@@ -69,7 +69,7 @@ public class CourseRequirementsController {
             @PathVariable Long requirementId,
             @RequestBody CourseRequirementsDTO dto,
             @RequestHeader(value = "X-Forwarded-For", required = false) String ipAddress) {
-        
+
         UUID userId = extractUserIdFromContext();
         CourseRequirementsResponse response = courseRequirementsService.updateRequirement(requirementId, dto, userId, ipAddress);
         return ResponseEntity.ok(response);
@@ -83,7 +83,7 @@ public class CourseRequirementsController {
     public ResponseEntity<CourseRequirementsResponse> deleteRequirement(
             @PathVariable Long requirementId,
             @RequestHeader(value = "X-Forwarded-For", required = false) String ipAddress) {
-        
+
         UUID userId = extractUserIdFromContext();
         CourseRequirementsResponse response = courseRequirementsService.deleteRequirement(requirementId, userId, ipAddress);
         return ResponseEntity.ok(response);

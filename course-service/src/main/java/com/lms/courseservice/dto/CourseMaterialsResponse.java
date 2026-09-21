@@ -13,7 +13,7 @@ public class CourseMaterialsResponse {
     private boolean success;
     private String message;
     private CourseMaterialsData data;
-    
+
     @Data
     @Builder
     @NoArgsConstructor

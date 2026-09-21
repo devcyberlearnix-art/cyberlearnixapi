@@ -10,11 +10,11 @@ public class AuthRequest {
     private String name;
     private String email;
     private String phone;
-    
+
     // OTP validation
     private String otp;
     private String otpSessionId; // To track OTP session
-    
+
     // Device information
     private String deviceId;
     private String deviceName;

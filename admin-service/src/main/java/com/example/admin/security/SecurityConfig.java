@@ -1,7 +1,6 @@
 package com.example.admin.security;
 
 
-
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.context.annotation.Bean;
@@ -23,7 +22,6 @@ import java.util.Arrays;
 import java.util.List;
 
 
-
 @Configuration
 
 @RequiredArgsConstructor
@@ -31,17 +29,14 @@ import java.util.List;
 public class SecurityConfig {
 
 
-
     private final JwtAuthFilter jwtAuthFilter;
 
     private final AdminAuthorizationFilter adminAuthorizationFilter;
 
 
-
     @Bean
 
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-
 
 
         http
@@ -82,11 +77,9 @@ public class SecurityConfig {
                 .formLogin(form -> form.disable());
 
 
-
         return http.build();
 
     }
-
 
 
     @Bean

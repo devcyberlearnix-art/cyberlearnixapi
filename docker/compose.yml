@@ -105,9 +105,11 @@ services:
       SPRING_DATA_REDIS_PORT: 6379
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       ADMIN_SERVICE_URL: http://admin-service:8087
-      JWT_SECRET: ${JWT_ACCESS_SECRET:-myVerySecretKeyForAccessTokenThatIsAtLeast32Chars}
-      JWT_ACCESS_TOKEN_SECRET: ${JWT_ACCESS_SECRET:-myVerySecretKeyForAccessTokenThatIsAtLeast32Chars}
-      JWT_REFRESH_TOKEN_SECRET: ${JWT_REFRESH_SECRET:-myVerySecretKeyForRefreshTokenThatIsAtLeast32Chars}
+      JWT_SECRET: ${JWT_SECRET:-8c4e9d2f1a7b6c5d9e3f0a1b7c8d4e5f9a2b6c1d8e7f3a4b5c9d1e6f8a2b7c3}
+      JWT_ACCESS_TOKEN_SECRET: ${JWT_SECRET:-8c4e9d2f1a7b6c5d9e3f0a1b7c8d4e5f9a2b6c1d8e7f3a4b5c9d1e6f8a2b7c3}
+      JWT_REFRESH_TOKEN_SECRET: ${JWT_SECRET:-8c4e9d2f1a7b6c5d9e3f0a1b7c8d4e5f9a2b6c1d8e7f3a4b5c9d1e6f8a2b7c3}
+      JWT_ISSUER: ${JWT_ISSUER:-cyberlearnix}
+      JWT_AUDIENCE: ${JWT_AUDIENCE:-cyberlearnix-clients}
       DB_HOST: postgres
       DB_PORT: 5432
       SPRING_MAIL_HOST: ${SMTP_HOST:-smtp.gmail.com}
@@ -140,7 +142,11 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/lms_course_db
       SPRING_DATASOURCE_USERNAME: ${DB_USER:-cyberlearnix}
       SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-cyberlearnix123}
-      JWT_SECRET: ${JWT_ACCESS_SECRET:-myVerySecretKeyForAccessTokenThatIsAtLeast32Chars}
+      JWT_SECRET: ${JWT_SECRET:-8c4e9d2f1a7b6c5d9e3f0a1b7c8d4e5f9a2b6c1d8e7f3a4b5c9d1e6f8a2b7c3}
+      JWT_ISSUER: ${JWT_ISSUER:-cyberlearnix}
+      JWT_AUDIENCE: ${JWT_AUDIENCE:-cyberlearnix-clients}
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
       REVIEW_SERVICE_URL: http://review-service:8089
       DB_HOST: postgres
       DB_PORT: 5432
@@ -163,8 +169,10 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/lms_cart_db
       SPRING_DATASOURCE_USERNAME: ${DB_USER:-cyberlearnix}
       SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-cyberlearnix123}
-      JWT_SECRET: ${JWT_ACCESS_SECRET:-myVerySecretKeyForAccessTokenThatIsAtLeast32Chars}
-      JWT_ACCESS_TOKEN_SECRET: ${JWT_ACCESS_SECRET:-myVerySecretKeyForAccessTokenThatIsAtLeast32Chars}
+      JWT_SECRET: ${JWT_SECRET:-8c4e9d2f1a7b6c5d9e3f0a1b7c8d4e5f9a2b6c1d8e7f3a4b5c9d1e6f8a2b7c3}
+      JWT_ACCESS_TOKEN_SECRET: ${JWT_SECRET:-8c4e9d2f1a7b6c5d9e3f0a1b7c8d4e5f9a2b6c1d8e7f3a4b5c9d1e6f8a2b7c3}
+      JWT_ISSUER: ${JWT_ISSUER:-cyberlearnix}
+      JWT_AUDIENCE: ${JWT_AUDIENCE:-cyberlearnix-clients}
       COUPON_SERVICE_URL: http://coupon-service:8082
       INSTRUCTOR_SERVICE_URL: http://instructor-service:8088
       COURSE_SERVICE_URL: http://course-service:8083
@@ -192,7 +200,9 @@ services:
       SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-cyberlearnix123}
       SPRING_DATA_REDIS_HOST: redis
       SPRING_DATA_REDIS_PORT: 6379
-      JWT_SECRET: ${JWT_ACCESS_SECRET:-myVerySecretKeyForAccessTokenThatIsAtLeast32Chars}
+      JWT_SECRET: ${JWT_SECRET:-8c4e9d2f1a7b6c5d9e3f0a1b7c8d4e5f9a2b6c1d8e7f3a4b5c9d1e6f8a2b7c3}
+      JWT_ISSUER: ${JWT_ISSUER:-cyberlearnix}
+      JWT_AUDIENCE: ${JWT_AUDIENCE:-cyberlearnix-clients}
       DB_HOST: postgres
       DB_PORT: 5432
     depends_on:
@@ -229,9 +239,11 @@ services:
       NOTIFICATIONSERVICE_URL: http://notification-service:8093
       SPRING_DATA_REDIS_HOST: redis
       SPRING_DATA_REDIS_PORT: 6379
-      JWT_SECRET: ${JWT_ACCESS_SECRET:-myVerySecretKeyForAccessTokenThatIsAtLeast32Chars}
-      JWT_ACCESS_TOKEN_SECRET: ${JWT_ACCESS_SECRET:-myVerySecretKeyForAccessTokenThatIsAtLeast32Chars}
-      JWT_REFRESH_TOKEN_SECRET: ${JWT_REFRESH_SECRET:-myVerySecretKeyForRefreshTokenThatIsAtLeast32Chars}
+      JWT_SECRET: ${JWT_SECRET:-8c4e9d2f1a7b6c5d9e3f0a1b7c8d4e5f9a2b6c1d8e7f3a4b5c9d1e6f8a2b7c3}
+      JWT_ACCESS_TOKEN_SECRET: ${JWT_SECRET:-8c4e9d2f1a7b6c5d9e3f0a1b7c8d4e5f9a2b6c1d8e7f3a4b5c9d1e6f8a2b7c3}
+      JWT_REFRESH_TOKEN_SECRET: ${JWT_SECRET:-8c4e9d2f1a7b6c5d9e3f0a1b7c8d4e5f9a2b6c1d8e7f3a4b5c9d1e6f8a2b7c3}
+      JWT_ISSUER: ${JWT_ISSUER:-cyberlearnix}
+      JWT_AUDIENCE: ${JWT_AUDIENCE:-cyberlearnix-clients}
     depends_on:
       user-service:
         condition: service_started
@@ -259,8 +271,10 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/lms_admin_db
       SPRING_DATASOURCE_USERNAME: ${DB_USER:-cyberlearnix}
       SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-cyberlearnix123}
-      JWT_SECRET: ${JWT_ACCESS_SECRET:-myVerySecretKeyForAccessTokenThatIsAtLeast32Chars}
-      JWT_ACCESS_TOKEN_SECRET: ${JWT_ACCESS_SECRET:-myVerySecretKeyForAccessTokenThatIsAtLeast32Chars}
+      JWT_SECRET: ${JWT_SECRET:-8c4e9d2f1a7b6c5d9e3f0a1b7c8d4e5f9a2b6c1d8e7f3a4b5c9d1e6f8a2b7c3}
+      JWT_ACCESS_TOKEN_SECRET: ${JWT_SECRET:-8c4e9d2f1a7b6c5d9e3f0a1b7c8d4e5f9a2b6c1d8e7f3a4b5c9d1e6f8a2b7c3}
+      JWT_ISSUER: ${JWT_ISSUER:-cyberlearnix}
+      JWT_AUDIENCE: ${JWT_AUDIENCE:-cyberlearnix-clients}
       MAIN_ADMIN_EMAIL: ${MAIN_ADMIN_EMAIL:-admin@merqora.com}
       MAIN_ADMIN_PASSWORD: ${MAIN_ADMIN_PASSWORD:-MainAdmin@123}
       USER_SERVICE_URL: http://user-service:8091
@@ -303,8 +317,10 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/lms_order_db
       SPRING_DATASOURCE_USERNAME: ${DB_USER:-cyberlearnix}
       SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-cyberlearnix123}
-      JWT_SECRET: ${JWT_ACCESS_SECRET:-myVerySecretKeyForAccessTokenThatIsAtLeast32Chars}
-      JWT_ACCESS_TOKEN_SECRET: ${JWT_ACCESS_SECRET:-myVerySecretKeyForAccessTokenThatIsAtLeast32Chars}
+      JWT_SECRET: ${JWT_SECRET:-8c4e9d2f1a7b6c5d9e3f0a1b7c8d4e5f9a2b6c1d8e7f3a4b5c9d1e6f8a2b7c3}
+      JWT_ACCESS_TOKEN_SECRET: ${JWT_SECRET:-8c4e9d2f1a7b6c5d9e3f0a1b7c8d4e5f9a2b6c1d8e7f3a4b5c9d1e6f8a2b7c3}
+      JWT_ISSUER: ${JWT_ISSUER:-cyberlearnix}
+      JWT_AUDIENCE: ${JWT_AUDIENCE:-cyberlearnix-clients}
       CART_SERVICE_URL: http://cart-service:8081
       COUPON_SERVICE_URL: http://coupon-service:8082
       DB_HOST: postgres
@@ -330,7 +346,9 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/lms_payment_db
       SPRING_DATASOURCE_USERNAME: ${DB_USER:-cyberlearnix}
       SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-cyberlearnix123}
-      JWT_SECRET: ${JWT_ACCESS_SECRET:-myVerySecretKeyForAccessTokenThatIsAtLeast32Chars}
+      JWT_SECRET: ${JWT_SECRET:-8c4e9d2f1a7b6c5d9e3f0a1b7c8d4e5f9a2b6c1d8e7f3a4b5c9d1e6f8a2b7c3}
+      JWT_ISSUER: ${JWT_ISSUER:-cyberlearnix}
+      JWT_AUDIENCE: ${JWT_AUDIENCE:-cyberlearnix-clients}
       PAYMENT_CALLBACK_BASE_URL: http://payment-service:8085
       DB_HOST: postgres
       DB_PORT: 5432
@@ -353,8 +371,10 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/lms_review_db
       SPRING_DATASOURCE_USERNAME: ${DB_USER:-cyberlearnix}
       SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-cyberlearnix123}
-      JWT_SECRET: ${JWT_ACCESS_SECRET:-myVerySecretKeyForAccessTokenThatIsAtLeast32Chars}
-      JWT_ACCESS_TOKEN_SECRET: ${JWT_ACCESS_SECRET:-myVerySecretKeyForAccessTokenThatIsAtLeast32Chars}
+      JWT_SECRET: ${JWT_SECRET:-8c4e9d2f1a7b6c5d9e3f0a1b7c8d4e5f9a2b6c1d8e7f3a4b5c9d1e6f8a2b7c3}
+      JWT_ACCESS_TOKEN_SECRET: ${JWT_SECRET:-8c4e9d2f1a7b6c5d9e3f0a1b7c8d4e5f9a2b6c1d8e7f3a4b5c9d1e6f8a2b7c3}
+      JWT_ISSUER: ${JWT_ISSUER:-cyberlearnix}
+      JWT_AUDIENCE: ${JWT_AUDIENCE:-cyberlearnix-clients}
       ENROLLMENT_SERVICE_URL: http://course-service:8083
       COURSE_SERVICE_URL: http://course-service:8083
       USER_SERVICE_URL: http://user-service:8091
@@ -379,8 +399,10 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/lms_instructor_db
       SPRING_DATASOURCE_USERNAME: ${DB_USER:-cyberlearnix}
       SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-cyberlearnix123}
-      JWT_SECRET: ${JWT_ACCESS_SECRET:-myVerySecretKeyForAccessTokenThatIsAtLeast32Chars}
-      JWT_ACCESS_TOKEN_SECRET: ${JWT_ACCESS_SECRET:-myVerySecretKeyForAccessTokenThatIsAtLeast32Chars}
+      JWT_SECRET: ${JWT_SECRET:-8c4e9d2f1a7b6c5d9e3f0a1b7c8d4e5f9a2b6c1d8e7f3a4b5c9d1e6f8a2b7c3}
+      JWT_ACCESS_TOKEN_SECRET: ${JWT_SECRET:-8c4e9d2f1a7b6c5d9e3f0a1b7c8d4e5f9a2b6c1d8e7f3a4b5c9d1e6f8a2b7c3}
+      JWT_ISSUER: ${JWT_ISSUER:-cyberlearnix}
+      JWT_AUDIENCE: ${JWT_AUDIENCE:-cyberlearnix-clients}
       COURSE_SERVICE_URL: http://course-service:8083
       DB_HOST: postgres
       DB_PORT: 5432
@@ -403,8 +425,10 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/lms_wishlist_db
       SPRING_DATASOURCE_USERNAME: ${DB_USER:-cyberlearnix}
       SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-cyberlearnix123}
-      JWT_SECRET: ${JWT_ACCESS_SECRET:-myVerySecretKeyForAccessTokenThatIsAtLeast32Chars}
-      JWT_ACCESS_TOKEN_SECRET: ${JWT_ACCESS_SECRET:-myVerySecretKeyForAccessTokenThatIsAtLeast32Chars}
+      JWT_SECRET: ${JWT_SECRET:-8c4e9d2f1a7b6c5d9e3f0a1b7c8d4e5f9a2b6c1d8e7f3a4b5c9d1e6f8a2b7c3}
+      JWT_ACCESS_TOKEN_SECRET: ${JWT_SECRET:-8c4e9d2f1a7b6c5d9e3f0a1b7c8d4e5f9a2b6c1d8e7f3a4b5c9d1e6f8a2b7c3}
+      JWT_ISSUER: ${JWT_ISSUER:-cyberlearnix}
+      JWT_AUDIENCE: ${JWT_AUDIENCE:-cyberlearnix-clients}
       COURSE_SERVICE_URL: http://course-service:8083
       DB_HOST: postgres
       DB_PORT: 5432
@@ -427,8 +451,10 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/lms_notification_db
       SPRING_DATASOURCE_USERNAME: ${DB_USER:-cyberlearnix}
       SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-cyberlearnix123}
-      JWT_SECRET: ${JWT_ACCESS_SECRET:-myVerySecretKeyForAccessTokenThatIsAtLeast32Chars}
-      JWT_ACCESS_TOKEN_SECRET: ${JWT_ACCESS_SECRET:-myVerySecretKeyForAccessTokenThatIsAtLeast32Chars}
+      JWT_SECRET: ${JWT_SECRET:-8c4e9d2f1a7b6c5d9e3f0a1b7c8d4e5f9a2b6c1d8e7f3a4b5c9d1e6f8a2b7c3}
+      JWT_ACCESS_TOKEN_SECRET: ${JWT_SECRET:-8c4e9d2f1a7b6c5d9e3f0a1b7c8d4e5f9a2b6c1d8e7f3a4b5c9d1e6f8a2b7c3}
+      JWT_ISSUER: ${JWT_ISSUER:-cyberlearnix}
+      JWT_AUDIENCE: ${JWT_AUDIENCE:-cyberlearnix-clients}
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       DB_HOST: postgres
       DB_PORT: 5432

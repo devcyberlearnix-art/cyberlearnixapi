@@ -14,7 +14,7 @@ public class InspectSchema {
                     System.out.println(rs.getString("COLUMN_NAME") + " (" + rs.getString("TYPE_NAME") + ")");
                 }
             }
-            
+
             System.out.println("\nSampling 5 rows from 'content':");
             try (Statement stmt = conn.createStatement();
                  ResultSet rs = stmt.executeQuery("SELECT * FROM content LIMIT 5")) {

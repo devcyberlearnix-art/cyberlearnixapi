@@ -12,7 +12,7 @@ import java.util.Map;
  * Admin Service - Course Management
  * Integrates with Course Service (Port 8083)
  * No direct database access - all queries via REST
- * 
+ *
  * ✅ CHANGES:
  * - Removed direct database access to instructor DB
  * - Now uses AdminCourseServiceClient for all operations

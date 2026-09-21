@@ -45,7 +45,7 @@ public class AdminPasswordChangeController {
             @Valid @RequestBody AdminPasswordChangeDto dto) {
 
         log.info("[AdminPasswordChangeController] POST /api/v1/admin/change-password — initiating admin password change");
-        
+
         UUID adminId = getAuthenticatedAdminId();
         AdminPasswordChangeResponse response = adminPasswordChangeService.initiatePasswordChange(httpRequest, adminId, dto);
 

@@ -10,6 +10,6 @@ public class TestConstants {
     public static final String TEST_ZIPCODE = "560001";
     public static final double TEST_LATITUDE = 12.9716;
     public static final double TEST_LONGITUDE = 77.5946;
-    
+
     private TestConstants() {}
 }

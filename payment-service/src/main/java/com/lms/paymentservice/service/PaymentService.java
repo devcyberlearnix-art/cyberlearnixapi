@@ -59,7 +59,7 @@ public class PaymentService {
                 .filter(p -> p.getStatus() == PaymentStatus.SUCCESS)
                 .count();
         long totalPayments = payments.size();
-        
+
         return Map.of(
             "totalRevenue", totalRevenue,
             "successfulPayments", successfulPayments,
@@ -169,7 +169,7 @@ public class PaymentService {
 
         if ("success".equalsIgnoreCase(status)) {
             payment.setStatus(PaymentStatus.SUCCESS);
-            
+
             // ✅ ENROLL STUDENT IN COURSE (after successful payment)
             try {
                 Long courseId = Long.parseLong(payment.getCourseId());

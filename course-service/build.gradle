@@ -1,6 +1,6 @@
 plugins {
     id 'java'
-    id 'org.springframework.boot' version '3.5.1'
+    id 'org.springframework.boot' version '3.3.5'
     id 'io.spring.dependency-management' version '1.1.7'
 }
 
@@ -19,9 +19,6 @@ repositories {
 
 dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-security'
-    implementation 'io.jsonwebtoken:jjwt-api:0.11.5'
-    runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.11.5'
-    runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.11.5'
     implementation 'org.springframework.boot:spring-boot-starter-web'
 
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
@@ -31,44 +28,46 @@ dependencies {
     // Redis caching
     implementation 'org.springframework.boot:spring-boot-starter-data-redis'
     implementation 'org.springframework.boot:spring-boot-starter-cache'
-    
+
     // Retry mechanism
     implementation 'org.springframework.retry:spring-retry'
     implementation 'org.springframework.boot:spring-boot-starter-aop'
-    
+
     // Circuit breaker with Resilience4j
-    implementation 'io.github.resilience4j:resilience4j-spring-boot2:2.1.0'
-    implementation 'io.github.resilience4j:resilience4j-retry:2.1.0'
-    implementation 'io.github.resilience4j:resilience4j-circuitbreaker:2.1.0'
-    
+    implementation "io.github.resilience4j:resilience4j-spring-boot2:${resilience4jVersion}"
+    implementation "io.github.resilience4j:resilience4j-retry:${resilience4jVersion}"
+    implementation "io.github.resilience4j:resilience4j-circuitbreaker:${resilience4jVersion}"
+
     // Flyway for database migrations
-    implementation 'org.flywaydb:flyway-core'
-    implementation 'org.flywaydb:flyway-database-postgresql'
+    implementation "org.flywaydb:flyway-core:${flywayVersion}"
+    implementation "org.flywaydb:flyway-database-postgresql"
 
     // Commonlibs for shared JWT validator
     implementation project(':commonlibs')
 
-    compileOnly 'org.projectlombok:lombok'
-    annotationProcessor 'org.projectlombok:lombok'
+    compileOnly "org.projectlombok:lombok:${lombokVersion}"
+    annotationProcessor "org.projectlombok:lombok:${lombokVersion}"
 
-    runtimeOnly 'org.postgresql:postgresql'
-    
+    runtimeOnly "org.postgresql:postgresql:${postgresqlVersion}"
+
     // H2 in-memory DB for testing
-    testRuntimeOnly 'com.h2database:h2'
+    testRuntimeOnly "com.h2database:h2:${h2Version}"
 
+    // DevTools (auto restart during development)
     developmentOnly 'org.springframework.boot:spring-boot-devtools'
 
     // SpringDoc OpenAPI
-    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.3.0'
+    implementation "org.springdoc:springdoc-openapi-starter-webmvc-ui:${springdocVersion}"
 
     // Micrometer for observability metrics
     implementation 'io.micrometer:micrometer-core'
     implementation 'io.micrometer:micrometer-registry-prometheus'
 
     // Cloudinary for video/media uploads
-    implementation 'com.cloudinary:cloudinary-http44:1.36.0'
+    implementation "com.cloudinary:cloudinary-http5:${cloudinaryVersion}"
 
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.springframework.security:spring-security-test'
 }
 
 tasks.named('test') {

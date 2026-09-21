@@ -130,7 +130,7 @@ public class InvoiceService {
 
             document.add(new Paragraph("INVOICE").setFontSize(24).setBold());
             document.add(new Paragraph("--------------------------------------------------"));
-            
+
             document.add(new Paragraph("Payment ID: " + payment.getId()));
             document.add(new Paragraph("Transaction ID: " + payment.getTxnId()));
             document.add(new Paragraph("Date: " + payment.getCreatedAt().toString()));
@@ -138,7 +138,7 @@ public class InvoiceService {
             document.add(new Paragraph("Product: " + payment.getProductInfo()));
             document.add(new Paragraph("Status: " + payment.getStatus().name()));
             document.add(new Paragraph("PayU ID: " + payment.getPayuPaymentId()));
-            
+
             document.add(new Paragraph("--------------------------------------------------"));
             document.add(new Paragraph(
                     "Amount Paid: \u20B9 " + round2(safeAmount(payment.getAmount())) + " " + invoiceCurrency
@@ -146,7 +146,7 @@ public class InvoiceService {
 
             document.close();
             return baos.toByteArray();
-            
+
         } catch (Exception e) {
             throw new RuntimeException("Failed to generate invoice PDF", e);
         }

@@ -32,10 +32,10 @@ public class SectionService {
         section.setCourse(course);
 
         Section savedSection = sectionRepository.save(section);
-        
+
         // Evict cache for this course
         cacheInvalidationService.evictCurriculumForCourse(courseId);
-        
+
         return savedSection;
     }
 
@@ -57,11 +57,11 @@ public class SectionService {
             section.setOrderIndex(updatedSection.getOrderIndex());
 
         Section savedSection = sectionRepository.save(section);
-        
+
         // Evict cache for this course
         Long courseId = section.getCourse().getId();
         cacheInvalidationService.evictCurriculumForCourse(courseId);
-        
+
         return savedSection;
     }
 
@@ -87,10 +87,10 @@ public class SectionService {
         }
 
         sectionRepository.delete(section);
-        
+
         // Evict cache for this course
         cacheInvalidationService.evictCurriculumForCourse(courseId);
-        
+
         return section;
     }
 }

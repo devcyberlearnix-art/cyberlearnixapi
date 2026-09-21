@@ -6,7 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import java.security.Key;
+import javax.crypto.SecretKey;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
@@ -29,7 +29,7 @@ public class UnifiedJwtService {
     @Value("${jwt.refresh-token.expiration-days:30}")
     private long refreshTokenExpirationDays;
 
-    private Key getSigningKey() {
+    private SecretKey getSigningKey() {
         byte[] keyBytes = jwtSecret.getBytes(java.nio.charset.StandardCharsets.UTF_8);
         log.debug("JWT Secret length: {}", keyBytes.length);
         log.debug("JWT Secret: {}", jwtSecret);
@@ -38,7 +38,8 @@ public class UnifiedJwtService {
 
     public String generateAccessToken(String userId, String email, String role, String adminType, String assignedService) {
         log.debug("Generating access token for userId: {}, email: {}, role: {}", userId, email, role);
-        
+        log.debug("JWT Config - issuer: '{}', audience: '{}'", issuer, audience);
+
         Map<String, Object> claims = new HashMap<>();
         claims.put("userId", userId);
         claims.put("email", email);
@@ -51,20 +52,23 @@ public class UnifiedJwtService {
         Date expiry = new Date(now.getTime() + TimeUnit.MINUTES.toMillis(accessTokenExpirationMinutes));
 
         var builder = Jwts.builder()
-                .setClaims(claims)
-                .setSubject(userId)
-                .setIssuedAt(now)
-                .setExpiration(expiry)
-                .setId(UUID.randomUUID().toString())
-                .signWith(getSigningKey(), SignatureAlgorithm.HS256);
-        
+                .claims(claims)
+                .subject(userId)
+                .issuedAt(now)
+                .expiration(expiry)
+                .id(UUID.randomUUID().toString())
+                .signWith(getSigningKey());
+
         if (issuer != null && !issuer.isBlank()) {
-            builder.setIssuer(issuer);
+            builder.issuer(issuer);
         }
         if (audience != null && !audience.isBlank()) {
-            builder.setAudience(audience);
+            builder.claim("aud", audience);
+            log.debug("Adding audience claim: {}", audience);
+        } else {
+            log.debug("Audience is null or blank, skipping audience claim");
         }
-        
+
         String token = builder.compact();
         log.debug("Generated access token successfully");
         return token;
@@ -81,37 +85,40 @@ public class UnifiedJwtService {
         Date expiry = new Date(now.getTime() + TimeUnit.DAYS.toMillis(refreshTokenExpirationDays));
 
         var builder = Jwts.builder()
-                .setClaims(claims)
-                .setSubject(userId)
-                .setIssuedAt(now)
-                .setExpiration(expiry)
-                .setId(UUID.randomUUID().toString())
-                .signWith(getSigningKey(), SignatureAlgorithm.HS256);
-        
+                .claims(claims)
+                .subject(userId)
+                .issuedAt(now)
+                .expiration(expiry)
+                .id(UUID.randomUUID().toString())
+                .signWith(getSigningKey());
+
         if (issuer != null && !issuer.isBlank()) {
-            builder.setIssuer(issuer);
+            builder.issuer(issuer);
         }
         if (audience != null && !audience.isBlank()) {
-            builder.setAudience(audience);
+            builder.claim("aud", audience);
+            log.debug("Adding audience claim: {}", audience);
+        } else {
+            log.debug("Audience is null or blank, skipping audience claim");
         }
-        
+
         return builder.compact();
     }
 
     public Claims extractClaims(String token) {
-        var parserBuilder = Jwts.parserBuilder()
-                .setSigningKey(getSigningKey());
-        
+        var parserBuilder = Jwts.parser()
+                .verifyWith(getSigningKey());
+
         if (issuer != null && !issuer.isBlank()) {
-            parserBuilder.requireIssuer(issuer);
+            parserBuilder.require("iss", issuer);
         }
         if (audience != null && !audience.isBlank()) {
-            parserBuilder.requireAudience(audience);
+            parserBuilder.require("aud", audience);
         }
-        
+
         return parserBuilder.build()
-                .parseClaimsJws(token)
-                .getBody();
+                .parseSignedClaims(token)
+                .getPayload();
     }
 
     public String extractUserId(String token) {

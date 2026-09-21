@@ -22,7 +22,7 @@ public class UserSession {
 
     public UserSession() {}
 
-    public UserSession(String sessionId, String userId, String deviceId, String deviceName, 
+    public UserSession(String sessionId, String userId, String deviceId, String deviceName,
                       String ipAddress, String userAgent, LocalDateTime expiresAt) {
         this.sessionId = sessionId;
         this.userId = userId;

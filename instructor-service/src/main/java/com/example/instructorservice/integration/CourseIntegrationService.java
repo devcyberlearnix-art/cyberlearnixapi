@@ -32,7 +32,7 @@ public class CourseIntegrationService {
             HttpEntity<Map<String, Object>> entity = new HttpEntity<>(payload, headers);
             ResponseEntity<Map> response = restTemplate.postForEntity(
                     courseServiceUrl + "/api/v1/courses", entity, Map.class);
-            
+
             // Handle new ApiResponse format
             if (response.getBody() != null) {
                 Object dataObj = response.getBody().get("data");
@@ -45,7 +45,7 @@ public class CourseIntegrationService {
                     return number.longValue();
                 }
             }
-            
+
             // Fallback to old format for backward compatibility
             Object id = response.getBody() != null ? response.getBody().get("id") : null;
             if (!(id instanceof Number number)) {

@@ -62,7 +62,6 @@ public class LoginResponse {
     private String userAgent;
 
 
-
     public void setAccessTokenExpiresAt(LocalDateTime localDateTime) {
     }
 

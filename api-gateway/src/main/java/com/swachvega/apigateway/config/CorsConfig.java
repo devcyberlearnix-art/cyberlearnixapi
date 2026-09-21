@@ -34,34 +34,34 @@ public class CorsConfig {
     @Order(Ordered.HIGHEST_PRECEDENCE)
     public CorsWebFilter corsWebFilter() {
         CorsConfiguration corsConfig = new CorsConfiguration();
-        
+
         // Allow configured origins from environment
         List<String> origins = Arrays.asList(allowedOrigins);
         origins.forEach(corsConfig::addAllowedOrigin);
-        
+
         // Add wildcard for ngrok in development if localhost is allowed
         if (origins.contains("http://localhost:3000") || origins.contains("http://localhost:*")) {
             corsConfig.addAllowedOriginPattern("https://*.ngrok-free.app");
             corsConfig.addAllowedOriginPattern("https://*.ngrok-free.dev");
             corsConfig.addAllowedOriginPattern("https://*.ngrok.io");
         }
-        
+
         // Allow configured HTTP methods
         Arrays.asList(allowedMethods).forEach(corsConfig::addAllowedMethod);
-        
+
         // Allow configured headers
         Arrays.asList(allowedHeaders).forEach(corsConfig::addAllowedHeader);
-        
+
         // Allow credentials (cookies, authorization headers)
         corsConfig.setAllowCredentials(allowCredentials);
-        
+
         // Cache preflight requests
         corsConfig.setMaxAge(maxAge);
-        
+
         // Apply to all paths
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", corsConfig);
-        
+
         return new CorsWebFilter(source);
     }
 }

@@ -32,7 +32,7 @@ public class RateLimitFilter implements GatewayFilter, Ordered {
         try {
             // Get current count
             Long currentCount = redisTemplate.opsForValue().increment(key);
-            
+
             if (currentCount == null) {
                 currentCount = 1L;
                 redisTemplate.opsForValue().set(key, 1, Duration.ofMinutes(1));
@@ -64,8 +64,8 @@ public class RateLimitFilter implements GatewayFilter, Ordered {
     private String getClientIp(ServerWebExchange exchange) {
         String ip = exchange.getRequest().getHeaders().getFirst("X-Forwarded-For");
         if (ip == null || ip.isEmpty()) {
-            ip = exchange.getRequest().getRemoteAddress() != null 
-                    ? exchange.getRequest().getRemoteAddress().getAddress().getHostAddress() 
+            ip = exchange.getRequest().getRemoteAddress() != null
+                    ? exchange.getRequest().getRemoteAddress().getAddress().getHostAddress()
                     : "unknown";
         }
         return ip;

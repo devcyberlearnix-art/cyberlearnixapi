@@ -68,7 +68,7 @@ public class AdminPasswordChangeService {
         if (!passwordEncoder.matches(dto.getOldPassword(), admin.getPassword())) {
             int attempts = (admin.getFailedPasswordAttempts() != null ? admin.getFailedPasswordAttempts() : 0) + 1;
             admin.setFailedPasswordAttempts(attempts);
-            
+
             // Log audit log of failure
             saveAuditLog(adminId, "PASSWORD_CHANGE_INITIATE", request.getRemoteAddr(), getClientDevice(request), "FAILURE");
 
@@ -181,14 +181,14 @@ public class AdminPasswordChangeService {
         if (!adminPasswordOtp.getOtpHash().equals(submittedHash)) {
             int newAttempts = adminPasswordOtp.getAttempts() + 1;
             adminPasswordOtp.setAttempts(newAttempts);
-            
+
             if (newAttempts >= 3) {
                 adminPasswordOtp.setStatus(AdminPasswordOtp.Status.EXPIRED);
                 adminPasswordOtpRepository.save(adminPasswordOtp);
                 log.warn("[AdminPasswordChange] Max OTP attempts reached. Session invalidated. sessionId={}", sessionUuid);
                 throw AdminPasswordChangeException.tooManyRequests("Incorrect OTP. Maximum attempts exceeded. This session has been invalidated.");
             }
-            
+
             adminPasswordOtpRepository.save(adminPasswordOtp);
             log.warn("[AdminPasswordChange] Incorrect OTP for session={}, attempt {}/3", sessionUuid, newAttempts);
             throw AdminPasswordChangeException.unauthorized("Incorrect OTP. Remaining attempts: " + (3 - newAttempts));

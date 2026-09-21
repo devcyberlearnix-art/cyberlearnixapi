@@ -9,7 +9,7 @@ import java.util.List;
 public class CourseSpecifications {
 
     public static Specification<Course> withStatus(String status) {
-        return (root, query, cb) -> 
+        return (root, query, cb) ->
             status != null ? cb.equal(cb.lower(root.get("status")), status.toLowerCase()) : null;
     }
 
@@ -55,17 +55,17 @@ public class CourseSpecifications {
     }
 
     public static Specification<Course> withMinPrice(BigDecimal minPrice) {
-        return (root, query, cb) -> 
+        return (root, query, cb) ->
             minPrice != null ? cb.greaterThanOrEqualTo(root.get("price"), minPrice) : null;
     }
 
     public static Specification<Course> withMaxPrice(BigDecimal maxPrice) {
-        return (root, query, cb) -> 
+        return (root, query, cb) ->
             maxPrice != null ? cb.lessThanOrEqualTo(root.get("price"), maxPrice) : null;
     }
 
     public static Specification<Course> withPremium(Boolean premium) {
-        return (root, query, cb) -> 
+        return (root, query, cb) ->
             premium != null ? cb.equal(root.get("premium"), premium) : null;
     }
 

@@ -32,25 +32,25 @@ public class SharedJwtValidator {
 
     /**
      * Generate a signed JWT token with the configured secret, issuer, and audience.
-     * 
+     *
      * @param subject User ID or subject
      * @param role Role (STUDENT, INSTRUCTOR, MAIN_ADMIN, SUB_ADMIN, etc.)
      * @return Signed JWT token string
      */
     public String generateToken(String subject, String role) {
         var builder = Jwts.builder()
-                .setId(UUID.randomUUID().toString())
-                .setSubject(subject)
+                .id(UUID.randomUUID().toString())
+                .subject(subject)
                 .claim("role", role)
-                .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + 86400000L));
+                .issuedAt(new Date())
+                .expiration(new Date(System.currentTimeMillis() + 86400000L));
 
         if (issuer != null && !issuer.isBlank()) {
-            builder.setIssuer(issuer);
+            builder.issuer(issuer);
         }
 
         if (audience != null && !audience.isBlank()) {
-            builder.setAudience(audience);
+            builder.audience().add(audience);
         }
 
         return builder.signWith(secretKey).compact();
@@ -58,7 +58,7 @@ public class SharedJwtValidator {
 
     /**
      * Validate JWT token and extract claims.
-     * 
+     *
      * @param token JWT token
      * @return Claims object containing token data
      * @throws JwtException if token is invalid or expired
@@ -67,29 +67,29 @@ public class SharedJwtValidator {
         try {
             String tokenFingerprint = token.substring(0, Math.min(8, token.length()));
             log.debug("[SharedJwtValidator] Validating token, fingerprint: {}, length: {}", tokenFingerprint, token.length());
-            
+
             log.debug("[SharedJwtValidator] Signature validation starting");
-            var parserBuilder = Jwts.parserBuilder()
-                    .setSigningKey(secretKey);
+            var parserBuilder = Jwts.parser()
+                    .verifyWith(secretKey);
             log.debug("[SharedJwtValidator] Signature validation passed");
-            
+
             if (issuer != null && !issuer.isBlank()) {
                 log.debug("[SharedJwtValidator] Requiring issuer: {}", issuer);
-                parserBuilder.requireIssuer(issuer);
+                parserBuilder.require("iss", issuer);
                 log.debug("[SharedJwtValidator] Issuer validation passed");
             }
-            
+
             if (audience != null && !audience.isBlank()) {
                 log.debug("[SharedJwtValidator] Requiring audience: {}", audience);
-                parserBuilder.requireAudience(audience);
+                parserBuilder.require("aud", audience);
                 log.debug("[SharedJwtValidator] Audience validation passed");
             }
-            
+
             log.debug("[SharedJwtValidator] Parsing token claims");
             Claims claims = parserBuilder.build()
-                    .parseClaimsJws(token)
-                    .getBody();
-            log.debug("[SharedJwtValidator] Token validated successfully, subject: {}, issuer: {}, audience: {}", 
+                    .parseSignedClaims(token)
+                    .getPayload();
+            log.debug("[SharedJwtValidator] Token validated successfully, subject: {}, issuer: {}, audience: {}",
                 claims.getSubject(), claims.getIssuer(), claims.getAudience());
             return claims;
         } catch (ExpiredJwtException e) {
@@ -103,7 +103,7 @@ public class SharedJwtValidator {
 
     /**
      * Extract user ID from JWT token.
-     * 
+     *
      * @param token JWT token
      * @return User ID as string
      */
@@ -113,7 +113,7 @@ public class SharedJwtValidator {
 
     /**
      * Extract email from JWT token.
-     * 
+     *
      * @param token JWT token
      * @return Email address
      */
@@ -123,7 +123,7 @@ public class SharedJwtValidator {
 
     /**
      * Extract role from JWT token.
-     * 
+     *
      * @param token JWT token
      * @return Role (STUDENT, INSTRUCTOR, MAIN_ADMIN, SUB_ADMIN)
      */
@@ -133,7 +133,7 @@ public class SharedJwtValidator {
 
     /**
      * Extract admin type from JWT token.
-     * 
+     *
      * @param token JWT token
      * @return Admin type (MAIN_ADMIN, SUB_ADMIN, NONE)
      */
@@ -143,7 +143,7 @@ public class SharedJwtValidator {
 
     /**
      * Extract assigned service from JWT token.
-     * 
+     *
      * @param token JWT token
      * @return Assigned service
      */
@@ -153,7 +153,7 @@ public class SharedJwtValidator {
 
     /**
      * Extract token type from JWT token.
-     * 
+     *
      * @param token JWT token
      * @return Token type (access, refresh)
      */
@@ -163,7 +163,7 @@ public class SharedJwtValidator {
 
     /**
      * Check if token is valid without throwing exception.
-     * 
+     *
      * @param token JWT token
      * @return true if valid, false otherwise
      */
@@ -179,7 +179,7 @@ public class SharedJwtValidator {
 
     /**
      * Check if token is expired.
-     * 
+     *
      * @param token JWT token
      * @return true if expired, false otherwise
      */
@@ -194,7 +194,7 @@ public class SharedJwtValidator {
 
     /**
      * Extract all claims from JWT token.
-     * 
+     *
      * @param token JWT token
      * @return All claims
      */

@@ -32,7 +32,7 @@ public class JwtProperties {
         private String issuer = "cyberlearnix";
         private String audience = "cyberlearnix-clients";
     }
-    
+
     // Security settings
     @Data
     public static class Security {
@@ -43,6 +43,6 @@ public class JwtProperties {
         private boolean enableRateLimiting = true;
         private int rateLimitRequestsPerMinute = 100;
     }
-    
+
     private Security security = new Security();
 }

@@ -48,15 +48,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 if (userId != null && SecurityContextHolder.getContext().getAuthentication() == null) {
                     // Build authorities list
                     List<SimpleGrantedAuthority> authorities = new java.util.ArrayList<>();
-                    
+
                     // Add role authority (ROLE_SUB_ADMIN)
                     authorities.add(new SimpleGrantedAuthority("ROLE_" + role));
-                    
+
                     // Add service authority if assignedService is present (SERVICE_COUPON_SERVICE)
                     if (assignedService != null && !assignedService.isBlank() && !"NONE".equals(assignedService)) {
                         authorities.add(new SimpleGrantedAuthority("SERVICE_" + assignedService));
                     }
-                    
+
                     // Add ALL service authority for MAIN_ADMIN
                     if ("MAIN_ADMIN".equals(role)) {
                         authorities.add(new SimpleGrantedAuthority("SERVICE_ALL"));

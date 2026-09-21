@@ -1,7 +1,6 @@
 package com.user.register.service;
 
 
-
 import java.io.InputStream;
 
 import java.time.Duration;
@@ -23,7 +22,6 @@ import java.util.Random;
 import java.util.UUID;
 
 import com.user.register.entity.UserSession;
-
 
 
 import com.user.register.util.BearerTokenResolver;
@@ -48,7 +46,6 @@ import com.cloudinary.Cloudinary;
 import com.cloudinary.utils.ObjectUtils;
 
 import java.io.ByteArrayOutputStream;
-
 
 
 import com.user.register.dto.ApiResponse;
@@ -80,8 +77,6 @@ import com.user.register.util.CountryCodes;
 import com.user.register.util.SecurityUtils;
 
 
-
-
 import jakarta.servlet.http.Cookie;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -93,7 +88,6 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 
 import lombok.extern.slf4j.Slf4j;
-
 
 
 @Service
@@ -128,12 +122,10 @@ public class RegistrationService {
 
     private final org.springframework.web.client.RestTemplate restTemplate;
 
-    
 
     @Value("${admin.service.url:http://localhost:8087}")
 
     private String adminServiceUrl;
-
 
 
     @Value("${cloudinary.folder:cyberlearnix}")
@@ -141,15 +133,12 @@ public class RegistrationService {
     private String folder;
 
 
-
     @Value("${app.encryption.key:1234567890123456}")
 
     private String encryptionKey;
 
 
-
     private String confirmPassword;
-
 
 
     // ✅ ADD HERE (inside class)
@@ -163,18 +152,12 @@ public class RegistrationService {
     }
 
 
-
-
-
-
     private static final int MAX_OTP_ATTEMPTS = 5;
 
     private byte[] secretKey;
 
 
-
     public User register(User user, HttpServletRequest request) throws Exception {
-
 
 
         // ================= GET CLIENT IP =================
@@ -188,7 +171,6 @@ public class RegistrationService {
         }
 
 
-
         // ================= DEVICE + BROWSER + OS =================
 
         String userAgent = request.getHeader("User-Agent");
@@ -200,7 +182,6 @@ public class RegistrationService {
         String os = detectOS(userAgent);
 
         if (device == null || device.isEmpty()) device = "Unknown Device";
-
 
 
         // ================= PASSWORD VALIDATION =================
@@ -230,7 +211,6 @@ public class RegistrationService {
         String normalizedProfilePhoto = ensureCloudinaryProfilePhotoUrl(user.getProfilePhoto());
 
 
-
         // ================= COUNTRY CODE VALIDATION =================
 
         String countryCode = user.getCountryCode();
@@ -242,7 +222,6 @@ public class RegistrationService {
         }
 
 
-
         // ================= MOBILE VALIDATION =================
 
         int requiredLength = getMobileLengthForCountry(countryCode);
@@ -250,7 +229,6 @@ public class RegistrationService {
         if (user.getMobile() == null || !user.getMobile().matches(mobilePattern)) {
             throw new RuntimeException("Mobile number must be exactly " + requiredLength + " digits for country " + countryCode);
         }
-
 
 
         // ================= FULL MOBILE =================
@@ -268,7 +246,6 @@ public class RegistrationService {
         System.out.println("FullMobile is null: " + (fullMobile == null));
 
 
-
         // ================= DUPLICATE MOBILE CHECK =================
 
         String encryptedMobile = SecurityUtils.encrypt(fullMobile, encryptionKey);
@@ -280,7 +257,6 @@ public class RegistrationService {
         Optional<User> existingMobileUser = userRepository.findByMobile(encryptedMobile);
 
         System.out.println("Existing mobile user found: " + existingMobileUser.isPresent());
-
 
 
         if (existingMobileUser.isPresent()) {
@@ -320,7 +296,6 @@ public class RegistrationService {
             }
 
         }
-
 
 
         // ================= DUPLICATE EMAIL CHECK =================
@@ -368,7 +343,6 @@ public class RegistrationService {
             }
 
         }
-
 
 
         // ================= NEW USER =================
@@ -422,7 +396,6 @@ public class RegistrationService {
             user.setHighestQualification(SecurityUtils.encrypt(user.getHighestQualification(), encryptionKey));
 
 
-
         user.setPassword(SecurityUtils.hashPassword(user.getPassword()));
 
         user.setStatus(User.Status.PENDING_VERIFICATION);
@@ -430,7 +403,6 @@ public class RegistrationService {
         user.setRole(User.Role.STUDENT);
 
         user.setIsInstructorApproved(false);
-
 
 
         // ================= SAVE DEVICE INFO =================
@@ -446,11 +418,9 @@ public class RegistrationService {
         user.setUserAgent(userAgent);
 
 
-
         // ================= SAVE USER =================
 
         User savedUser = userRepository.save(user);
-
 
 
         // ================= GENERATE OTP =================
@@ -463,7 +433,6 @@ public class RegistrationService {
         otpService.claimOtpSend(savedUser.getEmail(), "registration", 30, 5, 3600);
 
         log.debug("Registration OTP session created with id: {}", otpSession.sessionId());
-
 
 
         // ================= AUDIT LOG =================
@@ -483,7 +452,6 @@ public class RegistrationService {
                 .build());
 
 
-
         // Send OTP email - don't fail registration if email fails
         try {
             emailService.sendOtpEmail(savedUser.getEmail(), otp);
@@ -495,7 +463,6 @@ public class RegistrationService {
         return savedUser;
 
     }
-
 
 
     public Map<String, Object> getRegistrationOtpMetadata(String email) {
@@ -619,7 +586,6 @@ public class RegistrationService {
     }
 
 
-
     public String ensureCloudinaryProfilePhotoUrl(String profilePhoto) {
 
         if (profilePhoto == null || profilePhoto.isBlank()) {
@@ -659,9 +625,7 @@ public class RegistrationService {
     }
 
 
-
     private String detectDevice(String userAgent) {
-
 
 
         if (userAgent == null)
@@ -669,9 +633,7 @@ public class RegistrationService {
             return "Unknown Device";
 
 
-
         userAgent = userAgent.toLowerCase();
-
 
 
         // Postman
@@ -681,7 +643,6 @@ public class RegistrationService {
             return "Postman";
 
 
-
         // Mobile
 
         if (userAgent.contains("android"))
@@ -689,17 +650,14 @@ public class RegistrationService {
             return "Android Mobile";
 
 
-
         if (userAgent.contains("iphone"))
 
             return "iPhone";
 
 
-
         if (userAgent.contains("ipad"))
 
             return "iPad";
-
 
 
         // Desktop
@@ -709,11 +667,9 @@ public class RegistrationService {
             return "Windows Desktop";
 
 
-
         if (userAgent.contains("mac"))
 
             return "Mac Desktop";
-
 
 
         if (userAgent.contains("linux"))
@@ -725,17 +681,13 @@ public class RegistrationService {
     }
 
 
-
     private String detectBrowser(String userAgent) {
-
 
 
         if (userAgent == null) return "Unknown Browser";
 
 
-
         userAgent = userAgent.toLowerCase();
-
 
 
         if (userAgent.contains("postman"))
@@ -743,11 +695,9 @@ public class RegistrationService {
             return "Postman";
 
 
-
         if (userAgent.contains("chrome"))
 
             return "Chrome";
-
 
 
         if (userAgent.contains("firefox"))
@@ -755,11 +705,9 @@ public class RegistrationService {
             return "Firefox";
 
 
-
         if (userAgent.contains("safari"))
 
             return "Safari";
-
 
 
         if (userAgent.contains("edge"))
@@ -767,15 +715,12 @@ public class RegistrationService {
             return "Edge";
 
 
-
         return "Unknown Browser";
 
     }
 
 
-
     private String detectOS(String userAgent) {
-
 
 
         if (userAgent == null)
@@ -783,9 +728,7 @@ public class RegistrationService {
             return "Unknown OS";
 
 
-
         userAgent = userAgent.toLowerCase();
-
 
 
         if (userAgent.contains("postmanruntime") || userAgent.contains("postman"))
@@ -793,11 +736,9 @@ public class RegistrationService {
             return "Development Environment";
 
 
-
         if (userAgent.contains("android"))
 
             return "Android";
-
 
 
         if (userAgent.contains("iphone") || userAgent.contains("ios"))
@@ -805,11 +746,9 @@ public class RegistrationService {
             return "iOS";
 
 
-
         if (userAgent.contains("windows"))
 
             return "Windows";
-
 
 
         if (userAgent.contains("mac"))
@@ -817,17 +756,14 @@ public class RegistrationService {
             return "MacOS";
 
 
-
         if (userAgent.contains("linux"))
 
             return "Linux";
 
 
-
         return "Unknown OS";
 
     }
-
 
 
     /**
@@ -851,7 +787,6 @@ public class RegistrationService {
         return true;
 
     }
-
 
 
     /**
@@ -881,8 +816,6 @@ public class RegistrationService {
     // OTP emails are now sent via EmailService — no direct mail sending in this class.
 
 
-
-
     /**
 
      * Upload and process profile photo
@@ -900,7 +833,6 @@ public class RegistrationService {
     public String uploadProfilePhoto(MultipartFile file) throws Exception {
 
 
-
         // 1️⃣ Check empty
 
         if (file == null || file.isEmpty()) {
@@ -908,7 +840,6 @@ public class RegistrationService {
             throw new RuntimeException("File is empty");
 
         }
-
 
 
         // 2️⃣ Validate size (5MB)
@@ -920,7 +851,6 @@ public class RegistrationService {
             throw new RuntimeException("File size must be less than 5MB");
 
         }
-
 
 
         // 3️⃣ Validate content type
@@ -936,11 +866,9 @@ public class RegistrationService {
                         contentType.equals("image/webp"))) {
 
 
-
             throw new RuntimeException("Only JPG, PNG, WEBP formats allowed");
 
         }
-
 
 
         // 4️⃣ Read image
@@ -950,13 +878,11 @@ public class RegistrationService {
                 javax.imageio.ImageIO.read(file.getInputStream());
 
 
-
         if (originalImage == null) {
 
             throw new RuntimeException("Invalid image file");
 
         }
-
 
 
         // 5️⃣ Resize to 512x512
@@ -966,13 +892,11 @@ public class RegistrationService {
                 new java.awt.image.BufferedImage(512, 512, java.awt.image.BufferedImage.TYPE_INT_RGB);
 
 
-
         java.awt.Graphics2D g = resizedImage.createGraphics();
 
         g.drawImage(originalImage, 0, 0, 512, 512, null);
 
         g.dispose();
-
 
 
         // 6️⃣ Generate file name
@@ -984,9 +908,7 @@ public class RegistrationService {
                 : "jpg";
 
 
-
         String fileName = java.util.UUID.randomUUID().toString();
-
 
 
         // 7️⃣ Save resized image to byte array
@@ -1006,7 +928,6 @@ public class RegistrationService {
         byte[] fileBytes = os.toByteArray();
 
 
-
         // 8️⃣ Upload to Cloudinary
 
         Map<?, ?> options = ObjectUtils.asMap(
@@ -1024,7 +945,6 @@ public class RegistrationService {
         return (String) uploadResult.get("secure_url");
 
     }
-
 
 
     public ResponseEntity<Map<String, Object>> verifyOTP(
@@ -1073,7 +993,6 @@ public class RegistrationService {
                         new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
 
 
-
         // 2️⃣ Account status checks
 
         if (user.getStatus() == User.Status.LOCKED) {
@@ -1091,7 +1010,6 @@ public class RegistrationService {
         }
 
 
-
         if (user.getStatus() == User.Status.SUSPENDED) {
 
             return buildOtpResponse(HttpStatus.FORBIDDEN,
@@ -1105,7 +1023,6 @@ public class RegistrationService {
                     0);
 
         }
-
 
 
         // 3️⃣ Verify OTP from Redis session
@@ -1155,7 +1072,6 @@ public class RegistrationService {
         }
 
 
-
         // 7️⃣ OTP correct
 
         user.setStatus(User.Status.ACTIVE);
@@ -1163,9 +1079,7 @@ public class RegistrationService {
         userRepository.save(user);
 
 
-
         // Prevent replay attack by consuming successful Redis OTP session.
-
 
 
         // 8️⃣ Device Detection
@@ -1175,13 +1089,11 @@ public class RegistrationService {
         String ipAddress = request.getRemoteAddr();
 
 
-
         String device = detectDevice(userAgent);
 
         String browser = detectBrowser(userAgent);
 
         String os = detectOS(userAgent);
-
 
 
         // 9️⃣ Audit logging
@@ -1205,7 +1117,6 @@ public class RegistrationService {
         );
 
 
-
         // 🔟 Generate Tokens
 
         String accessToken = jwtUtil.generateAccessToken(user.getId().toString(), user.getRole().name());
@@ -1219,7 +1130,6 @@ public class RegistrationService {
         user.setDevice(device);
 
         userRepository.save(user);
-
 
 
         // Invalidate old sessions
@@ -1243,7 +1153,6 @@ public class RegistrationService {
         }
 
         userSessionRepository.deleteAll(existingSessions);
-
 
 
         // Save new session
@@ -1281,7 +1190,6 @@ public class RegistrationService {
         response.addCookie(accessCookie);
 
 
-
         // 12️⃣ Refresh Token Cookie
 
         Cookie refreshCookie = new Cookie("refreshToken", refreshToken);
@@ -1295,7 +1203,6 @@ public class RegistrationService {
         refreshCookie.setMaxAge(30 * 24 * 60 * 60);
 
         response.addCookie(refreshCookie);
-
 
 
         // 13️⃣ Response Data
@@ -1346,7 +1253,6 @@ public class RegistrationService {
         data.put("otpType", "registration");
 
 
-
         Map<String, Object> responseBody = new LinkedHashMap<>();
 
         responseBody.put("success", true);
@@ -1358,11 +1264,9 @@ public class RegistrationService {
         responseBody.put("timestamp", LocalDateTime.now());
 
 
-
         return new ResponseEntity<>(responseBody, HttpStatus.OK);
 
     }
-
 
 
     private String decryptOrNull(String encryptedValue) {
@@ -1375,7 +1279,6 @@ public class RegistrationService {
             return encryptedValue;
         }
     }
-
 
 
     private ResponseEntity<Map<String, Object>> buildOtpResponse(
@@ -1391,13 +1294,11 @@ public class RegistrationService {
             long expiresInSeconds) {
 
 
-
         Map<String, Object> data = new HashMap<>();
 
         data.put("remainingAttempts", remainingAttempts);
 
         data.put("expiresInSeconds", expiresInSeconds);
-
 
 
         Map<String, Object> body = new HashMap<>();
@@ -1411,11 +1312,9 @@ public class RegistrationService {
         body.put("timestamp", LocalDateTime.now());
 
 
-
         return new ResponseEntity<>(body, status);
 
     }
-
 
 
     /**
@@ -1433,7 +1332,6 @@ public class RegistrationService {
     }
 
 
-
     /**
 
      * Generate 6-digit OTP
@@ -1449,18 +1347,15 @@ public class RegistrationService {
     }
 
 
-
     public ResponseEntity<Map<String, Object>> loginWithPassword(LoginRequest request, HttpServletRequest httpRequest, HttpServletResponse httpResponse) {
 
         LocalDateTime now = LocalDateTime.now();
-
 
 
         // 1️⃣ Fetch user
 
         Optional<User> optionalUser = userRepository.findByEmail(request.getEmail());
 
-        
 
         if (optionalUser.isEmpty()) {
 
@@ -1474,13 +1369,11 @@ public class RegistrationService {
 
                 adminRequest.put("password", request.getPassword());
 
-                
 
                 String adminLoginUrl = adminServiceUrl + "/api/v1/admins/login";
 
                 ResponseEntity<Map> adminResponse = restTemplate.postForEntity(adminLoginUrl, adminRequest, Map.class);
 
-                
 
                 if (adminResponse.getStatusCode() == HttpStatus.OK && adminResponse.getBody() != null) {
 
@@ -1513,9 +1406,7 @@ public class RegistrationService {
         }
 
 
-
         User user = optionalUser.get();
-
 
 
         // 2️⃣ Account status checks
@@ -1533,13 +1424,11 @@ public class RegistrationService {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Account suspended by admin");
 
 
-
         // 3️⃣ Instructor approval check
 
         if (user.getRole() == User.Role.INSTRUCTOR && !user.getIsInstructorApproved())
 
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Instructor account not approved yet");
-
 
 
         // 4️⃣ Get client IP
@@ -1549,7 +1438,6 @@ public class RegistrationService {
         if (ipAddress == null || ipAddress.isEmpty() || "unknown".equalsIgnoreCase(ipAddress))
 
             ipAddress = httpRequest.getRemoteAddr();
-
 
 
         // 5️⃣ Detect User-Agent details
@@ -1563,11 +1451,9 @@ public class RegistrationService {
         String browser = detectBrowser(userAgent);
 
 
-
         if (userAgent != null) {
 
             String agent = userAgent.toLowerCase();
-
 
 
             // Device detection
@@ -1579,7 +1465,6 @@ public class RegistrationService {
                 deviceType = "Mobile";
 
             else if (agent.contains("ipad") || agent.contains("tablet")) deviceType = "Tablet";
-
 
 
             // OS detection
@@ -1595,7 +1480,6 @@ public class RegistrationService {
             else if (agent.contains("linux")) os = "Linux";
 
 
-
             // Browser detection
 
             if (agent.contains("chrome") && !agent.contains("edge")) browser = "Chrome";
@@ -1609,9 +1493,7 @@ public class RegistrationService {
         }
 
 
-
         String deviceInfo = deviceType + " - " + os + " - " + browser;
-
 
 
         // 6️⃣ Verify password with brute force lockout
@@ -1623,13 +1505,10 @@ public class RegistrationService {
             user.setFailedLoginAttempts(failed);
 
 
-
             if (failed >= MAX_FAILED_LOGIN) user.setStatus(User.Status.LOCKED);
 
 
-
             userRepository.save(user);
-
 
 
             auditLogRepository.save(AuditLog.builder()
@@ -1647,7 +1526,6 @@ public class RegistrationService {
                     .build());
 
 
-
             Map<String, Object> errorData = Map.of(
 
                     "remainingAttempts", MAX_FAILED_LOGIN - failed,
@@ -1657,11 +1535,9 @@ public class RegistrationService {
             );
 
 
-
             throw new LoginFailedException("Invalid credentials", errorData);
 
         }
-
 
 
         // 7️⃣ Reset failed attempts on success
@@ -1675,7 +1551,6 @@ public class RegistrationService {
         user.setLastLoginAt(now);
 
         userRepository.save(user);
-
 
 
 // 8️⃣ Generate strong tokens
@@ -1707,7 +1582,6 @@ public class RegistrationService {
         userRepository.save(user);
 
 
-
         // 8.5️⃣ Create UserSession (required for JwtAuthFilter session validation)
 
         // Clear any existing sessions for this user first
@@ -1733,7 +1607,6 @@ public class RegistrationService {
         userSessionRepository.deleteAll(existingSessions);
 
 
-
         UserSession newSession = UserSession.builder()
 
                 .user(user)
@@ -1753,7 +1626,6 @@ public class RegistrationService {
         userSessionRepository.save(newSession);
 
 
-
         // 9️⃣ Audit success
 
         auditLogRepository.save(AuditLog.builder()
@@ -1771,7 +1643,6 @@ public class RegistrationService {
                 .build());
 
 
-
         // 🔟 Set HttpOnly cookies for tokens (CSRF & XSS safe)
 
         Cookie accessCookie = new Cookie("accessToken", accessToken);
@@ -1785,7 +1656,6 @@ public class RegistrationService {
         httpResponse.addCookie(accessCookie);
 
 
-
         Cookie refreshCookie = new Cookie("refreshToken", refreshToken);
 
         refreshCookie.setHttpOnly(true);
@@ -1795,7 +1665,6 @@ public class RegistrationService {
         refreshCookie.setMaxAge(30 * 24 * 60 * 60);
 
         httpResponse.addCookie(refreshCookie);
-
 
 
         // 1️⃣1️⃣ Build response
@@ -1811,7 +1680,6 @@ public class RegistrationService {
         responseBody.put("message", "Login successful");
 
 
-
 // ✅ User info
 
         responseBody.put("userId", user.getId());
@@ -1825,9 +1693,7 @@ public class RegistrationService {
         responseBody.put("mobile", user.getMobile());
 
 
-
 // ✅ Device & system info
-
 
 
         responseBody.put("loginDevice", deviceInfo); // Full string: Device - OS - Browser
@@ -1843,7 +1709,6 @@ public class RegistrationService {
         responseBody.put("loginIp", ipAddress);
 
 
-
 // ✅ Tokens
 
         responseBody.put("accessToken", accessToken);
@@ -1855,17 +1720,14 @@ public class RegistrationService {
         responseBody.put("refreshTokenExpiresAt", refreshTokenExpiry);
 
 
-
 // ✅ Timestamp
 
         responseBody.put("timestamp", now);
 
 
-
         return new ResponseEntity<>(responseBody, HttpStatus.OK);
 
     }
-
 
 
     /**
@@ -1879,9 +1741,7 @@ public class RegistrationService {
     public ApiResponse<Map<String, Object>> sendLoginOtp(String email) {
 
 
-
         Optional<User> userOptional = userRepository.findByEmail(email);
-
 
 
         if (userOptional.isEmpty()) {
@@ -1891,9 +1751,7 @@ public class RegistrationService {
         }
 
 
-
         User user = userOptional.get();
-
 
 
         if (user.getStatus() != User.Status.ACTIVE) {
@@ -1903,7 +1761,6 @@ public class RegistrationService {
         }
 
 
-
         long cooldown = otpService.getCooldownSeconds(email, "login");
         if (cooldown > 0) {
             throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS,
@@ -1911,15 +1768,12 @@ public class RegistrationService {
         }
 
 
-
         String otp = generateOTP();
         OtpService.OtpSession otpSession = otpService.createSession(email, "login", otp, 5, 5);
         otpService.markCooldown(email, "login", 30);
 
 
-
         emailService.sendLoginOtp(user.getEmail(), otp);
-
 
 
         Map<String, Object> data = new HashMap<>();
@@ -1937,7 +1791,6 @@ public class RegistrationService {
         data.put("cooldownSeconds", 30);
 
 
-
         return new ApiResponse<>(
 
                 true,
@@ -1953,11 +1806,9 @@ public class RegistrationService {
     }
 
 
-
     public ApiResponse<?> verifyLoginOtp(String email, String otp) {
 
         User user = userRepository.findByEmail(email).orElse(null);
-
 
 
         if (user == null) {
@@ -1965,7 +1816,6 @@ public class RegistrationService {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid credentials");
 
         }
-
 
 
         if (user.getLockedUntil() != null && user.getLockedUntil().isAfter(LocalDateTime.now())) {
@@ -1983,13 +1833,11 @@ public class RegistrationService {
         }
 
 
-
         if (user.getStatus() != User.Status.ACTIVE) {
 
             return buildOtpErrorResponse("Account not active", 0, 0);
 
         }
-
 
 
         long expiresInSeconds = otpService.getLatestSessionTtlSeconds(email, "login");
@@ -2018,13 +1866,11 @@ public class RegistrationService {
         }
 
 
-
         // Generate tokens
 
         String accessToken = jwtUtil.generateAccessToken(String.valueOf(user.getId()), user.getRole().name());
 
         String refreshToken = jwtUtil.generateRefreshToken(user, String.valueOf(user.getId()), user.getRole().name());
-
 
 
         // Invalidate old sessions (enforce single device)
@@ -2050,14 +1896,13 @@ public class RegistrationService {
         userSessionRepository.deleteAll(existingSessions);
 
 
-
         // Save new session
 
         HttpServletRequest request = null;
 
         try {
 
-            request = ((org.springframework.web.context.request.ServletRequestAttributes) 
+            request = ((org.springframework.web.context.request.ServletRequestAttributes)
 
                 org.springframework.web.context.request.RequestContextHolder.currentRequestAttributes()).getRequest();
 
@@ -2072,7 +1917,6 @@ public class RegistrationService {
         if (deviceInfo == null) deviceInfo = "Unknown Device";
 
         String ipAddress = request != null ? request.getRemoteAddr() : "127.0.0.1";
-
 
 
         UserSession userSession = UserSession.builder()
@@ -2094,7 +1938,6 @@ public class RegistrationService {
         userSessionRepository.save(userSession);
 
 
-
         Map<String, Object> data = new HashMap<>();
 
         data.put("accessToken", accessToken);
@@ -2106,7 +1949,6 @@ public class RegistrationService {
         data.put("refreshTokenExpiresInDays", 30);
 
         data.put("sessionId", String.valueOf(userSession.getId()));
-
 
 
         return new ApiResponse<>(
@@ -2124,7 +1966,6 @@ public class RegistrationService {
     }
 
 
-
     private ApiResponse<Map<String, Object>> buildOtpErrorResponse(String message, int remainingAttempts, long expiresInSeconds) {
 
         Map<String, Object> data = new HashMap<>();
@@ -2132,7 +1973,6 @@ public class RegistrationService {
         data.put("remainingAttempts", remainingAttempts);
 
         data.put("expiresInSeconds", expiresInSeconds);
-
 
 
         return new ApiResponse<>(
@@ -2150,9 +1990,7 @@ public class RegistrationService {
     }
 
 
-
     public LoginResponse refreshAccessToken(String refreshToken) {
-
 
 
         // 1️⃣ Validate refresh token
@@ -2162,7 +2000,6 @@ public class RegistrationService {
             throw new RuntimeException("Invalid or expired refresh token");
 
         }
-
 
 
         // 2️⃣ Check token type
@@ -2176,17 +2013,14 @@ public class RegistrationService {
         }
 
 
-
         // 3️⃣ Extract userId
 
         String userId = jwtUtil.extractUserId(refreshToken);
 
 
-
         User user = userRepository.findById(UUID.fromString(userId))
 
                 .orElseThrow(() -> new RuntimeException("User not found"));
-
 
 
         if (user.getStatus() != User.Status.ACTIVE) {
@@ -2196,11 +2030,9 @@ public class RegistrationService {
         }
 
 
-
         // 4️⃣ Generate new access token (15 minutes)
 
         String newAccessToken = jwtUtil.generateAccessToken(userId, user.getRole().name());
-
 
 
         // Update session with new access token
@@ -2214,9 +2046,7 @@ public class RegistrationService {
         });
 
 
-
         LoginResponse response = new LoginResponse();
-
 
 
         response.setAccessToken(newAccessToken);
@@ -2234,11 +2064,9 @@ public class RegistrationService {
         response.setExpiresInSeconds(15 * 60); // 900 seconds
 
 
-
         return response;
 
     }
-
 
 
     // ===================== FORGOT PASSWORD =====================
@@ -2250,13 +2078,11 @@ public class RegistrationService {
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
 
-
         if (user.getStatus() != User.Status.ACTIVE) {
 
             throw new RuntimeException("Account not active");
 
         }
-
 
 
         long cooldown = otpService.getCooldownSeconds(email, "password_reset");
@@ -2271,11 +2097,9 @@ public class RegistrationService {
         otpService.markCooldown(email, "password_reset", 30);
 
 
-
         // Send OTP email
 
         emailService.sendPasswordResetOtp(user.getEmail(), otp);
-
 
 
         return new ForgotPasswordResponseData(
@@ -2299,15 +2123,12 @@ public class RegistrationService {
     }
 
 
-
     public Map<String, Object> verifyOtpAndGenerateResetToken(String email, String otp) {
-
 
 
         User user = userRepository.findByEmail(email)
 
                 .orElseThrow(() -> new RuntimeException("User not found"));
-
 
 
         OtpService.OtpVerifyResult verifyResult = otpService.verifyLatestSession(email, otp, "password_reset", true);
@@ -2319,11 +2140,9 @@ public class RegistrationService {
         }
 
 
-
         // ✅ Generate secure token
 
         String resetToken = UUID.randomUUID().toString();
-
 
 
         // ✅ Save token
@@ -2335,9 +2154,7 @@ public class RegistrationService {
         userRepository.save(user);
 
 
-
         // OTP is consumed by Redis verify call.
-
 
 
         return Map.of(
@@ -2351,7 +2168,6 @@ public class RegistrationService {
     }
 
 
-
     public Map<String, Object> resetPasswordWithToken(
 
             String authHeader,
@@ -2363,7 +2179,6 @@ public class RegistrationService {
     ) {
 
 
-
         // 🔥 Extract token from "Bearer xxx"
 
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
@@ -2373,9 +2188,7 @@ public class RegistrationService {
         }
 
 
-
         String token = authHeader.replace("Bearer ", "").trim();
-
 
 
         // ✅ Password match
@@ -2385,7 +2198,6 @@ public class RegistrationService {
             throw new RuntimeException("Passwords do not match");
 
         }
-
 
 
         // ✅ Password strength
@@ -2399,7 +2211,6 @@ public class RegistrationService {
             );
 
         }
-
 
 
         // 🔍 Find user by token
@@ -2423,11 +2234,9 @@ public class RegistrationService {
         }
 
 
-
         // 🔐 update password
 
         user.setPassword(passwordEncoder.encode(newPassword));
-
 
 
         // 🧹 clear token
@@ -2437,9 +2246,7 @@ public class RegistrationService {
         user.setResetTokenExpiry(null);
 
 
-
         userRepository.save(user);
-
 
 
         return Map.of(
@@ -2453,7 +2260,6 @@ public class RegistrationService {
     }
 
 
-
     public Map<String, Object> logoutCurrentDevice(String accessToken, String ipAddress, String deviceInfo) {
 
         // 1️⃣ Validate token & extract userId
@@ -2465,11 +2271,9 @@ public class RegistrationService {
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
 
-
         // 2️⃣ Delete the session from DB instead of in-memory blacklist
 
         userSessionRepository.findByToken(accessToken).ifPresent(userSessionRepository::delete);
-
 
 
         // 3️⃣ Save audit log
@@ -2489,7 +2293,6 @@ public class RegistrationService {
                 .build());
 
 
-
         // 4️⃣ Prepare response
 
         Map<String, Object> data = new HashMap<>();
@@ -2505,11 +2308,9 @@ public class RegistrationService {
         data.put("sessionTerminated", true);
 
 
-
         return data;
 
     }
-
 
 
     @Transactional
@@ -2517,11 +2318,9 @@ public class RegistrationService {
     public Map<String, Object> switchRole(String switchRole, HttpServletRequest httpRequest) {
 
 
-
         // 1️⃣ Extract token
 
         String token = BearerTokenResolver.resolveToken(httpRequest);
-
 
 
         if (token == null || token.isBlank()) {
@@ -2529,7 +2328,6 @@ public class RegistrationService {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Missing token");
 
         }
-
 
 
         // 2️⃣ Extract userId + role from JWT
@@ -2541,9 +2339,7 @@ public class RegistrationService {
         );
 
 
-
         String tokenRole = jwtUtil.extractRole(token); // 🔥 IMPORTANT
-
 
 
         // 3️⃣ Convert requested role
@@ -2551,11 +2347,9 @@ public class RegistrationService {
         User.Role targetRole = mapSwitchRole(switchRole);
 
 
-
         // 4️⃣ Fetch user from DB
 
         User user = userRepository.findById(userId).orElse(null);
-
 
 
         if (user == null) {
@@ -2573,7 +2367,6 @@ public class RegistrationService {
                 String refreshToken = jwtUtil.generateRefreshToken(null, userId.toString(), jwtRole);
 
 
-
                 Map<String, Object> data = new LinkedHashMap<>();
 
                 data.put("userId", userId);
@@ -2589,7 +2382,6 @@ public class RegistrationService {
                 data.put("refreshToken", refreshToken);
 
 
-
                 return data;
 
             } else {
@@ -2601,15 +2393,12 @@ public class RegistrationService {
         }
 
 
-
         User.Role currentRole = user.getRole();
-
 
 
         // 5️⃣ Validate switch
 
         validateRoleSwitch(currentRole, targetRole, user, tokenRole);
-
 
 
         // 6️⃣ Update role (Hibernate will auto-save)
@@ -2619,11 +2408,9 @@ public class RegistrationService {
         user.setUpdatedAt(LocalDateTime.now());
 
 
-
         // 7️⃣ Generate NEW tokens with updated role
 
         String jwtRole = toJwtRole(targetRole);
-
 
 
         String accessToken = jwtUtil.generateAccessToken(
@@ -2635,7 +2422,6 @@ public class RegistrationService {
         );
 
 
-
         String refreshToken = jwtUtil.generateRefreshToken(
 
                 user,
@@ -2645,7 +2431,6 @@ public class RegistrationService {
                 jwtRole
 
         );
-
 
 
         // 8️⃣ Response
@@ -2665,15 +2450,12 @@ public class RegistrationService {
         data.put("refreshToken", refreshToken);
 
 
-
         return data;
 
     }
 
 
-
     private User.Role mapSwitchRole(String role) {
-
 
 
         if (role == null || role.isBlank()) {
@@ -2681,7 +2463,6 @@ public class RegistrationService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "switchRole is required");
 
         }
-
 
 
         String normalized = role.trim().toUpperCase();
@@ -2710,7 +2491,6 @@ public class RegistrationService {
     }
 
 
-
     private void validateRoleSwitch(User.Role currentRole,
 
                                     User.Role targetRole,
@@ -2718,7 +2498,6 @@ public class RegistrationService {
                                     User user,
 
                                     String tokenRole) {
-
 
 
         // ❌ Same role
@@ -2732,13 +2511,11 @@ public class RegistrationService {
         }
 
 
-
         // ❌ Nobody can switch TO MAIN_ADMIN or SUB_ADMIN
         if (targetRole == User.Role.MAIN_ADMIN || targetRole == User.Role.SUB_ADMIN) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN,
                     "Cannot switch to ADMIN role");
         }
-
 
 
         // ✅ ADMIN (from JWT, not DB)
@@ -2754,13 +2531,11 @@ public class RegistrationService {
         }
 
 
-
         // ✅ USER → INSTRUCTOR
 
         if (currentRole == User.Role.STUDENT) {
 
             if (targetRole == User.Role.INSTRUCTOR) {
-
 
 
                 if (!Boolean.TRUE.equals(user.getIsInstructorApproved())) {
@@ -2778,7 +2553,6 @@ public class RegistrationService {
         }
 
 
-
         // ✅ INSTRUCTOR → USER
 
         if (currentRole == User.Role.INSTRUCTOR) {
@@ -2792,7 +2566,6 @@ public class RegistrationService {
         }
 
 
-
         // ❌ Everything else blocked
 
         throw new ResponseStatusException(HttpStatus.FORBIDDEN,
@@ -2804,13 +2577,11 @@ public class RegistrationService {
     }
 
 
-
     private boolean isAdminRole(String role) {
 
         return role != null && role.toUpperCase().contains("ADMIN");
 
     }
-
 
 
     private String toJwtRole(User.Role role) {

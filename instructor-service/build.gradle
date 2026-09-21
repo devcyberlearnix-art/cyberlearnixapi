@@ -1,6 +1,6 @@
 plugins {
 	id 'java'
-	id 'org.springframework.boot' version '3.2.5'
+	id 'org.springframework.boot' version '3.3.5'
 	id 'io.spring.dependency-management' version '1.1.7'
 }
 
@@ -32,30 +32,25 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-validation'
 
     // ✅ Lombok (reduce boilerplate code)
-    compileOnly 'org.projectlombok:lombok'
-    annotationProcessor 'org.projectlombok:lombok'
+    compileOnly "org.projectlombok:lombok:${lombokVersion}"
+    annotationProcessor "org.projectlombok:lombok:${lombokVersion}"
 
     // ✅ Spring Security (optional, but recommended)
     implementation 'org.springframework.boot:spring-boot-starter-security'
-
-    // ✅ JWT (if you're using authentication)
-    implementation 'io.jsonwebtoken:jjwt-api:0.11.5'
-    runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.11.5'
-    runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.11.5'
 
     // Commonlibs for shared JWT validator
     implementation project(':commonlibs')
 
     // Cloudinary SDK
-    implementation 'com.cloudinary:cloudinary-http5:2.3.2'
+    implementation "com.cloudinary:cloudinary-http5:${cloudinaryVersion}"
 
     // SpringDoc OpenAPI
-    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.3.0'
+    implementation "org.springdoc:springdoc-openapi-starter-webmvc-ui:${springdocVersion}"
 
-    // ✅ DevTools (auto restart during development)
+    // DevTools (auto restart during development)
     developmentOnly 'org.springframework.boot:spring-boot-devtools'
 
-    // ✅ Testing
+    // Testing
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
 }
 tasks.named('test') {

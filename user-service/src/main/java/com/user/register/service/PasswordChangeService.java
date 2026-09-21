@@ -71,7 +71,7 @@ public class PasswordChangeService {
         if (!passwordEncoder.matches(dto.getOldPassword(), user.getPassword())) {
             int attempts = user.getFailedLoginAttempts() != null ? user.getFailedLoginAttempts() + 1 : 1;
             user.setFailedLoginAttempts(attempts);
-            
+
             // Log audit log of failure
             saveAuditLog(user, "PASSWORD_CHANGE_INITIATE", request.getRemoteAddr(), getClientDevice(request), "FAILURE");
 
@@ -184,14 +184,14 @@ public class PasswordChangeService {
         if (!passwordOtp.getOtpHash().equals(submittedHash)) {
             int newAttempts = passwordOtp.getAttempts() + 1;
             passwordOtp.setAttempts(newAttempts);
-            
+
             if (newAttempts >= 3) {
                 passwordOtp.setStatus(PasswordOtp.Status.EXPIRED);
                 passwordOtpRepository.save(passwordOtp);
                 log.warn("[PasswordChange] Max OTP attempts reached. Session invalidated. sessionId={}", sessionUuid);
                 throw PasswordChangeException.tooManyRequests("Incorrect OTP. Maximum attempts exceeded. This session has been invalidated.");
             }
-            
+
             passwordOtpRepository.save(passwordOtp);
             log.warn("[PasswordChange] Incorrect OTP for session={}, attempt {}/3", sessionUuid, newAttempts);
             throw PasswordChangeException.unauthorized("Incorrect OTP. Remaining attempts: " + (3 - newAttempts));
