@@ -2,6 +2,7 @@ package com.example.admin.service;
 
 import com.example.admin.dto.AdminPasswordChangeDto;
 import com.example.admin.dto.AdminPasswordChangeResponse;
+import com.example.admin.dto.AdminResendPasswordOtpDto;
 import com.example.admin.dto.VerifyAdminPasswordOtpDto;
 import com.example.admin.entity.Admin;
 import com.example.admin.entity.AdminPasswordChangeAuditLog;
@@ -42,6 +43,7 @@ public class AdminPasswordChangeService {
     private final EmailService emailService;
     private final PasswordEncoder passwordEncoder;
     private final StringRedisTemplate redisTemplate;
+    private final OtpService otpService;
 
     private static final String ADMIN_PWD_CHANGE_PREFIX = "ADMIN:PASSWORD_CHANGE_TIME:";
     private static final String TOKEN_BLACKLIST_PREFIX = "ADMIN:JWT:BLACKLIST:";
@@ -251,6 +253,64 @@ public class AdminPasswordChangeService {
                 .status("VERIFIED")
                 .requiresReLogin(true)
                 .message("Password changed successfully. You have been logged out of all devices. Please login again.")
+                .build();
+    }
+
+    @Transactional
+    public AdminPasswordChangeResponse resendPasswordOtp(HttpServletRequest request, UUID adminId, AdminResendPasswordOtpDto dto) {
+        log.info("[AdminPasswordChange] Resending OTP for adminId={}", adminId);
+
+        String sessionId = dto != null ? dto.resolveSessionId() : null;
+        if (sessionId == null || sessionId.isBlank()) {
+            throw AdminPasswordChangeException.badRequest("Session ID is required.");
+        }
+
+        UUID sessionUuid;
+        try {
+            sessionUuid = UUID.fromString(sessionId);
+        } catch (IllegalArgumentException e) {
+            throw AdminPasswordChangeException.badRequest("Invalid session ID format.");
+        }
+
+        AdminPasswordOtp adminPasswordOtp = adminPasswordOtpRepository.findByIdAndAdminId(sessionUuid, adminId)
+                .orElseThrow(() -> AdminPasswordChangeException.notFound("Password change session not found or access denied."));
+
+        if (adminPasswordOtp.getStatus() == AdminPasswordOtp.Status.VERIFIED) {
+            throw AdminPasswordChangeException.badRequest("This password change request has already been completed.");
+        }
+
+        Admin admin = adminRepository.findById(adminId)
+                .orElseThrow(() -> AdminPasswordChangeException.notFound("Admin not found."));
+
+        // Cooldown check
+        long cooldown = otpService.getCooldownSeconds(admin.getEmail(), "ADMIN_PASSWORD_CHANGE");
+        if (cooldown > 0) {
+            throw AdminPasswordChangeException.tooManyRequests(
+                    "Please wait " + cooldown + " seconds before requesting another OTP.");
+        }
+        otpService.markCooldown(admin.getEmail(), "ADMIN_PASSWORD_CHANGE", 30);
+
+        // Generate new OTP and hash
+        String rawOtp = generateNumericOtp();
+        String hashedOtp = hashSha256(rawOtp);
+
+        // Send email FIRST
+        emailService.sendPasswordChangeOtp(admin.getEmail(), rawOtp);
+
+        // Update verification session state
+        adminPasswordOtp.setOtpHash(hashedOtp);
+        adminPasswordOtp.setAttempts(0);
+        adminPasswordOtp.setStatus(AdminPasswordOtp.Status.PENDING);
+        adminPasswordOtp.setExpiryTime(LocalDateTime.now().plusMinutes(5));
+        adminPasswordOtpRepository.save(adminPasswordOtp);
+
+        log.info("[AdminPasswordChange] Password change OTP resent successfully for sessionId={}", adminPasswordOtp.getId());
+
+        return AdminPasswordChangeResponse.builder()
+                .sessionId(adminPasswordOtp.getId().toString())
+                .status("PENDING")
+                .expiresAt(adminPasswordOtp.getExpiryTime())
+                .message("A new verification code has been sent to your email. Please verify within 5 minutes.")
                 .build();
     }
 
