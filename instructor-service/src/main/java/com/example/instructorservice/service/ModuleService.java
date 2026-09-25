@@ -13,9 +13,6 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
-import com.cloudinary.Cloudinary;
-import com.cloudinary.utils.ObjectUtils;
-import org.springframework.beans.factory.annotation.Value;
 import java.util.Map;
 
 import java.nio.file.Files;
@@ -33,10 +30,7 @@ public class ModuleService {
     private final ModuleRepository moduleRepository;
     private final resourceRepository resourceRepository; // ✅ correct
     private final ContentRepository contentRepository;
-    private final Cloudinary cloudinary;
-
-    @Value("${cloudinary.folder:cyberlearnix}")
-    private String folder;
+    private final GoogleDriveService googleDriveService;
 
     private Instructor findInstructorByIdOrUserId(UUID idOrUserId) {
         return instructorRepository.findById(idOrUserId)
@@ -244,26 +238,8 @@ public class ModuleService {
             throw new ValidationException("File is empty");
         }
 
-        String fileName = file.getOriginalFilename();
-        String safeName = (fileName != null && !fileName.isBlank())
-                ? fileName.replaceAll("[^a-zA-Z0-9._-]", "_")
-                : "file";
-        String publicId = UUID.randomUUID().toString() + "_" + safeName;
-        if (publicId.contains(".")) {
-            publicId = publicId.substring(0, publicId.lastIndexOf("."));
-        }
-
-        String fileUrl;
-        try {
-            Map<?, ?> uploadResult = cloudinary.uploader().upload(file.getBytes(), ObjectUtils.asMap(
-                    "folder", folder,
-                    "public_id", publicId,
-                    "resource_type", "auto"
-            ));
-            fileUrl = (String) uploadResult.get("secure_url");
-        } catch (Exception e) {
-            throw new RuntimeException("File upload failed: " + e.getMessage(), e);
-        }
+        String fileName = file.getOriginalFilename() != null ? file.getOriginalFilename() : "file";
+        String fileUrl = googleDriveService.uploadFile(file);
 
         // 🔥 1. CREATE CONTENT (THIS WAS MISSING)
         Content content = Content.builder()

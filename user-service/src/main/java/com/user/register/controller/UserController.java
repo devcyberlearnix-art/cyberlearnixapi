@@ -65,7 +65,7 @@ public class UserController {
         }
     }
 
-    @PostMapping("/me/photo")
+    @PutMapping("/me/photo")
     public ResponseEntity<ApiResponse<UserProfileResponse>> uploadProfilePhoto(
             HttpServletRequest request,
             @RequestParam("file") MultipartFile file

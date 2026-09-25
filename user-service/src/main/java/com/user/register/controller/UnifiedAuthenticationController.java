@@ -251,4 +251,51 @@ public class UnifiedAuthenticationController {
             @Valid @RequestBody ResendOtpRequest request) {
         return unifiedAuthenticationService.resendOtpCommon(request);
     }
+
+    /**
+     * Social Login / Continue with OAuth (Google, GitHub, LinkedIn)
+     * POST /api/v1/auth/social-login
+     */
+    @PostMapping("/social-login")
+    public ResponseEntity<LoginResponse> socialLogin(
+            @Valid @RequestBody SocialLoginRequest request,
+            HttpServletRequest httpRequest) {
+        return unifiedAuthenticationService.socialLogin(request, httpRequest);
+    }
+
+    /**
+     * Social Login with provider in path
+     * POST /api/v1/auth/social-login/{provider}
+     */
+    @PostMapping("/social-login/{provider}")
+    public ResponseEntity<LoginResponse> socialLoginWithProvider(
+            @PathVariable("provider") String provider,
+            @RequestBody SocialLoginRequest request,
+            HttpServletRequest httpRequest) {
+        if (request == null) {
+            request = new SocialLoginRequest();
+        }
+        request.setProvider(provider);
+        return unifiedAuthenticationService.socialLogin(request, httpRequest);
+    }
+
+    /**
+     * Continue with OAuth provider alias endpoint
+     * POST /api/v1/auth/oauth/continue
+     */
+    @PostMapping("/oauth/continue")
+    public ResponseEntity<LoginResponse> oauthContinue(
+            @Valid @RequestBody SocialLoginRequest request,
+            HttpServletRequest httpRequest) {
+        return unifiedAuthenticationService.socialLogin(request, httpRequest);
+    }
+
+    /**
+     * Get available OAuth Providers & Redirect Info
+     * GET /api/v1/auth/oauth/providers
+     */
+    @GetMapping("/oauth/providers")
+    public ResponseEntity<OAuthProviderResponse> getOAuthProviders() {
+        return unifiedAuthenticationService.getOAuthProviders();
+    }
 }

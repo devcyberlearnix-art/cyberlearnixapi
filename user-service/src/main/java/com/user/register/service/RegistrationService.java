@@ -43,10 +43,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 import org.springframework.web.server.ResponseStatusException;
 
-import com.cloudinary.Cloudinary;
-
-import com.cloudinary.utils.ObjectUtils;
-
 import java.io.ByteArrayOutputStream;
 
 
@@ -124,7 +120,7 @@ public class RegistrationService {
 
     private final TokenBlacklistService blacklistService;
 
-    private final Cloudinary cloudinary;
+    private final GoogleDriveService googleDriveService;
 
     private final org.springframework.web.client.RestTemplate restTemplate;
 
@@ -133,12 +129,6 @@ public class RegistrationService {
     @Value("${admin.service.url:http://localhost:8087}")
 
     private String adminServiceUrl;
-
-
-
-    @Value("${cloudinary.folder:cyberlearnix}")
-
-    private String folder;
 
 
 
@@ -632,7 +622,7 @@ public class RegistrationService {
         }
 
         String normalized = profilePhoto.trim();
-        if (normalized.contains("res.cloudinary.com")) {
+        if (normalized.contains("drive.google.com") || normalized.contains("res.cloudinary.com")) {
             return normalized;
         }
 
@@ -641,20 +631,12 @@ public class RegistrationService {
             java.io.File diskFile = new java.io.File(normalized);
             if (diskFile.exists() && diskFile.isFile()) {
                 byte[] fileBytes = java.nio.file.Files.readAllBytes(diskFile.toPath());
-                Map<?, ?> options = ObjectUtils.asMap(
-                        "folder", folder,
-                        "resource_type", "image"
-                );
-                Map<?, ?> uploadResult = cloudinary.uploader().upload(fileBytes, options);
-                Object secureUrl = uploadResult.get("secure_url");
-                if (secureUrl != null && !secureUrl.toString().isBlank()) {
-                    return secureUrl.toString();
-                }
+                return googleDriveService.uploadBytes(fileBytes, diskFile.getName(), "image/jpeg");
             }
         } catch (Exception ignored) {
         }
 
-        // If URL points to local uploads directory, read the local file and upload to Cloudinary
+        // If URL points to local uploads directory, read the local file and upload to Google Drive
         if (normalized.contains("/uploads/") || normalized.contains("\\uploads\\")) {
             try {
                 String filename = normalized.substring(Math.max(normalized.lastIndexOf('/'), normalized.lastIndexOf('\\')) + 1);
@@ -664,46 +646,14 @@ public class RegistrationService {
                 }
                 if (localFile.exists()) {
                     byte[] fileBytes = java.nio.file.Files.readAllBytes(localFile.toPath());
-                    Map<?, ?> options = ObjectUtils.asMap(
-                            "folder", folder,
-                            "resource_type", "image"
-                    );
-                    Map<?, ?> uploadResult = cloudinary.uploader().upload(fileBytes, options);
-                    Object secureUrl = uploadResult.get("secure_url");
-                    if (secureUrl != null && !secureUrl.toString().isBlank()) {
-                        return secureUrl.toString();
-                    }
+                    return googleDriveService.uploadBytes(fileBytes, filename, "image/jpeg");
                 }
             } catch (Exception e) {
-                log.warn("Failed to upload local uploads file to Cloudinary: {}", normalized, e);
+                log.warn("Failed to upload local uploads file to Google Drive: {}", normalized, e);
             }
         }
 
-        // If this is likely a web page (not a direct image), keep the URL as-is.
-        String lower = normalized.toLowerCase();
-        if (!(lower.endsWith(".jpg")
-                || lower.endsWith(".jpeg")
-                || lower.endsWith(".png")
-                || lower.endsWith(".webp")
-                || lower.matches(".*\\.(jpg|jpeg|png|webp)(\\?.*)?$"))) {
-            return normalized;
-        }
-
-        try {
-            Map<?, ?> options = ObjectUtils.asMap(
-                    "folder", folder,
-                    "resource_type", "image"
-            );
-            Map<?, ?> uploadResult = cloudinary.uploader().upload(normalized, options);
-            Object secureUrl = uploadResult.get("secure_url");
-            if (secureUrl == null || secureUrl.toString().isBlank()) {
-                throw new RuntimeException("Profile photo upload failed");
-            }
-            return secureUrl.toString();
-        } catch (Exception e) {
-            log.warn("Profile photo upload failed for URL [{}], keeping original URL", normalized, e);
-            return normalized;
-        }
+        return normalized;
     }
 
 
@@ -1055,21 +1005,12 @@ public class RegistrationService {
 
 
 
-        // 8️⃣ Upload to Cloudinary
-
-        Map<?, ?> options = ObjectUtils.asMap(
-
-                "folder", folder,
-
-                "public_id", fileName,
-
-                "resource_type", "image"
-
+        // 8️⃣ Upload to Google Drive
+        return googleDriveService.uploadBytes(
+                fileBytes,
+                fileName + "." + extension,
+                contentType.equals("image/png") ? "image/png" : contentType.equals("image/webp") ? "image/webp" : "image/jpeg"
         );
-
-        Map<?, ?> uploadResult = cloudinary.uploader().upload(fileBytes, options);
-
-        return (String) uploadResult.get("secure_url");
 
     }
 

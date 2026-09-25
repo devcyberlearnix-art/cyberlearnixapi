@@ -1,6 +1,6 @@
 package com.lms.courseservice.controller;
 
-import com.lms.courseservice.service.CloudinaryService;
+import com.lms.courseservice.service.GoogleDriveService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -16,10 +16,10 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class CloudinaryController {
 
-    private final CloudinaryService cloudinaryService;
+    private final GoogleDriveService googleDriveService;
 
     /**
-     * Upload a video file to Cloudinary and return the secure URL.
+     * Upload a video file to Google Drive and return the public URL.
      *
      * POST /api/v1/upload/video
      * Content-Type: multipart/form-data
@@ -29,7 +29,7 @@ public class CloudinaryController {
      * {
      *   "success": true,
      *   "message": "Video uploaded successfully",
-     *   "url": "https://res.cloudinary.com/dmvmvdefr/video/upload/...",
+     *   "url": "https://drive.google.com/uc?id=...",
      *   "timestamp": "2026-08-14T..."
      * }
      */
@@ -46,7 +46,7 @@ public class CloudinaryController {
             ));
         }
 
-        String url = cloudinaryService.uploadVideo(file);
+        String url = googleDriveService.uploadVideo(file);
 
         return ResponseEntity.ok(Map.of(
                 "success",          true,

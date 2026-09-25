@@ -81,10 +81,12 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
 
             "/api/v1/auth/password/reset",
 
-            "/api/v1/auth/upload/profile-photo",
-
             "/api/v1/auth/otp/resend",
-
+            "/api/v1/auth/social-login",
+            "/api/v1/auth/social-login/**",
+            "/api/v1/auth/oauth/**",
+            "/oauth2/**",
+            "/login/oauth2/**",
             "/api/v1/users/login/social",
 
             // Course service – public course browsing

@@ -546,9 +546,209 @@ public class UnifiedAuthenticationService {
 
 
         return ResponseEntity.ok(response);
+    }
 
+    /**
+     * Social Login / Continue with OAuth provider (Google, GitHub, LinkedIn)
+     * Authenticates existing user or registers new student user
+     */
+    public ResponseEntity<LoginResponse> socialLogin(SocialLoginRequest request, HttpServletRequest httpRequest) {
+        if (request == null || request.getProvider() == null || request.getProvider().isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Provider is required (google, github, linkedin)");
+        }
 
+        String provider = request.getProvider().trim().toLowerCase();
+        if (!List.of("google", "github", "linkedin").contains(provider)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Unsupported OAuth provider: '" + request.getProvider() + "'. Supported providers are: google, github, linkedin");
+        }
 
+        String email = request.getEmail();
+        if (email == null || email.isBlank()) {
+            if ("github".equals(provider) && request.getProviderId() != null && !request.getProviderId().isBlank()) {
+                email = request.getProviderId() + "@github-user.local";
+            } else {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Email is required for social login with " + provider);
+            }
+        }
+        email = email.trim().toLowerCase();
+
+        Optional<User> userOptional = userRepository.findByEmail(email);
+        User user;
+
+        if (userOptional.isPresent()) {
+            user = userOptional.get();
+
+            if (user.getStatus() == User.Status.LOCKED) {
+                throw new ResponseStatusException(HttpStatus.LOCKED, "Account locked due to too many failed login attempts");
+            }
+
+            if (user.getStatus() == User.Status.SUSPENDED || user.getStatus() == User.Status.PENDING_VERIFICATION) {
+                user.setStatus(User.Status.ACTIVE);
+            }
+
+            if (user.getProvider() == null || user.getProvider().isBlank()) {
+                user.setProvider(provider);
+            }
+            if (request.getProviderId() != null && !request.getProviderId().isBlank() && (user.getProviderId() == null || user.getProviderId().isBlank())) {
+                user.setProviderId(request.getProviderId());
+            }
+            if (request.getProfilePhoto() != null && !request.getProfilePhoto().isBlank() && (user.getProfilePhoto() == null || user.getProfilePhoto().isBlank())) {
+                user.setProfilePhoto(request.getProfilePhoto());
+            }
+            if (request.getFirstName() != null && !request.getFirstName().isBlank() && (user.getFirstName() == null || user.getFirstName().isBlank())) {
+                user.setFirstName(encryptField(request.getFirstName()));
+            }
+            if (request.getLastName() != null && !request.getLastName().isBlank() && (user.getLastName() == null || user.getLastName().isBlank())) {
+                user.setLastName(encryptField(request.getLastName()));
+            }
+
+            user.setLastLoginAt(LocalDateTime.now());
+            user.setLastLogin(LocalDateTime.now());
+            user = userRepository.save(user);
+        } else {
+            // Register new social user
+            user = User.builder()
+                    .email(email)
+                    .role(User.Role.STUDENT)
+                    .status(User.Status.ACTIVE)
+                    .provider(provider)
+                    .providerId(request.getProviderId())
+                    .profilePhoto(request.getProfilePhoto())
+                    .firstName(request.getFirstName() != null ? encryptField(request.getFirstName()) : "")
+                    .lastName(request.getLastName() != null ? encryptField(request.getLastName()) : "")
+                    .createdAt(LocalDateTime.now())
+                    .lastLoginAt(LocalDateTime.now())
+                    .lastLogin(LocalDateTime.now())
+                    .build();
+            user = userRepository.save(user);
+            log.info("Registered new user {} via social login provider {}", user.getId(), provider);
+        }
+
+        // Generate tokens
+        String accessToken = unifiedJwtService.generateAccessToken(
+                user.getId().toString(),
+                user.getEmail(),
+                user.getRole().name(),
+                null,
+                null
+        );
+
+        String refreshToken = unifiedJwtService.generateRefreshToken(
+                user.getId().toString(),
+                user.getEmail(),
+                user.getRole().name()
+        );
+
+        // Persist session
+        sessionService.createSession(user, httpRequest, accessToken, refreshToken);
+
+        // Build user data
+        LoginResponse.UserData userData = LoginResponse.UserData.builder()
+                .id(user.getId())
+                .email(user.getEmail())
+                .firstName(decryptField(user.getFirstName()))
+                .lastName(decryptField(user.getLastName()))
+                .mobileNumber(decryptField(user.getMobile()))
+                .role(user.getRole().name())
+                .adminType("NONE")
+                .assignedService("NONE")
+                .permissions(getPermissionsForRole(user.getRole().name()))
+                .verified(true)
+                .approved(user.getIsInstructorApproved() != null ? user.getIsInstructorApproved() : true)
+                .build();
+
+        LoginResponse.AuthenticationInfo authInfo = LoginResponse.AuthenticationInfo.builder()
+                .accessToken(accessToken)
+                .accessTokenExpiresIn("15 minutes")
+                .refreshToken(refreshToken)
+                .refreshTokenExpiresIn("30 days")
+                .build();
+
+        LoginResponse.SessionInfo sessionInfo = buildSessionInfo(httpRequest);
+
+        LoginResponse response = LoginResponse.builder()
+                .success(true)
+                .message("Social login successful with " + provider)
+                .user(userData)
+                .authentication(authInfo)
+                .sessionInfo(sessionInfo)
+                .timestamp(LocalDateTime.now())
+                .build();
+
+        // Publish login event to Kafka
+        try {
+            String firstName = decryptField(user.getFirstName());
+            String lastName = decryptField(user.getLastName());
+            String fullName = (firstName != null ? firstName : "") + " " + (lastName != null ? lastName : "");
+            UserLoginEvent event = new UserLoginEvent(
+                    UUID.randomUUID(),
+                    "USER_LOGIN",
+                    user.getId(),
+                    user.getEmail(),
+                    fullName.trim(),
+                    LocalDateTime.now(),
+                    user.getIpAddress(),
+                    user.getDevice(),
+                    user.getBrowser(),
+                    user.getOs(),
+                    provider.toUpperCase(),
+                    isNewDevice(user)
+            );
+            kafkaTemplate.send(userLoginTopic, user.getId().toString(), event);
+            log.info("UserLoginEvent published for social login user {} via {}", user.getId(), provider);
+        } catch (Exception e) {
+            log.error("Failed to publish UserLoginEvent for social login user {}", user.getId(), e);
+        }
+
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Get list of supported OAuth providers and authorization metadata
+     */
+    public ResponseEntity<OAuthProviderResponse> getOAuthProviders() {
+        List<OAuthProviderResponse.ProviderInfo> list = List.of(
+                OAuthProviderResponse.ProviderInfo.builder()
+                        .id("google")
+                        .name("Google")
+                        .authorizationUrl("/oauth2/authorization/google")
+                        .icon("https://auth.cyberlearnix.com/icons/google.svg")
+                        .scope("email,profile")
+                        .enabled(true)
+                        .build(),
+                OAuthProviderResponse.ProviderInfo.builder()
+                        .id("github")
+                        .name("GitHub")
+                        .authorizationUrl("/oauth2/authorization/github")
+                        .icon("https://auth.cyberlearnix.com/icons/github.svg")
+                        .scope("read:user,user:email")
+                        .enabled(true)
+                        .build(),
+                OAuthProviderResponse.ProviderInfo.builder()
+                        .id("linkedin")
+                        .name("LinkedIn")
+                        .authorizationUrl("/oauth2/authorization/linkedin")
+                        .icon("https://auth.cyberlearnix.com/icons/linkedin.svg")
+                        .scope("openid,profile,email")
+                        .enabled(true)
+                        .build()
+        );
+
+        return ResponseEntity.ok(OAuthProviderResponse.builder()
+                .success(true)
+                .message("OAuth providers retrieved successfully")
+                .providers(list)
+                .build());
+    }
+
+    private String encryptField(String value) {
+        if (value == null || value.isBlank()) return "";
+        try {
+            return com.user.register.util.SecurityUtils.encrypt(value, "1234567890123456");
+        } catch (Exception e) {
+            return value;
+        }
     }
 
 

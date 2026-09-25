@@ -204,6 +204,14 @@ spring:
           filters:
             - StripPrefix=0
 
+        # ── User Service OAuth2 ─────────────────────────────────
+        - id: userservice-oauth
+          uri: ${USER_SERVICE_URL:http://localhost:8091}
+          predicates:
+            - Path=/oauth2/**,/login/oauth2/**
+          filters:
+            - StripPrefix=0
+
         # ── Common OTP Resend ───────────────────────────────────
         # Explicit route for common OTP resend to ensure proper routing
         - id: userservice-otp-resend

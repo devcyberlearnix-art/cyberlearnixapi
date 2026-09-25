@@ -39,91 +39,55 @@ public class UnifiedSecurityConfig {
 
 
     private final UnifiedJwtAuthenticationFilter unifiedJwtAuthenticationFilter;
-
     private final UnifiedJwtAuthenticationEntryPoint unauthorizedHandler;
     private final ServiceAuthFilter serviceAuthFilter;
-
-
+    private final OAuth2SuccessHandler oAuth2SuccessHandler;
 
     @Bean
-
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-
         http
-
                 .csrf(csrf -> csrf.disable())
                 .cors(cors -> cors.disable()) // Disable CORS - handled by API Gateway
-
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-
                 .exceptionHandling(ex -> ex.authenticationEntryPoint(unauthorizedHandler))
-
                 .authorizeHttpRequests(auth -> auth
-
                         // Public endpoints
-
                         .requestMatchers(
                             "/api/v1/auth/login",
                             "/api/v1/auth/register",
                             "/api/v1/auth/register/email",
                             "/api/v1/auth/register/resend-otp").permitAll()
-
                         .requestMatchers("/api/v1/auth/verify-email").permitAll()
-
                         .requestMatchers("/api/v1/auth/login/otp/**").permitAll()
-
                         .requestMatchers("/api/v1/auth/password/**").permitAll()
-
                         .requestMatchers("/api/v1/auth/otp/**").permitAll()
-
                         .requestMatchers("/api/v1/auth/refresh").permitAll()
-
                         .requestMatchers("/api/v1/auth/logout").permitAll()
-
                         .requestMatchers("/api/v1/auth/switch-role").permitAll()
 
-                        
-
-                        // OAuth2 endpoints
-
+                        // Social Login & OAuth endpoints
+                        .requestMatchers("/api/v1/auth/social-login/**").permitAll()
+                        .requestMatchers("/api/v1/auth/oauth/**").permitAll()
                         .requestMatchers("/oauth2/**").permitAll()
-
-                        
+                        .requestMatchers("/login/oauth2/**").permitAll()
 
                         // Health check endpoints
-
                         .requestMatchers("/actuator/health").permitAll()
-
                         .requestMatchers("/actuator/info").permitAll()
 
-                        
-
                         // Swagger documentation
-
                         .requestMatchers("/swagger-ui/**").permitAll()
-
                         .requestMatchers("/v3/api-docs/**").permitAll()
 
-                        
-
                         // H2 console
-
                         .requestMatchers("/h2-console/**").permitAll()
 
-                        
-
                         // Public profile endpoints
-
                         .requestMatchers("/api/v1/public/**").permitAll()
 
-                        
-
                         // User management endpoints (require authentication)
-
                         .requestMatchers("/api/v1/users/me").authenticated()
-
                         .requestMatchers("/api/v1/users/me/photo").authenticated()
-
                         .requestMatchers("/api/v1/users/me/sessions/**").authenticated()
 
                         // Email change — all three steps require an authenticated user
@@ -131,77 +95,45 @@ public class UnifiedSecurityConfig {
 
                         // Password change — requires authentication
                         .requestMatchers("/api/v1/users/change-password/**").authenticated()
-                        
+
                         // Admin user management endpoints (require admin role or service token)
-
                         .requestMatchers("/api/v1/users/stats").hasAnyRole("MAIN_ADMIN", "SUB_ADMIN")
-
                         .requestMatchers("/api/v1/users").permitAll()
-
                         .requestMatchers("/api/v1/users/{id}").permitAll()
-
                         .requestMatchers("/api/v1/users/{id}/status").permitAll()
-
                         .requestMatchers("/api/v1/users/{id}/**").permitAll()
 
-                        
-
                         // Instructor application endpoints
-
                         .requestMatchers("/api/v1/instructors/applications").authenticated()
-
                         .requestMatchers("/api/v1/instructors/applications/me").authenticated()
 
-                        
-
                         // Student endpoints
-
                         .requestMatchers("/api/v1/students/**").hasAnyRole("STUDENT", "INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN")
 
-                        
-
                         // Instructor endpoints
-
                         .requestMatchers("/api/v1/instructors/**").hasAnyRole("INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN")
 
-                        
-
                         // Admin endpoints
-
                         .requestMatchers("/api/v1/admins/**").hasAnyRole("MAIN_ADMIN", "SUB_ADMIN")
-
                         .requestMatchers("/api/v1/admin/instructors/**").authenticated()  // Business logic handles role check
 
-                        
-
                         // Super Admin only endpoints
-
                         .requestMatchers("/api/v1/super-admin/**").hasRole("MAIN_ADMIN")
 
-                        
-
                         // Course management
-
                         .requestMatchers("/api/v1/courses/**").authenticated()
 
-                        
-
                         // Payment endpoints
-
                         .requestMatchers("/api/v1/payments/**").authenticated()
 
-                        
-
                         // Any other request requires authentication
-
                         .anyRequest().authenticated()
-
                 )
-
+                .oauth2Login(oauth2 -> oauth2
+                        .successHandler(oAuth2SuccessHandler)
+                )
                 .addFilterBefore(serviceAuthFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(unifiedJwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
-
-
 
         return http.build();
 

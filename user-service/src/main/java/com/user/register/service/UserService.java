@@ -39,14 +39,7 @@ import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
 
 import org.springframework.web.multipart.MultipartFile;
-
-import com.cloudinary.Cloudinary;
-
-
-
 import java.util.ArrayList;
-
-import com.cloudinary.utils.ObjectUtils;
 
 import org.springframework.beans.factory.annotation.Value;
 
@@ -102,19 +95,11 @@ public class UserService {
 
     private AuditLogRepository auditLogRepository;
 
-    private final Cloudinary cloudinary;
+    private final GoogleDriveService googleDriveService;
 
     private final SessionService sessionService;
 
     private final TokenBlacklistService tokenBlacklistService;
-
-
-
-    @Value("${cloudinary.folder:cyberlearnix}")
-
-    private String folder;
-
-
 
     public UserService(UserRepository userRepository,
 
@@ -126,7 +111,7 @@ public class UserService {
 
                        AuditLogRepository auditLogRepository,
 
-                       Cloudinary cloudinary,
+                       GoogleDriveService googleDriveService,
 
                        SessionService sessionService,
 
@@ -142,7 +127,7 @@ public class UserService {
 
         this.auditLogRepository = auditLogRepository;
 
-        this.cloudinary = cloudinary;
+        this.googleDriveService = googleDriveService;
 
         this.sessionService = sessionService;
 
@@ -684,19 +669,7 @@ public class UserService {
 
 
 
-            Map<?, ?> options = ObjectUtils.asMap(
-
-                    "folder", folder,
-
-                    "public_id", filename,
-
-                    "resource_type", "image"
-
-            );
-
-            Map<?, ?> uploadResult = cloudinary.uploader().upload(fileBytes, options);
-
-            String fileUrl = (String) uploadResult.get("secure_url");
+            String fileUrl = googleDriveService.uploadBytes(fileBytes, filename + "." + extension, contentType);
 
 
 

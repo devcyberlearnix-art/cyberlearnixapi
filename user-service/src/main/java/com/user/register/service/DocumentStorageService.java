@@ -1,25 +1,18 @@
 package com.user.register.service;
 
-import com.cloudinary.Cloudinary;
-import com.cloudinary.utils.ObjectUtils;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.util.Map;
 import java.util.UUID;
 
 @Service
 public class DocumentStorageService {
 
-    private final Cloudinary cloudinary;
+    private final GoogleDriveService googleDriveService;
 
-    @Value("${cloudinary.folder:cyberlearnix}")
-    private String folder;
-
-    public DocumentStorageService(Cloudinary cloudinary) {
-        this.cloudinary = cloudinary;
+    public DocumentStorageService(GoogleDriveService googleDriveService) {
+        this.googleDriveService = googleDriveService;
     }
 
     public String store(UUID userId, String fieldName, MultipartFile file) throws IOException {
@@ -32,20 +25,9 @@ public class DocumentStorageService {
                 ? original.replaceAll("[^a-zA-Z0-9._-]", "_")
                 : "file";
         
-        // Use a unique name including fieldName, userId, and timestamp to avoid conflicts in that folder
-        String publicId = userId.toString() + "_" + fieldName + "_" + System.currentTimeMillis() + "_" + safeName;
-        // Strip file extension from publicId since Cloudinary handles extensions automatically
-        if (publicId.contains(".")) {
-            publicId = publicId.substring(0, publicId.lastIndexOf("."));
-        }
+        String uploadFileName = userId.toString() + "_" + fieldName + "_" + System.currentTimeMillis() + "_" + safeName;
+        String contentType = file.getContentType() != null ? file.getContentType() : "application/octet-stream";
 
-        Map<?, ?> options = ObjectUtils.asMap(
-                "folder", folder,
-                "public_id", publicId,
-                "resource_type", "auto"
-        );
-
-        Map<?, ?> uploadResult = cloudinary.uploader().upload(file.getBytes(), options);
-        return (String) uploadResult.get("secure_url");
+        return googleDriveService.uploadBytes(file.getBytes(), uploadFileName, contentType);
     }
 }

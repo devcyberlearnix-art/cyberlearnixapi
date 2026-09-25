@@ -13,8 +13,21 @@ public interface UserSessionRepository extends JpaRepository<UserSession, UUID> 
     List<UserSession> findByUser(User user);
     void deleteByUser(User user);
 
-    // ✅ Add this method to find a session by its token
-    Optional<UserSession> findByToken(String token);
-    Optional<UserSession> findByAccessToken(String token);
-    Optional<UserSession> findByRefreshToken(String token);
+    Optional<UserSession> findFirstByToken(String token);
+    default Optional<UserSession> findByToken(String token) {
+        if (token == null || token.isBlank()) return Optional.empty();
+        return findFirstByToken(token);
+    }
+
+    Optional<UserSession> findFirstByAccessToken(String token);
+    default Optional<UserSession> findByAccessToken(String token) {
+        if (token == null || token.isBlank()) return Optional.empty();
+        return findFirstByAccessToken(token);
+    }
+
+    Optional<UserSession> findFirstByRefreshToken(String token);
+    default Optional<UserSession> findByRefreshToken(String token) {
+        if (token == null || token.isBlank()) return Optional.empty();
+        return findFirstByRefreshToken(token);
+    }
 }

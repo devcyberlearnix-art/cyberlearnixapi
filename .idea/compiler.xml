@@ -71,6 +71,9 @@
       <module name="cyberlearnix.course-service" options="-parameters" />
       <module name="cyberlearnix.course-service.main" options="-parameters" />
       <module name="cyberlearnix.course-service.test" options="-parameters" />
+      <module name="cyberlearnix.file-service" options="-parameters" />
+      <module name="cyberlearnix.file-service.main" options="-parameters" />
+      <module name="cyberlearnix.file-service.test" options="-parameters" />
       <module name="cyberlearnix.instructor-service" options="-parameters" />
       <module name="cyberlearnix.instructor-service.main" options="-parameters" />
       <module name="cyberlearnix.instructor-service.test" options="-parameters" />

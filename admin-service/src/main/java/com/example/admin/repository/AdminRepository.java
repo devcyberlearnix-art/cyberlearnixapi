@@ -10,7 +10,11 @@ import java.util.UUID;
 
 public interface AdminRepository extends JpaRepository<Admin, UUID> {
 
-    Optional<Admin> findByEmail(String email);
+    Optional<Admin> findFirstByEmail(String email);
+    default Optional<Admin> findByEmail(String email) {
+        if (email == null || email.isBlank()) return Optional.empty();
+        return findFirstByEmail(email);
+    }
 
     List<Admin> findByAdminType(AdminType adminType);
 }

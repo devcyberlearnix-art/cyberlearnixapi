@@ -50,12 +50,6 @@ import org.springframework.web.multipart.MultipartHttpServletRequest;
 
 import org.springframework.web.server.ResponseStatusException;
 
-import com.cloudinary.Cloudinary;
-
-import com.cloudinary.utils.ObjectUtils;
-
-import org.springframework.beans.factory.annotation.Value;
-
 import java.io.ByteArrayOutputStream;
 
 
@@ -99,14 +93,6 @@ public class RegistrationController {
     private final TokenBlacklistService blacklistService;
 
     private final SessionService sessionService;
-
-    private final Cloudinary cloudinary;
-
-
-
-    @Value("${cloudinary.folder:cyberlearnix}")
-
-    private String folder;
 
 
 

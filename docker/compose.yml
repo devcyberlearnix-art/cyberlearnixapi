@@ -448,6 +448,35 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
+  file-service:
+    build:
+      context: ..
+      dockerfile: file-service/Dockerfile
+    image: cyberlearnix/file-service:latest
+    container_name: cyberlearnix-file-service
+    ports:
+      - "8094:8094"
+    environment:
+      SERVER_PORT: 8094
+      JAVA_TOOL_OPTIONS: ${FILE_SERVICE_JAVA_OPTS:--Xms128m -Xmx512m -XX:+UseG1GC -XX:+ExitOnOutOfMemoryError}
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/lms_file_db
+      SPRING_DATASOURCE_USERNAME: ${DB_USER:-cyberlearnix}
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-cyberlearnix123}
+      JWT_SECRET: ${JWT_ACCESS_SECRET:-myVerySecretKeyForAccessTokenThatIsAtLeast32Chars}
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+      GOOGLE_REFRESH_TOKEN: ${GOOGLE_REFRESH_TOKEN}
+      GOOGLE_FOLDER_ID: ${GOOGLE_FOLDER_ID:-1nLiT67PMJLS_fDw4M_jJ_qOdA0qenQYJ}
+      DB_HOST: postgres
+      DB_PORT: 5432
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    restart: unless-stopped
+
 volumes:
   pgdata:
   redisdata:
