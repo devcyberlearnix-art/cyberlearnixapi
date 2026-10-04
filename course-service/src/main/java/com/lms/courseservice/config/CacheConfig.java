@@ -3,9 +3,12 @@ package com.lms.courseservice.config;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.lms.courseservice.dto.CourseDetailsDTO;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
+import org.springframework.data.redis.serializer.Jackson2JsonRedisSerializer;
 import org.springframework.data.redis.cache.RedisCacheConfiguration;
 import org.springframework.data.redis.cache.RedisCacheManager;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
@@ -19,6 +22,7 @@ import java.util.Map;
 
 @Configuration
 @EnableCaching
+@Profile("!test")
 public class CacheConfig {
 
     @Bean
@@ -47,6 +51,10 @@ public class CacheConfig {
         // Individual banner cache - longer TTL
         cacheConfigurations.put("banners",
                 defaultConfig.entryTtl(Duration.ofHours(2)));
+
+        cacheConfigurations.put("courseDetails",
+                defaultConfig.serializeValuesWith(RedisSerializationContext.SerializationPair
+                        .fromSerializer(new Jackson2JsonRedisSerializer<>(CourseDetailsDTO.class))));
 
         return RedisCacheManager.builder(connectionFactory)
                 .cacheDefaults(defaultConfig)

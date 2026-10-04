@@ -6,7 +6,9 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
-@Table(name = "wishlist_items")
+@Table(name = "wishlist_items", uniqueConstraints = {
+    @UniqueConstraint(name = "uk_wishlist_user_course", columnNames = {"user_id", "course_id"})
+})
 @Getter
 @Setter
 @NoArgsConstructor

@@ -209,11 +209,11 @@ public class CourseDetailsService {
                 .filter(e -> "ACTIVE".equals(e.getStatus()))
                 .count();
         double averageProgress = enrollments.stream()
-                .mapToDouble(Enrollment::getProgress)
+                .mapToDouble(enrollment -> enrollment.getProgress() == null ? 0.0 : enrollment.getProgress())
                 .average()
                 .orElse(0.0);
         long completionCount = enrollments.stream()
-                .filter(e -> e.getProgress() >= 100.0)
+                .filter(e -> e.getProgress() != null && e.getProgress() >= 100.0)
                 .count();
 
         return CourseDetailsDTO.CourseStatsDTO.builder()

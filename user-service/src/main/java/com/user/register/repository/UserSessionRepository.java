@@ -17,4 +17,7 @@ public interface UserSessionRepository extends JpaRepository<UserSession, UUID> 
     Optional<UserSession> findByToken(String token);
     Optional<UserSession> findByAccessToken(String token);
     Optional<UserSession> findByRefreshToken(String token);
+    @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+    @org.springframework.data.jpa.repository.Query("select s from UserSession s where s.refreshToken = :token")
+    Optional<UserSession> findForUpdateByRefreshToken(@org.springframework.data.repository.query.Param("token") String token);
 }

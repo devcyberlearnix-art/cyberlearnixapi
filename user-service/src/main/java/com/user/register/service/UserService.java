@@ -2,7 +2,6 @@ package com.user.register.service;
 
 import com.user.register.service.SessionService;
 
-
 import org.springframework.security.core.Authentication;
 
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -14,8 +13,11 @@ import com.user.register.entity.InstructorApplication;
 import com.user.register.entity.User;
 
 import com.user.register.repository.AuditLogRepository;
+import com.user.register.repository.EmailChangeRequestRepository;
 
 import com.user.register.repository.InstructorApplicationRepository;
+import com.user.register.repository.PasswordHistoryRepository;
+import com.user.register.repository.PasswordOtpRepository;
 
 import com.user.register.repository.UserRepository;
 
@@ -41,7 +43,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.cloudinary.Cloudinary;
 
-
 import java.util.ArrayList;
 
 import com.cloudinary.utils.ObjectUtils;
@@ -49,7 +50,6 @@ import com.cloudinary.utils.ObjectUtils;
 import org.springframework.beans.factory.annotation.Value;
 
 import java.io.ByteArrayOutputStream;
-
 
 import javax.imageio.ImageIO;
 
@@ -77,17 +77,18 @@ import java.util.UUID;
 
 import java.util.stream.Collectors;
 
-
 @Service
 
 public class UserService {
-
 
     private final UserRepository userRepository;
 
     private final UserSessionRepository sessionRepository;
 
     private final InstructorApplicationRepository instructorApplicationRepository;
+    private final EmailChangeRequestRepository emailChangeRequestRepository;
+    private final PasswordHistoryRepository passwordHistoryRepository;
+    private final PasswordOtpRepository passwordOtpRepository;
 
     private final UnifiedJwtService unifiedJwtService;
 
@@ -103,33 +104,41 @@ public class UserService {
 
     private final TokenBlacklistService tokenBlacklistService;
 
+    private final GoogleDriveService googleDriveService;
 
     @Value("${cloudinary.folder:cyberlearnix}")
 
     private String folder;
 
-
     public UserService(UserRepository userRepository,
 
-                       UserSessionRepository sessionRepository,
+            UserSessionRepository sessionRepository,
 
-                       InstructorApplicationRepository instructorApplicationRepository,
+            InstructorApplicationRepository instructorApplicationRepository,
+            EmailChangeRequestRepository emailChangeRequestRepository,
+            PasswordHistoryRepository passwordHistoryRepository,
+            PasswordOtpRepository passwordOtpRepository,
 
-                       UnifiedJwtService unifiedJwtService,
+            UnifiedJwtService unifiedJwtService,
 
-                       AuditLogRepository auditLogRepository,
+            AuditLogRepository auditLogRepository,
 
-                       Cloudinary cloudinary,
+            Cloudinary cloudinary,
 
-                       SessionService sessionService,
+            SessionService sessionService,
 
-                       TokenBlacklistService tokenBlacklistService) {
+            TokenBlacklistService tokenBlacklistService,
+
+            GoogleDriveService googleDriveService) {
 
         this.userRepository = userRepository;
 
         this.sessionRepository = sessionRepository;
 
         this.instructorApplicationRepository = instructorApplicationRepository;
+    this.emailChangeRequestRepository = emailChangeRequestRepository;
+    this.passwordHistoryRepository = passwordHistoryRepository;
+    this.passwordOtpRepository = passwordOtpRepository;
 
         this.unifiedJwtService = unifiedJwtService;
 
@@ -141,17 +150,19 @@ public class UserService {
 
         this.tokenBlacklistService = tokenBlacklistService;
 
+        this.googleDriveService = googleDriveService;
+
     }
 
-
     /**
-
+     * 
      * Resolves the authenticated user's UUID.
-
-     * Primary: SecurityContext (populated by UnifiedJwtAuthenticationFilter from gateway X-User-Id header or JWT).
-
+     * 
+     * Primary: SecurityContext (populated by UnifiedJwtAuthenticationFilter from
+     * gateway X-User-Id header or JWT).
+     * 
      * Fallback: parse JWT from Authorization header (for direct service access).
-
+     * 
      */
 
     private UUID resolveAuthenticatedUserId(HttpServletRequest request) {
@@ -174,7 +185,6 @@ public class UserService {
 
         }
 
-
         // 2️⃣ Fallback: parse JWT from Authorization header using UnifiedJwtService
 
         String authHeader = request.getHeader("Authorization");
@@ -184,24 +194,30 @@ public class UserService {
             String token = authHeader.substring(7);
 
             try {
-
                 String userIdStr = unifiedJwtService.extractUserId(token);
-
                 return UUID.fromString(userIdStr);
-
             } catch (Exception e) {
-
-                throw new RuntimeException("Invalid JWT token: " + e.getMessage());
-
+                // Ignore and try cookie fallback
             }
-
         }
 
+        // 3️⃣ Fallback: check cookies for accessToken
+        if (request.getCookies() != null) {
+            for (jakarta.servlet.http.Cookie cookie : request.getCookies()) {
+                if ("accessToken".equals(cookie.getName()) && cookie.getValue() != null
+                        && !cookie.getValue().isEmpty()) {
+                    try {
+                        String userIdStr = unifiedJwtService.extractUserId(cookie.getValue());
+                        return UUID.fromString(userIdStr);
+                    } catch (Exception ignored) {
+                    }
+                }
+            }
+        }
 
-        throw new RuntimeException("Missing authentication: no SecurityContext or Authorization header");
-
+        throw new RuntimeException(
+                "Missing authentication: no SecurityContext, Authorization header, or accessToken cookie");
     }
-
 
     public UserProfileResponse getLoggedInUserProfile(HttpServletRequest request) {
 
@@ -209,11 +225,9 @@ public class UserService {
 
         UUID userId = resolveAuthenticatedUserId(request);
 
-
         // 2️⃣ Try to fetch user from local DB first
 
         Optional<User> userOptional = userRepository.findById(userId);
-
 
         if (userOptional.isPresent()) {
 
@@ -239,7 +253,6 @@ public class UserService {
 
     }
 
-
     private UserProfileResponse buildUserProfileFromUser(User user) {
 
         // Decrypt fields before returning
@@ -260,7 +273,6 @@ public class UserService {
 
         String organization = decrypt(user.getOrganization());
 
-
         List<SessionDto> activeSessions = sessionRepository.findByUser(user)
 
                 .stream()
@@ -271,7 +283,7 @@ public class UserService {
 
                         s.getId(),
 
-                        user.getId(),   // ✅ UUID safe
+                        user.getId(), // ✅ UUID safe
 
                         s.getDeviceInfo(),
 
@@ -317,9 +329,9 @@ public class UserService {
 
                 user.getHighestQualification(),
 
-                user.getId(),              // ✅ UUID HERE
+                user.getId(), // ✅ UUID HERE
 
-                user.getEffectiveRole(),       // ✅ dynamic role
+                user.getEffectiveRole(), // ✅ dynamic role
 
                 user.getStatus().name(),
 
@@ -334,7 +346,6 @@ public class UserService {
         );
 
     }
-
 
     private UserProfileResponse fetchAdminProfileFromAdminService(UUID userId, HttpServletRequest request) {
 
@@ -352,7 +363,6 @@ public class UserService {
 
             String token = authHeader.substring(7);
 
-
             // Extract email from JWT
 
             String email = unifiedJwtService.extractEmail(token);
@@ -363,38 +373,37 @@ public class UserService {
 
             String assignedService = unifiedJwtService.extractAssignedService(token);
 
-
             // Build profile response from JWT claims (admin data is in admin database)
 
             return new UserProfileResponse(
 
-                    "Admin",  // firstName
+                    "Admin", // firstName
 
-                    "User",   // lastName
+                    "User", // lastName
 
                     email,
 
-                    "",       // mobile
+                    "", // mobile
 
-                    "",       // dob
+                    "", // dob
 
-                    "",       // profilePhoto
+                    "", // profilePhoto
 
-                    "",       // city
+                    "", // city
 
-                    "",       // state
+                    "", // state
 
-                    "",       // country
+                    "", // country
 
-                    "en",     // preferredLanguage
+                    "en", // preferredLanguage
 
-                    "",       // organization
+                    "", // organization
 
-                    "",       // skills
+                    "", // skills
 
-                    "",       // fieldOfStudy
+                    "", // fieldOfStudy
 
-                    "",       // highestQualification
+                    "", // highestQualification
 
                     userId,
 
@@ -402,13 +411,13 @@ public class UserService {
 
                     "ACTIVE",
 
-                    null,     // createdAt
+                    null, // createdAt
 
-                    null,     // updatedAt
+                    null, // updatedAt
 
-                    null,     // lastLoginAt
+                    null, // lastLoginAt
 
-                    new ArrayList<>()  // activeSessions
+                    new ArrayList<>() // activeSessions
 
             );
 
@@ -420,14 +429,14 @@ public class UserService {
 
     }
 
-
     // ----------------------------
 
     // Decrypt helper using your SecurityUtils
 
     private String decrypt(String value) {
 
-        if (value == null) return null;
+        if (value == null)
+            return null;
 
         try {
 
@@ -442,7 +451,6 @@ public class UserService {
         }
 
     }
-
 
     public UserProfileResponse updateUserProfile(HttpServletRequest request, UpdateUserProfileRequest updateRequest) {
 
@@ -504,28 +512,28 @@ public class UserService {
 
         }
 
-
         // 4️⃣ Update other fields
 
         if (updateRequest.getPreferredLanguage() != null)
 
             user.setPreferredLanguage(updateRequest.getPreferredLanguage());
 
-        if (updateRequest.getProfilePhoto() != null) user.setProfilePhoto(updateRequest.getProfilePhoto());
+        if (updateRequest.getProfilePhoto() != null)
+            user.setProfilePhoto(updateRequest.getProfilePhoto());
 
-        if (updateRequest.getSkills() != null) user.setSkills(updateRequest.getSkills());
+        if (updateRequest.getSkills() != null)
+            user.setSkills(updateRequest.getSkills());
 
-        if (updateRequest.getFieldOfStudy() != null) user.setFieldOfStudy(updateRequest.getFieldOfStudy());
+        if (updateRequest.getFieldOfStudy() != null)
+            user.setFieldOfStudy(updateRequest.getFieldOfStudy());
 
         if (updateRequest.getHighestQualification() != null)
 
             user.setHighestQualification(updateRequest.getHighestQualification());
 
-
         // 5️⃣ Save user
 
         userRepository.save(user);
-
 
         // 6️⃣ Build simplified response (decrypted fields only)
 
@@ -585,7 +593,6 @@ public class UserService {
 
     }
 
-
     public UserProfileResponse uploadProfilePhoto(HttpServletRequest request, MultipartFile file) {
 
         // 1️⃣ Get authenticated user ID
@@ -597,7 +604,6 @@ public class UserService {
         User user = userRepository.findById(userId)
 
                 .orElseThrow(() -> new RuntimeException("User not found"));
-
 
         // 3️⃣ Validate file
 
@@ -613,12 +619,12 @@ public class UserService {
 
         }
 
-
         String contentType = file.getContentType();
 
         if (contentType == null ||
 
-                !(contentType.equals("image/jpeg") || contentType.equals("image/png") || contentType.equals("image/webp"))) {
+                !(contentType.equals("image/jpeg") || contentType.equals("image/png")
+                        || contentType.equals("image/webp"))) {
 
             throw new RuntimeException("Only JPG, PNG, or WEBP files are allowed");
 
@@ -640,12 +646,11 @@ public class UserService {
 
             g.dispose();
 
-            // 5️⃣ Save file to byte array and upload to Cloudinary
+            // 5️⃣ Save file to byte array and upload to Google Drive
 
             String extension = contentType.equals("image/jpeg") ? "jpg" : contentType.split("/")[1];
 
-            String filename = UUID.randomUUID().toString();
-
+            String filename = UUID.randomUUID().toString() + "." + extension;
 
             ByteArrayOutputStream os = new ByteArrayOutputStream();
 
@@ -653,21 +658,8 @@ public class UserService {
 
             byte[] fileBytes = os.toByteArray();
 
-
-            Map<?, ?> options = ObjectUtils.asMap(
-
-                    "folder", folder,
-
-                    "public_id", filename,
-
-                    "resource_type", "image"
-
-            );
-
-            Map<?, ?> uploadResult = cloudinary.uploader().upload(fileBytes, options);
-
-            String fileUrl = (String) uploadResult.get("secure_url");
-
+            // Upload to Google Drive instead of Cloudinary
+            String fileUrl = googleDriveService.uploadProfilePhoto(filename, fileBytes);
 
             // 6️⃣ Update user
 
@@ -690,7 +682,6 @@ public class UserService {
                             s.getId(),
 
                             user.getId(),
-
 
                             s.getDeviceInfo(),
 
@@ -760,7 +751,49 @@ public class UserService {
 
     }
 
+    public String uploadPhotoPublic(MultipartFile file) {
+        try {
+            // 1️⃣ Validate file
+            if (file.isEmpty()) {
+                throw new RuntimeException("No file uploaded");
+            }
 
+            if (file.getSize() > 5 * 1024 * 1024) { // 5MB
+                throw new RuntimeException("File size exceeds 5MB limit");
+            }
+
+            String contentType = file.getContentType();
+            if (contentType == null ||
+                    !(contentType.equals("image/jpeg") || contentType.equals("image/png")
+                            || contentType.equals("image/webp"))) {
+                throw new RuntimeException("Only JPG, PNG, or WEBP files are allowed");
+            }
+
+            // 2️⃣ Resize to 512x512
+            BufferedImage originalImage = ImageIO.read(file.getInputStream());
+            BufferedImage resizedImage = new BufferedImage(512, 512, BufferedImage.TYPE_INT_ARGB);
+            Graphics2D g = resizedImage.createGraphics();
+            g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+            g.drawImage(originalImage, 0, 0, 512, 512, null);
+            g.dispose();
+
+            // 3️⃣ Save file to byte array and upload to Google Drive
+            String extension = contentType.equals("image/jpeg") ? "jpg" : contentType.split("/")[1];
+            String filename = UUID.randomUUID().toString() + "." + extension;
+
+            ByteArrayOutputStream os = new ByteArrayOutputStream();
+            ImageIO.write(resizedImage, extension, os);
+            byte[] fileBytes = os.toByteArray();
+
+            // Upload to Google Drive instead of Cloudinary
+            return googleDriveService.uploadProfilePhoto(filename, fileBytes);
+
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to process uploaded image: " + e.getMessage(), e);
+        }
+    }
+
+    @Transactional
     public ApiResponse<UserProfileResponse> softDeleteUser(HttpServletRequest request) {
 
         // 1️⃣ Get authenticated user ID
@@ -769,10 +802,9 @@ public class UserService {
 
         // 2️⃣ Fetch user
 
-        User user = userRepository.findById(userId)
+        User user = userRepository.findForUpdateById(userId)
 
                 .orElseThrow(() -> new RuntimeException("User not found"));
-
 
         // 3️⃣ Soft delete: mark user as DELETED
 
@@ -787,11 +819,17 @@ public class UserService {
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
             String currentToken = authHeader.substring(7);
             tokenBlacklistService.blacklistToken(currentToken);
+        } else if (request.getCookies() != null) {
+            for (jakarta.servlet.http.Cookie cookie : request.getCookies()) {
+                if ("accessToken".equals(cookie.getName()) && cookie.getValue() != null) {
+                    tokenBlacklistService.blacklistToken(cookie.getValue());
+                    break;
+                }
+            }
         }
 
         // 5️⃣ Blacklist all sessions & tokens of this user
         sessionService.invalidateAllSessionsForUser(user);
-
 
         UserProfileResponse profile = new UserProfileResponse(
 
@@ -823,7 +861,7 @@ public class UserService {
 
                 user.getHighestQualification(),
 
-                user.getId(),   // ✅ UUID (FIXED HERE)
+                user.getId(), // ✅ UUID (FIXED HERE)
 
                 user.getRole().name(),
 
@@ -838,7 +876,6 @@ public class UserService {
                 null
 
         );
-
 
         // 5️⃣ Return detailed ApiResponse
 
@@ -856,7 +893,6 @@ public class UserService {
 
     }
 
-
     public User socialLogin(String email, String provider) {
 
         // 1️⃣ Check if user exists
@@ -864,7 +900,6 @@ public class UserService {
         Optional<User> userOpt = userRepository.findByEmail(email);
 
         User user;
-
 
         if (userOpt.isPresent()) {
 
@@ -878,24 +913,20 @@ public class UserService {
 
             user.setEmail(email);
 
-
-            // Use an existing status like PENDING_VERIFICATION or create SOCIAL_LOGIN in enum
+            // Use an existing status like PENDING_VERIFICATION or create SOCIAL_LOGIN in
+            // enum
 
             user.setStatus(User.Status.PENDING_VERIFICATION);
 
-
             user.setRole(User.Role.STUDENT);
-
 
             // Store the provider (Google, GitHub, LinkedIn)
 
             user.setProvider(provider);
 
-
             userRepository.save(user);
 
         }
-
 
         // 3️⃣ Return user object (later JWT or session can be generated)
 
@@ -903,13 +934,11 @@ public class UserService {
 
     }
 
-
     public List<User> getAllUsers() {
 
         return userRepository.findAll();
 
     }
-
 
     public List<UserProfileResponse> getAllUsersProfiles() {
 
@@ -1002,13 +1031,11 @@ public class UserService {
         return response;
     }
 
-
     public List<User> getAllInstructors() {
 
         return userRepository.findByRole(User.Role.INSTRUCTOR);
 
     }
-
 
     public UserProfileResponse getUserById(UUID id) {
 
@@ -1016,10 +1043,9 @@ public class UserService {
 
                 .orElseThrow(() -> new RuntimeException("User not found with id: " + id));
 
-
         return UserProfileResponse.builder()
 
-                .userId(user.getId())   // UUID goes here
+                .userId(user.getId()) // UUID goes here
 
                 .firstName(decrypt(user.getFirstName()))
 
@@ -1087,21 +1113,25 @@ public class UserService {
 
     public void deleteUserById(UUID id) {
 
+        User user = userRepository.findForUpdateById(id)
+        .orElseThrow(() -> new org.springframework.web.server.ResponseStatusException(
+            org.springframework.http.HttpStatus.NOT_FOUND, "User not found"));
 
-        User user = userRepository.findById(id)
-
-                .orElseThrow(() -> new RuntimeException("User not found with id: " + id));
-
-
-        sessionRepository.deleteByUser(user);   // ✅
-
-        auditLogRepository.deleteByUser(user);  // ✅
-
-
-        userRepository.delete(user);            // ✅ now works
+    sessionService.invalidateAllSessionsForUser(user);
+    emailChangeRequestRepository.deleteByUserId(id);
+    instructorApplicationRepository.deleteByUserId(id);
+    passwordOtpRepository.deleteByUserId(id);
+    passwordHistoryRepository.deleteByUserId(id);
+        List<com.user.register.entity.AuditLog> auditHistory = auditLogRepository.findByUser(user);
+        auditHistory.forEach(audit -> {
+            audit.setUserIdSnapshot(id);
+            audit.setUser(null);
+        });
+        auditLogRepository.saveAll(auditHistory);
+        // Generic and email-change audit history are retained without a user FK.
+    userRepository.delete(user);
 
     }
-
 
     private void syncInstructorApplication(UUID userId, InstructorApplication.ApplicationStatus status) {
 
@@ -1119,7 +1149,6 @@ public class UserService {
 
     }
 
-
     public Map<String, Object> getUserStats() {
 
         long totalUsers = userRepository.count();
@@ -1136,20 +1165,17 @@ public class UserService {
 
         long deletedUsers = userRepository.countByStatus(User.Status.DELETED);
 
-
         long totalStudents = userRepository.countByRole(User.Role.STUDENT);
         long totalInstructors = userRepository.countByRole(User.Role.INSTRUCTOR);
         long totalMainAdmins = userRepository.countByRole(User.Role.MAIN_ADMIN);
         long totalSubAdmins = userRepository.countByRole(User.Role.SUB_ADMIN);
         long totalAdmins = totalMainAdmins + totalSubAdmins;
 
-
         // Calculate new users this month
 
         LocalDateTime startOfMonth = LocalDateTime.now().withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0);
 
         long newUsersThisMonth = userRepository.countByCreatedAtAfter(startOfMonth);
-
 
         return Map.of(
 

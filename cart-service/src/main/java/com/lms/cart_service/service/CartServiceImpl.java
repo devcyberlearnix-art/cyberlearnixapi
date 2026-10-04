@@ -213,4 +213,15 @@ public class CartServiceImpl implements CartService {
     public CartResponse getCartForOrderService(String userId) {
         return buildCartResponse(userId);
     }
+
+    @Override
+    @Transactional
+    public AddCourseResponse addToCartInternal(String userId, Long courseId) {
+        // Create a CartRequest for the internal add operation
+        CartRequest request = new CartRequest();
+        request.setCourseId(courseId);
+        
+        // Reuse the existing addToCart logic
+        return addToCart(userId, request);
+    }
 }

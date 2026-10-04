@@ -2,8 +2,8 @@ package com.lms.review.service;
 
 import com.lms.review.client.CourseCheckResponse;
 import com.lms.review.client.CourseClient;
-import com.lms.review.client.EnrollmentCheckResponse;
 import com.lms.review.client.EnrollmentClient;
+import com.lms.review.client.EnrollmentInfo;
 import com.lms.review.client.StudentNameResolver;
 import com.lms.review.dto.request.CreateReviewRequest;
 import com.lms.review.dto.request.UpdateReviewRequest;
@@ -54,8 +54,10 @@ public class ReviewService {
                     throw new BusinessException("You have already reviewed this course", HttpStatus.CONFLICT);
                 });
 
-        EnrollmentCheckResponse enrollment = enrollmentClient.checkEnrollment(request.getCourseId());
-        if (enrollment == null || !enrollment.isEnrolled()) {
+        List<EnrollmentInfo> enrollments = enrollmentClient.getEnrollmentsByUserId(userId);
+        boolean isEnrolled = enrollments.stream()
+                .anyMatch(e -> e.getCourseId().equals(request.getCourseId()));
+        if (!isEnrolled) {
             throw new BusinessException("Only enrolled students can review this course", HttpStatus.FORBIDDEN);
         }
 
@@ -107,7 +109,8 @@ public class ReviewService {
     @Transactional
     public ApiResponse deleteReview(UserPrincipal principal, Long reviewId) {
         Review review = getReviewForModification(principal, reviewId);
-        reviewRepository.delete(review);
+        review.setStatus(ReviewStatus.DELETED);
+        reviewRepository.save(review);
 
         return ApiResponse.builder()
                 .success(true)
@@ -211,6 +214,10 @@ public class ReviewService {
         Review review = reviewRepository.findById(reviewId)
                 .orElseThrow(() -> new BusinessException("Review not found", HttpStatus.NOT_FOUND));
 
+        if (review.getStatus() == ReviewStatus.DELETED) {
+            throw new BusinessException("Cannot modify a deleted review", HttpStatus.BAD_REQUEST);
+        }
+
         boolean isAdmin = principal.getAuthorities().stream()
                 .anyMatch(authority -> "ROLE_ADMIN".equals(authority.getAuthority()));
 
@@ -230,8 +237,13 @@ public class ReviewService {
         if (request.getRating() == null || request.getRating() < 1 || request.getRating() > 5) {
             throw new BusinessException("Rating must be between 1 and 5", HttpStatus.BAD_REQUEST);
         }
-        if (request.getComment() != null && request.getComment().length() > 2000) {
-            throw new BusinessException("Comment must not exceed 2000 characters", HttpStatus.BAD_REQUEST);
+        if (request.getComment() != null) {
+            if (request.getComment().isBlank()) {
+                throw new BusinessException("Comment cannot be blank", HttpStatus.BAD_REQUEST);
+            }
+            if (request.getComment().length() > 2000) {
+                throw new BusinessException("Comment must not exceed 2000 characters", HttpStatus.BAD_REQUEST);
+            }
         }
     }
 

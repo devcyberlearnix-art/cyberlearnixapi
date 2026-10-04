@@ -10,6 +10,8 @@ import java.util.Optional;
 import java.util.UUID;
 
 public interface PasswordOtpRepository extends JpaRepository<PasswordOtp, UUID> {
+    void deleteByUserId(UUID userId);
+
 
     Optional<PasswordOtp> findByIdAndUserId(UUID id, UUID userId);
 

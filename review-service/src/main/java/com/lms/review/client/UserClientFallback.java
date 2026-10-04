@@ -12,9 +12,9 @@ import java.util.UUID;
 public class UserClientFallback implements UserClient {
 
     @Override
-    public UserResponse getUserById(UUID userId) {
+    public UserApiResponse getUserById(UUID userId) {
         log.warn("User service unavailable for userId={}. Using placeholder name.", userId);
-        return UserResponse.builder()
+        return UserApiResponse.builder()
                 .success(false)
                 .build();
     }

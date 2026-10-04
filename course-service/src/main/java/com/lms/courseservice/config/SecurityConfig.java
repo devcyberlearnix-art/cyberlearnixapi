@@ -208,6 +208,157 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/v1/banners/*/impression").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/banners/*/click").permitAll()
 
+                        // ============== PROGRESS TRACKING (Authenticated Students) ==============
+                        // Start lecture
+                        .requestMatchers(HttpMethod.POST, "/api/v1/progress/lectures/*/start").authenticated()
+                        // Update lecture progress
+                        .requestMatchers(HttpMethod.PATCH, "/api/v1/progress/lectures/*").authenticated()
+                        // Complete lecture
+                        .requestMatchers(HttpMethod.PATCH, "/api/v1/progress/lectures/*/complete").authenticated()
+                        // Get lecture progress
+                        .requestMatchers(HttpMethod.GET, "/api/v1/progress/lectures/*").authenticated()
+                        // Get course progress
+                        .requestMatchers(HttpMethod.GET, "/api/v1/progress/courses/*").authenticated()
+                        // Resume learning
+                        .requestMatchers(HttpMethod.GET, "/api/v1/progress/courses/*/resume").authenticated()
+
+                        // ============== QUIZ MANAGEMENT (Instructor/Admin) ==============
+                        // Create quiz
+                        .requestMatchers(HttpMethod.POST, "/api/v1/quizzes", "/api/v1/quizzes/")
+                        .hasAnyRole("INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN")
+                        // Update quiz
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/quizzes/*")
+                        .hasAnyRole("INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN")
+                        // Delete quiz
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/quizzes/*")
+                        .hasAnyRole("INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN")
+                        // Publish/Unpublish quiz
+                        .requestMatchers(HttpMethod.PATCH, "/api/v1/quizzes/*/publish", "/api/v1/quizzes/*/unpublish")
+                        .hasAnyRole("INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN")
+                        // Add question to quiz
+                        .requestMatchers(HttpMethod.POST, "/api/v1/quizzes/*/questions", "/api/v1/quizzes/*/questions/")
+                        .hasAnyRole("INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN")
+                        // Update question
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/quizzes/questions/*")
+                        .hasAnyRole("INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN")
+                        // Delete question
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/quizzes/questions/*")
+                        .hasAnyRole("INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN")
+
+                        // ============== QUIZ STUDENT APIs ==============
+                        // Get student quiz
+                        .requestMatchers(HttpMethod.GET, "/api/v1/quizzes/*/student", "/api/v1/quizzes/*/student/questions")
+                        .authenticated()
+                        // Start quiz attempt
+                        .requestMatchers(HttpMethod.POST, "/api/v1/quizzes/*/attempts", "/api/v1/quizzes/*/attempts/")
+                        .authenticated()
+                        // Get current attempt
+                        .requestMatchers(HttpMethod.GET, "/api/v1/quizzes/*/attempts/current")
+                        .authenticated()
+                        // Submit answer
+                        .requestMatchers(HttpMethod.POST, "/api/v1/quizzes/*/attempts/*/answers", "/api/v1/quizzes/*/attempts/*/answers/")
+                        .authenticated()
+                        // Submit quiz attempt
+                        .requestMatchers(HttpMethod.POST, "/api/v1/quizzes/*/attempts/*/submit", "/api/v1/quizzes/*/attempts/*/submit/")
+                        .authenticated()
+                        // Get attempt result
+                        .requestMatchers(HttpMethod.GET, "/api/v1/quizzes/*/attempts/*/result")
+                        .authenticated()
+                        // Get student attempts
+                        .requestMatchers(HttpMethod.GET, "/api/v1/quizzes/*/attempts")
+                        .authenticated()
+
+                        // ============== CERTIFICATE PUBLIC VERIFICATION ==============
+                        // Verify certificate (public) - must come before /api/v1/certificates/*
+                        .requestMatchers(HttpMethod.GET, "/api/v1/certificates/verify/*")
+                        .permitAll()
+
+                        // ============== CERTIFICATE STUDENT APIs ==============
+                        // Get course certificate
+                        .requestMatchers(HttpMethod.GET, "/api/v1/certificates/courses/*")
+                        .hasAnyRole("STUDENT", "USER", "INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN")
+                        // Get certificate by ID
+                        .requestMatchers(HttpMethod.GET, "/api/v1/certificates/*")
+                        .hasAnyRole("STUDENT", "USER", "INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN")
+                        // Get my certificates
+                        .requestMatchers(HttpMethod.GET, "/api/v1/certificates/my")
+                        .hasAnyRole("STUDENT", "USER", "INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN")
+
+                        // ============== CERTIFICATE ADMIN APIs ==============
+                        // Get certificates by course
+                        .requestMatchers(HttpMethod.GET, "/api/v1/certificates/admin/courses/*")
+                        .hasAnyRole("MAIN_ADMIN", "SUB_ADMIN")
+                        // Revoke certificate
+                        .requestMatchers(HttpMethod.PATCH, "/api/v1/certificates/admin/*/revoke")
+                        .hasAnyRole("MAIN_ADMIN", "SUB_ADMIN")
+
+                        // ============== LIVE CLASS INSTRUCTOR/ADMIN APIs ==============
+                        // Create live class
+                        .requestMatchers(HttpMethod.POST, "/api/v1/live-classes")
+                        .hasAnyRole("INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN")
+                        // Update live class
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/live-classes/*")
+                        .hasAnyRole("INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN")
+                        // Get live class by ID
+                        .requestMatchers(HttpMethod.GET, "/api/v1/live-classes/*")
+                        .hasAnyRole("INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN")
+                        // Get live classes by course
+                        .requestMatchers(HttpMethod.GET, "/api/v1/live-classes/course/*")
+                        .hasAnyRole("INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN")
+                        // Get live classes by section
+                        .requestMatchers(HttpMethod.GET, "/api/v1/live-classes/section/*")
+                        .hasAnyRole("INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN")
+                        // Start live class
+                        .requestMatchers(HttpMethod.PATCH, "/api/v1/live-classes/*/start")
+                        .hasAnyRole("INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN")
+                        // Complete live class
+                        .requestMatchers(HttpMethod.PATCH, "/api/v1/live-classes/*/complete")
+                        .hasAnyRole("INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN")
+                        // Cancel live class
+                        .requestMatchers(HttpMethod.PATCH, "/api/v1/live-classes/*/cancel")
+                        .hasAnyRole("INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN")
+                        // Delete live class
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/live-classes/*")
+                        .hasAnyRole("INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN")
+
+                        // ============== LIVE CLASS STUDENT APIs ==============
+                        // Get upcoming live classes for course
+                        .requestMatchers(HttpMethod.GET, "/api/v1/live-classes/course/*/upcoming")
+                        .hasAnyRole("STUDENT", "USER", "INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN")
+                        // Join live class
+                        .requestMatchers(HttpMethod.GET, "/api/v1/live-classes/*/join")
+                        .hasAnyRole("STUDENT", "USER", "INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN")
+
+                        // ============== LIVE CLASS ATTENDANCE STUDENT APIs ==============
+                        // Join live class attendance
+                        .requestMatchers(HttpMethod.POST, "/api/v1/live-classes/*/attendance/join")
+                        .hasAnyRole("STUDENT", "USER", "INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN")
+                        // Leave live class attendance
+                        .requestMatchers(HttpMethod.PATCH, "/api/v1/live-classes/*/attendance/leave")
+                        .hasAnyRole("STUDENT", "USER", "INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN")
+                        // Get my attendance
+                        .requestMatchers(HttpMethod.GET, "/api/v1/live-classes/*/attendance/me")
+                        .hasAnyRole("STUDENT", "USER", "INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN")
+
+                        // ============== LIVE CLASS ATTENDANCE INSTRUCTOR/ADMIN APIs ==============
+                        // Get attendance for live class
+                        .requestMatchers(HttpMethod.GET, "/api/v1/live-classes/*/attendance")
+                        .hasAnyRole("INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN")
+                        // Get attendance summary
+                        .requestMatchers(HttpMethod.GET, "/api/v1/live-classes/*/attendance/summary")
+                        .hasAnyRole("INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN")
+
+                        // ============== STUDENT DASHBOARD APIS ==============
+                        // Get student dashboard overview
+                        .requestMatchers(HttpMethod.GET, "/api/v1/dashboard/student")
+                        .hasAnyRole("STUDENT", "USER")
+                        // Get student courses
+                        .requestMatchers(HttpMethod.GET, "/api/v1/dashboard/student/courses")
+                        .hasAnyRole("STUDENT", "USER")
+                        // Get course-specific dashboard
+                        .requestMatchers(HttpMethod.GET, "/api/v1/dashboard/student/courses/*")
+                        .hasAnyRole("STUDENT", "USER")
+
                         // Default: deny all other requests
                         .anyRequest().denyAll())
 

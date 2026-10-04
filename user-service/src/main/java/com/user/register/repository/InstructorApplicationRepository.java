@@ -10,6 +10,8 @@ import java.util.Optional;
 import java.util.UUID;
 
 public interface InstructorApplicationRepository extends JpaRepository<InstructorApplication, UUID> {
+    void deleteByUserId(UUID userId);
+
 
     Optional<InstructorApplication> findTopByUserIdOrderBySubmittedAtDesc(UUID userId);
 

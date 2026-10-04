@@ -1,6 +1,7 @@
 package com.lms.courseservice.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.lms.courseservice.enums.LectureType;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -30,6 +31,10 @@ public class Lecture {
     private Boolean previewEnabled;
 
     private String resources;
+
+    @Enumerated(EnumType.STRING)
+    @Builder.Default
+    private LectureType type = LectureType.VIDEO;
 
     @ManyToOne
     @JoinColumn(name = "section_id")

@@ -31,4 +31,8 @@ public class Enrollment {
     private String status;
 
     private Double progress;
+
+    private LocalDateTime completedAt;
+
+    private Long lastLectureId;
 }

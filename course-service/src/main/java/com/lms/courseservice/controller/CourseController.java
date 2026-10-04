@@ -4,6 +4,7 @@ import com.lms.courseservice.dto.ApiResponse;
 
 import com.lms.courseservice.dto.CourseInfo;
 import com.lms.courseservice.dto.CourseListResponse;
+import com.lms.courseservice.dto.CourseByIdResponse;
 import com.lms.courseservice.dto.CourseRequestDTO;
 import com.lms.courseservice.dto.DeleteCourseResponse;
 import com.lms.courseservice.dto.EnrollCourseResponse;
@@ -17,8 +18,10 @@ import com.lms.courseservice.dto.TrendingResponseData;
 import com.lms.courseservice.entity.Course;
 import com.lms.courseservice.security.JwtUtil;
 import com.lms.courseservice.service.CourseService;
+import com.lms.courseservice.service.CourseDetailsService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
@@ -32,9 +35,11 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/v1/courses")
 @RequiredArgsConstructor
+@Slf4j
 public class CourseController {
 
     private final CourseService courseService;
+    private final CourseDetailsService courseDetailsService;
     private final JwtUtil jwtUtil;
 
     /**
@@ -58,8 +63,26 @@ public class CourseController {
      */
     @GetMapping
     @Transactional(readOnly = true)
-    public List<Course> getAllCourses() {
-        return courseService.getAllCourses();
+    public ResponseEntity<org.springframework.data.domain.Page<Course>> getAllCourses(
+            @RequestParam(required = true) Integer page,
+            @RequestParam(required = true) Integer size,
+            @RequestParam(required = false) String sortBy,
+            @RequestParam(required = false) String sortDir) {
+
+        if (page < 0) {
+            throw new IllegalArgumentException("Page number must be >= 0");
+        }
+        if (size <= 0) {
+            throw new IllegalArgumentException("Page size must be > 0");
+        }
+
+        String sortField = (sortBy != null && !sortBy.isEmpty()) ? sortBy : "id";
+        org.springframework.data.domain.Sort.Direction direction =
+                (sortDir != null && sortDir.equalsIgnoreCase("desc")) ?
+                org.springframework.data.domain.Sort.Direction.DESC :
+                org.springframework.data.domain.Sort.Direction.ASC;
+
+        return ResponseEntity.ok(courseService.getAllCourses(page, size, sortField, direction));
     }
 
     /**
@@ -130,10 +153,18 @@ public class CourseController {
     }
 
     @PostMapping("/{courseId}/impressions")
-    public void trackCourseImpression(
+    public ResponseEntity<ApiResponse<Void>> trackCourseImpression(
             @PathVariable Long courseId,
             @RequestParam(defaultValue = "HOME") String source) {
         courseService.trackImpression(courseId, source);
+        
+        return ResponseEntity.ok(
+            ApiResponse.<Void>builder()
+                .success(true)
+                .message("Course impression tracked successfully")
+                .timestamp(Instant.now().toString())
+                .build()
+        );
     }
 
     /**
@@ -141,8 +172,25 @@ public class CourseController {
      */
     @GetMapping("/{id}")
     @Transactional(readOnly = true)
-    public Course getCourse(@PathVariable Long id) {
-        return courseService.getCourseById(id);
+    public CourseByIdResponse getCourse(
+            @PathVariable Long id,
+            @RequestHeader(value = "Authorization", required = false) String authorization) {
+        Course course = courseService.getCourseById(id);
+        UUID userId = null;
+        if (authorization != null && authorization.startsWith("Bearer ")) {
+            try {
+                userId = jwtUtil.extractUserId(authorization.substring(7));
+            } catch (Exception ignored) {
+                // Public course details remain available when an optional token is invalid.
+            }
+        }
+
+        try {
+            return CourseByIdResponse.from(course, courseDetailsService.getCourseDetails(id, userId));
+        } catch (RuntimeException exception) {
+            log.error("Failed to build course detail response for course {}", id, exception);
+            throw exception;
+        }
     }
 
     /**

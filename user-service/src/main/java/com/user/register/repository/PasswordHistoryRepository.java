@@ -10,6 +10,8 @@ import java.util.List;
 import java.util.UUID;
 
 public interface PasswordHistoryRepository extends JpaRepository<PasswordHistory, UUID> {
+    void deleteByUserId(UUID userId);
+
 
     @Query("SELECT ph FROM PasswordHistory ph WHERE ph.userId = :userId ORDER BY ph.createdAt DESC")
     List<PasswordHistory> findRecentByUserId(@Param("userId") UUID userId, Pageable pageable);

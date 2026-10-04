@@ -96,6 +96,20 @@ public class LectureService {
 
                 .orElseThrow(() -> new RuntimeException("Section not found"));
 
+        // Validate lecture title
+        if (lecture.getTitle() == null || lecture.getTitle().trim().isEmpty()) {
+            throw new RuntimeException("Lecture title cannot be blank");
+        }
+
+        // Validate duration
+        if (lecture.getDuration() != null && lecture.getDuration() < 0) {
+            throw new RuntimeException("Lecture duration cannot be negative");
+        }
+
+        // Validate order index
+        if (lecture.getOrderIndex() != null && lecture.getOrderIndex() < 0) {
+            throw new RuntimeException("Lecture order index must be a non-negative integer");
+        }
 
         // Prevent duplicate lecture title in same section
 
@@ -140,10 +154,12 @@ public class LectureService {
                 .orElseThrow(() -> new RuntimeException("Lecture not found"));
 
 
-        if (updatedLecture.getTitle() != null)
-
+        if (updatedLecture.getTitle() != null) {
+            if (updatedLecture.getTitle().trim().isEmpty()) {
+                throw new RuntimeException("Lecture title cannot be blank");
+            }
             lecture.setTitle(updatedLecture.getTitle());
-
+        }
 
         if (updatedLecture.getDescription() != null)
 
@@ -155,10 +171,19 @@ public class LectureService {
             lecture.setVideoUrl(updatedLecture.getVideoUrl());
 
 
-        if (updatedLecture.getDuration() != null)
-
+        if (updatedLecture.getDuration() != null) {
+            if (updatedLecture.getDuration() < 0) {
+                throw new RuntimeException("Lecture duration cannot be negative");
+            }
             lecture.setDuration(updatedLecture.getDuration());
+        }
 
+        if (updatedLecture.getOrderIndex() != null) {
+            if (updatedLecture.getOrderIndex() < 0) {
+                throw new RuntimeException("Lecture order index must be a non-negative integer");
+            }
+            lecture.setOrderIndex(updatedLecture.getOrderIndex());
+        }
 
         return lectureRepository.save(lecture);
 
@@ -179,6 +204,12 @@ public class LectureService {
 
         lectureRepository.delete(lecture);
         return lecture;
+    }
+
+    // Get Lecture by ID
+    public Lecture getLectureById(Long lectureId) {
+        return lectureRepository.findById(lectureId)
+                .orElseThrow(() -> new RuntimeException("Lecture not found"));
     }
 
 }

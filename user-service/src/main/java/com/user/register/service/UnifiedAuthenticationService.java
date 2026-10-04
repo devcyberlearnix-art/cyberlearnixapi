@@ -3,6 +3,7 @@ package com.user.register.service;
 
 import com.user.register.dto.unified.*;
 import com.cyberlearnix.commonlibs.dto.UserLoginEvent;
+import com.cyberlearnix.security.ServiceAuthUtil;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -91,6 +92,8 @@ public class UnifiedAuthenticationService {
     private final EmailService emailService;
     private final SessionService sessionService;
 
+    private final ServiceAuthUtil serviceAuthUtil;
+
 
     @Value("${admin.service.url:http://localhost:8087}")
 
@@ -147,6 +150,15 @@ public class UnifiedAuthenticationService {
 
 
         if (password != null && !passwordEncoder.matches(password, user.getPassword())) {
+
+
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid credentials");
+
+
+        }
+
+
+        if (user.getStatus() == User.Status.DELETED) {
 
 
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid credentials");
@@ -582,22 +594,17 @@ public class UnifiedAuthenticationService {
     }
 
 
+    @org.springframework.transaction.annotation.Transactional
     public ResponseEntity<RefreshTokenResponse> refreshToken(String refreshToken) {
 
 
-        if (!unifiedJwtService.validateToken(refreshToken)) {
+        if (!unifiedJwtService.validateToken(refreshToken)
+            || unifiedJwtService.isTokenExpired(refreshToken)
+            || tokenBlacklistService.isBlacklisted(refreshToken)
+            || !"refresh".equals(unifiedJwtService.extractClaims(refreshToken).get("type", String.class))) {
 
 
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid refresh token");
-
-
-        }
-
-
-        if (unifiedJwtService.isTokenExpired(refreshToken)) {
-
-
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Refresh token expired");
 
 
         }
@@ -611,11 +618,48 @@ public class UnifiedAuthenticationService {
 
         String role = unifiedJwtService.extractRole(refreshToken);
 
+        String adminType = unifiedJwtService.extractAdminType(refreshToken);
+
+        String assignedService = unifiedJwtService.extractAssignedService(refreshToken);
+
+        User user;
+        try {
+            user = userRepository.findForUpdateById(UUID.fromString(userId)).orElse(null);
+        } catch (IllegalArgumentException e) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid refresh token");
+        }
+
+        if (user != null) {
+            if (user.getStatus() != User.Status.ACTIVE && user.getStatus() != User.Status.SOCIAL_LOGIN) {
+                throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid refresh token");
+            }
+            if (user.getRole() == User.Role.INSTRUCTOR && !Boolean.TRUE.equals(user.getIsInstructorApproved())) {
+                throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid refresh token");
+            }
+            if (sessionService.findByRefreshToken(refreshToken)
+                    .filter(session -> session.getUser().getId().equals(user.getId()))
+                    .isEmpty()) {
+                throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid refresh token");
+            }
+        } else if (isAdminRole(role)) {
+            Map<String, Object> adminState = checkAdminRefreshEligibility(UUID.fromString(userId));
+            if (!Boolean.TRUE.equals(adminState.get("eligible"))) {
+                throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid refresh token");
+            }
+            email = String.valueOf(adminState.get("email"));
+            role = String.valueOf(adminState.get("role"));
+            adminType = String.valueOf(adminState.get("adminType"));
+            assignedService = String.valueOf(adminState.get("assignedService"));
+        } else {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid refresh token");
+        }
+
 
         // Generate new tokens
 
 
-        String newAccessToken = unifiedJwtService.generateAccessToken(userId, email, role, null, null);
+        String newAccessToken = unifiedJwtService.generateAccessToken(
+            userId, email, role, adminType, assignedService);
 
 
         String newRefreshToken = unifiedJwtService.generateRefreshToken(userId, email, role);
@@ -624,7 +668,11 @@ public class UnifiedAuthenticationService {
         // Blacklist old refresh token
 
 
-        tokenBlacklistService.blacklistToken(refreshToken);
+        if (user != null) {
+            sessionService.rotateTokens(refreshToken, newAccessToken, newRefreshToken);
+        } else {
+            tokenBlacklistService.blacklistToken(refreshToken);
+        }
 
 
         RefreshTokenResponse.AuthenticationInfo authInfo = RefreshTokenResponse.AuthenticationInfo.builder()
@@ -666,6 +714,41 @@ public class UnifiedAuthenticationService {
         return ResponseEntity.ok(response);
 
 
+    }
+
+    private boolean isAdminRole(String role) {
+        if (role == null) {
+            return false;
+        }
+        String normalizedRole = role.startsWith("ROLE_") ? role.substring(5) : role;
+        return "MAIN_ADMIN".equalsIgnoreCase(normalizedRole)
+                || "SUB_ADMIN".equalsIgnoreCase(normalizedRole)
+                || "SUPER_ADMIN".equalsIgnoreCase(normalizedRole)
+                || "ADMIN".equalsIgnoreCase(normalizedRole);
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> checkAdminRefreshEligibility(UUID adminId) {
+        try {
+            org.springframework.http.HttpHeaders headers = new org.springframework.http.HttpHeaders();
+            headers.set(serviceAuthUtil.getAuthHeaderName(), serviceAuthUtil.generateServiceToken());
+            ResponseEntity<Map> response = restTemplate.exchange(
+                    adminServiceUrl + "/api/v1/admin/internal/users/" + adminId + "/refresh-eligibility",
+                    org.springframework.http.HttpMethod.GET,
+                    new org.springframework.http.HttpEntity<>(headers),
+                    Map.class);
+            if (response.getBody() == null) {
+                throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE,
+                        "Admin service returned an invalid eligibility response");
+            }
+            return (Map<String, Object>) response.getBody();
+        } catch (ResourceAccessException e) {
+            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE,
+                    "Admin service is unavailable", e);
+        } catch (RestClientResponseException e) {
+            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE,
+                    "Admin eligibility check failed", e);
+        }
     }
 
 

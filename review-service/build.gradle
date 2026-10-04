@@ -53,6 +53,10 @@ dependencies {
 
     runtimeOnly "org.postgresql:postgresql:${postgresqlVersion}"
 
+    // H2 in-memory DB for testing and localtest profile
+    runtimeOnly "com.h2database:h2:${h2Version}"
+    testRuntimeOnly "com.h2database:h2:${h2Version}"
+
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.springframework.security:spring-security-test'
 }

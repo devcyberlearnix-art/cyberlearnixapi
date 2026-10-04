@@ -45,7 +45,7 @@ public class ServiceAuthFilter extends OncePerRequestFilter {
 
         // Check if this is an internal endpoint
         String path = request.getRequestURI();
-        if (isInternalEndpoint(path)) {
+        if (isInternalEndpoint(path, request.getMethod())) {
             String authHeader = request.getHeader(serviceAuthUtil.getAuthHeaderName());
 
             if (authHeader == null || authHeader.isEmpty()) {
@@ -64,8 +64,9 @@ public class ServiceAuthFilter extends OncePerRequestFilter {
         filterChain.doFilter(request, response);
     }
 
-    private boolean isInternalEndpoint(String path) {
+    private boolean isInternalEndpoint(String path, String method) {
         // Define which endpoints require service authentication
-        return path.startsWith("/api/v1/instructors/") && path.contains("/profile");
+        return path.startsWith("/api/v1/instructors/") && path.contains("/profile")
+                || "DELETE".equalsIgnoreCase(method) && path.matches("/api/v1/users/[0-9a-fA-F-]{36}");
     }
 }

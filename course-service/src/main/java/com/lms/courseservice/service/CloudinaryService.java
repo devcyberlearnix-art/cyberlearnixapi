@@ -68,5 +68,40 @@ public class CloudinaryService {
             throw new RuntimeException("Failed to upload image to Cloudinary: " + e.getMessage(), e);
         }
     }
+
+    /**
+     * Uploads a raw file (e.g., PDF) to Cloudinary under "{folder}/certificates/" subfolder.
+     *
+     * @param fileBytes the file bytes
+     * @param publicId the public ID for the file
+     * @return the secure HTTPS URL of the uploaded file
+     */
+    @SuppressWarnings("unchecked")
+    public String uploadRawFile(byte[] fileBytes, String publicId) {
+        try {
+            Map<String, Object> uploadResult = cloudinary.uploader().upload(
+                    fileBytes,
+                    ObjectUtils.asMap(
+                            "resource_type", "raw",
+                            "folder",        folder + "/certificates",
+                            "public_id",     publicId,
+                            "overwrite",     false,
+                            "invalidate",    true
+                    )
+            );
+            return (String) uploadResult.get("secure_url");
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to upload file to Cloudinary: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Gets the Cloudinary instance for direct access if needed.
+     *
+     * @return the Cloudinary instance
+     */
+    public Cloudinary getCloudinary() {
+        return cloudinary;
+    }
 }
 

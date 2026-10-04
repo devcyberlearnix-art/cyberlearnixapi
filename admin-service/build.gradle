@@ -26,6 +26,9 @@ dependencies {
     // Spring Security
     implementation 'org.springframework.boot:spring-boot-starter-security'
 
+    // Health endpoint for container health checks
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+
     // Spring Data JPA
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
 
@@ -47,6 +50,10 @@ dependencies {
     // PostgreSQL (or MySQL)
     runtimeOnly "org.postgresql:postgresql:${postgresqlVersion}"
     // runtimeOnly 'mysql:mysql-connector-java'
+
+    // H2 in-memory DB for testing and localtest profile
+    runtimeOnly "com.h2database:h2:${h2Version}"
+    testRuntimeOnly "com.h2database:h2:${h2Version}"
 
     // Redis (optional for session/token management)
     implementation 'org.springframework.boot:spring-boot-starter-data-redis'

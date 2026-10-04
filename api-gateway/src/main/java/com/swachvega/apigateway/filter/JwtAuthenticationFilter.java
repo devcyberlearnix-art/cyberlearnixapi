@@ -44,6 +44,7 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
             "/api/v1/auth/upload/profile-photo",
             "/api/v1/auth/otp/resend",
             "/api/v1/users/login/social",
+            "/api/v1/users/public/upload-photo",
             // Course service – public course browsing
             "/api/v1/courses",
             "/api/v1/courses/*",
@@ -104,17 +105,25 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
             return chain.filter(exchange);
         }
 
-        // Extract token from Authorization header
+        // Extract token from Authorization header or cookie
         String authHeader = exchange.getRequest()
                 .getHeaders()
                 .getFirst(HttpHeaders.AUTHORIZATION);
 
         String token = jwtTokenProvider.extractTokenFromHeader(authHeader);
+        if (token == null || token.isEmpty()) {
+            org.springframework.http.HttpCookie cookie = exchange.getRequest().getCookies().getFirst("accessToken");
+            if (cookie != null && !cookie.getValue().isEmpty()) {
+                token = cookie.getValue();
+            }
+        }
 
         if (token == null || token.isEmpty()) {
             log.warn("No valid token found for protected path: {}", path);
             return unauthorizedResponse(exchange, "Missing or invalid authorization token");
         }
+
+        final String finalToken = token;
 
         // Validate token
         String blacklistKey = "blacklist:token:" + token;
@@ -126,14 +135,14 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
                         return unauthorizedResponse(exchange, "Token has been logged out");
                     }
 
-                    return jwtTokenProvider.validateAccessToken(token)
+                    return jwtTokenProvider.validateAccessToken(finalToken)
                             .doOnNext(claims -> {
                                 // Reduced logging - only log user for security auditing
                                 log.debug("Token validated successfully for user: {} on path: {}", claims.get("sub"), path);
                             })
                             .flatMap(claims -> {
                                 // Add user info to request headers and delegate to downstream service
-                                ServerWebExchange modifiedExchange = addUserHeaders(exchange, claims);
+                                ServerWebExchange modifiedExchange = addUserHeaders(exchange, claims, finalToken);
                                 return chain.filter(modifiedExchange);
                             });
                 })
@@ -288,7 +297,7 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
     }
 
 
-    private ServerWebExchange addUserHeaders(ServerWebExchange exchange, Map<String, Object> claims) {
+    private ServerWebExchange addUserHeaders(ServerWebExchange exchange, Map<String, Object> claims, String token) {
 
         String authHeader = exchange.getRequest().getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
 
@@ -376,6 +385,8 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
 
         if (authHeader != null && !authHeader.isBlank()) {
             newHeaders.set(HttpHeaders.AUTHORIZATION, authHeader);
+        } else if (token != null && !token.isBlank()) {
+            newHeaders.set(HttpHeaders.AUTHORIZATION, "Bearer " + token);
         }
 
         if (merchantIdClaim != null && !merchantIdClaim.isBlank()) {

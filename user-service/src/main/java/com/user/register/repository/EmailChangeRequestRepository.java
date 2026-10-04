@@ -12,6 +12,8 @@ import java.util.Optional;
 import java.util.UUID;
 
 public interface EmailChangeRequestRepository extends JpaRepository<EmailChangeRequest, UUID> {
+  void deleteByUserId(UUID userId);
+
 
     /**
      * Fetch a request only if it belongs to the authenticated user (prevents IDOR).

@@ -6,6 +6,9 @@ import com.example.admin.dto.AdminInstructorApplicationsResponse;
 import com.example.admin.dto.AdminSingleUserResponse;
 import com.example.admin.dto.AdminUsersResponse;
 import com.example.admin.dto.UpdateUserStatusRequest;
+import com.example.admin.entity.Admin;
+import com.example.admin.repository.AdminRepository;
+import com.cyberlearnix.security.ServiceAuthUtil;
 import com.example.admin.service.AdminUserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -20,6 +23,39 @@ import java.util.UUID;
 public class AdminUserController {
 
     private final AdminUserService adminUserService;
+    private final AdminRepository adminRepository;
+    private final ServiceAuthUtil serviceAuthUtil;
+
+    @GetMapping("/internal/users/{id}/refresh-eligibility")
+    public ResponseEntity<java.util.Map<String, Object>> getRefreshEligibility(
+            @PathVariable UUID id,
+            jakarta.servlet.http.HttpServletRequest request) {
+        String serviceToken = request.getHeader(serviceAuthUtil.getAuthHeaderName());
+        if (!serviceAuthUtil.validateServiceToken(serviceToken)) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    HttpStatus.UNAUTHORIZED, "Invalid service authentication");
+        }
+
+        java.util.Optional<Admin> adminOptional = adminRepository.findById(id);
+        if (adminOptional.isEmpty()) {
+            return ResponseEntity.ok(java.util.Map.of("eligible", false));
+        }
+
+        Admin admin = adminOptional.get();
+        boolean eligible = admin.isVerified()
+            && admin.getApprovalStatus() == com.example.admin.entity.AdminApprovalStatus.APPROVED
+            && (admin.getLockedUntil() == null
+                || !admin.getLockedUntil().isAfter(java.time.LocalDateTime.now()));
+        java.util.Map<String, Object> response = new java.util.HashMap<>();
+        response.put("eligible", eligible);
+        if (eligible) {
+            response.put("email", admin.getEmail());
+            response.put("role", admin.getRole());
+            response.put("adminType", admin.getAdminType() != null ? admin.getAdminType().name() : "MAIN_ADMIN");
+            response.put("assignedService", admin.getAssignedService() != null ? admin.getAssignedService().name() : "ALL");
+        }
+        return ResponseEntity.ok(response);
+    }
 
     @GetMapping("/users")
     public ResponseEntity<AdminUsersResponse> getAllUsers(
@@ -71,17 +107,16 @@ public class AdminUserController {
     @DeleteMapping("/users/{id}")
     public ResponseEntity<AdminDeleteUserResponse> deleteUser(@PathVariable UUID id) {
 
-        AdminDeleteUserResponse response = adminUserService.deleteUser(id);
-
-        if (!response.isSuccess()) {
-            return ResponseEntity
-                    .status(HttpStatus.NOT_FOUND)
-                    .body(response);
+        try {
+            AdminDeleteUserResponse response = adminUserService.deleteUser(id);
+            return ResponseEntity.ok(response);
+        } catch (org.springframework.web.server.ResponseStatusException e) {
+            return ResponseEntity.status(e.getStatusCode()).body(new AdminDeleteUserResponse(
+                    false,
+                    e.getReason() != null ? e.getReason() : "User deletion failed",
+                    null,
+                    java.time.LocalDateTime.now()));
         }
-
-        return ResponseEntity
-                .status(HttpStatus.OK)
-                .body(response);
     }
     @GetMapping("/instructors")
     public ResponseEntity<AdminUsersResponse> getAllInstructors(

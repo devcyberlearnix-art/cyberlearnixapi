@@ -75,7 +75,8 @@ public class AdminReviewService {
     @Transactional
     public ApiResponse deleteReview(UUID reviewUuid) {
         Review review = getReviewOrThrow(reviewUuid);
-        reviewRepository.delete(review);
+        review.setStatus(ReviewStatus.DELETED);
+        reviewRepository.save(review);
 
         return ApiResponse.builder()
                 .success(true)

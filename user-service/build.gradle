@@ -30,6 +30,7 @@ dependencies {
     runtimeOnly "org.postgresql:postgresql:${postgresqlVersion}"
 
     // H2 in-memory DB (local/dev testing without Docker)
+    runtimeOnly "com.h2database:h2:${h2Version}"
     testRuntimeOnly "com.h2database:h2:${h2Version}"
 
     // Redis
@@ -55,6 +56,12 @@ dependencies {
     annotationProcessor 'org.projectlombok:lombok'
     // Cloudinary SDK
     implementation "com.cloudinary:cloudinary-http5:${cloudinaryVersion}"
+
+    // Google Drive API
+    implementation 'com.google.api-client:google-api-client:2.0.0'
+    implementation 'com.google.oauth-client:google-oauth-client:1.34.1'
+    implementation 'com.google.apis:google-api-services-drive:v3-rev20220815-2.0.0'
+    implementation 'com.google.http-client:google-http-client-jackson2:1.43.3'
 
     // SpringDoc OpenAPI
     implementation "org.springdoc:springdoc-openapi-starter-webmvc-ui:${springdocVersion}"

@@ -3,6 +3,7 @@ package com.user.register.entity;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Entity
 @Table(name = "audit_logs")
@@ -19,6 +20,9 @@ public class AuditLog {
     @ManyToOne
     @JoinColumn(name = "user_id")
     private User user;
+
+    @Column(name = "user_id_snapshot")
+    private UUID userIdSnapshot;
 
     private String action;
 

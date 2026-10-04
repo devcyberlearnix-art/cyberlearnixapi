@@ -38,10 +38,6 @@ dependencies {
     implementation "io.github.resilience4j:resilience4j-retry:${resilience4jVersion}"
     implementation "io.github.resilience4j:resilience4j-circuitbreaker:${resilience4jVersion}"
 
-    // Flyway for database migrations
-    implementation "org.flywaydb:flyway-core:${flywayVersion}"
-    implementation "org.flywaydb:flyway-database-postgresql"
-
     // Commonlibs for shared JWT validator
     implementation project(':commonlibs')
 
@@ -50,7 +46,8 @@ dependencies {
 
     runtimeOnly "org.postgresql:postgresql:${postgresqlVersion}"
 
-    // H2 in-memory DB for testing
+    // H2 in-memory DB for testing and localtest profile
+    runtimeOnly "com.h2database:h2:${h2Version}"
     testRuntimeOnly "com.h2database:h2:${h2Version}"
 
     // DevTools (auto restart during development)
@@ -65,6 +62,9 @@ dependencies {
 
     // Cloudinary for video/media uploads
     implementation "com.cloudinary:cloudinary-http5:${cloudinaryVersion}"
+
+    // iTextPDF for certificate generation
+    implementation "com.itextpdf:itext7-core:${itextpdfVersion}"
 
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.springframework.security:spring-security-test'

@@ -122,6 +122,8 @@ public class RegistrationService {
 
     private final org.springframework.web.client.RestTemplate restTemplate;
 
+    private final GoogleDriveService googleDriveService;
+
 
     @Value("${admin.service.url:http://localhost:8087}")
 
@@ -598,6 +600,13 @@ public class RegistrationService {
         }
 
         String normalized = profilePhoto.trim();
+        
+        // Accept Google Drive URLs directly
+        if (normalized.contains("drive.google.com")) {
+            return normalized;
+        }
+        
+        // Accept Cloudinary URLs directly
         if (normalized.contains("res.cloudinary.com")) {
             return normalized;
         }
@@ -988,9 +997,9 @@ public class RegistrationService {
 
         );
 
-        Map<?, ?> uploadResult = cloudinary.uploader().upload(fileBytes, options);
-
-        return (String) uploadResult.get("secure_url");
+        // 8️⃣ Upload to Google Drive
+        String fullFileName = fileName + "." + extension;
+        return googleDriveService.uploadProfilePhoto(fullFileName, fileBytes);
 
     }
 

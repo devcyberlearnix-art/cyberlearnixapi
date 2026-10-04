@@ -35,3 +35,9 @@ seed_test_user.sql
 test_login.json
 test_login2.json
 test_login3.json
+
+# Environment variables and secrets
+.env
+.env.local
+.env.*.local
+run-with-credentials.bat

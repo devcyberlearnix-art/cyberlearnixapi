@@ -63,6 +63,26 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
     }
 
+    @ExceptionHandler(LiveClassException.class)
+    public ResponseEntity<ApiResponse<Void>> handleLiveClassException(LiveClassException ex) {
+        ApiResponse<Void> response = ApiResponse.<Void>builder()
+            .success(false)
+            .message(ex.getMessage())
+            .timestamp(Instant.now().toString())
+            .build();
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+    }
+
+    @ExceptionHandler(LiveClassAttendanceException.class)
+    public ResponseEntity<ApiResponse<Void>> handleLiveClassAttendanceException(LiveClassAttendanceException ex) {
+        ApiResponse<Void> response = ApiResponse.<Void>builder()
+            .success(false)
+            .message(ex.getMessage())
+            .timestamp(Instant.now().toString())
+            .build();
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+    }
+
     @ExceptionHandler(org.springframework.web.bind.MethodArgumentNotValidException.class)
     public ResponseEntity<Map<String, Object>> handleValidationException(
             org.springframework.web.bind.MethodArgumentNotValidException ex) {

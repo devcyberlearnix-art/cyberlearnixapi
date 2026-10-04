@@ -20,9 +20,11 @@ import com.lms.courseservice.exception.EnrollmentException;
 import com.lms.courseservice.repository.LectureRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.http.HttpStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 import com.lms.courseservice.entity.CoursePreview;
 import com.lms.courseservice.entity.Section;
 import com.lms.courseservice.repository.CoursePreviewRepository;
@@ -47,6 +49,11 @@ public class CourseService {
 
     private final ReviewRatingClient reviewRatingClient;
     private final CacheInvalidationService cacheInvalidationService;
+
+    public Lecture getLectureById(Long lectureId) {
+        return lectureRepository.findByIdWithCourse(lectureId)
+                .orElseThrow(() -> new EnrollmentException("Lecture not found with id: " + lectureId));
+    }
 
     public Course createCourse(Course course) {
         if (course.getStatus() == null || course.getStatus().isBlank()) {
@@ -76,8 +83,9 @@ public class CourseService {
     }
 
     @Transactional(readOnly = true)
-    public List<Course> getAllCourses() {
-        return courseRepository.findAll();
+    public org.springframework.data.domain.Page<Course> getAllCourses(int page, int size, String sortBy, org.springframework.data.domain.Sort.Direction direction) {
+        org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(page, size, org.springframework.data.domain.Sort.by(direction, sortBy));
+        return courseRepository.findAll(pageable);
     }
 
     public Map<String, Object> getCourseStats() {
@@ -180,7 +188,8 @@ public class CourseService {
     @Transactional(readOnly = true)
     public Course getCourseById(Long id) {
         return courseRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Course not found with id: " + id));
+            .orElseThrow(() -> new ResponseStatusException(
+                HttpStatus.NOT_FOUND, "Course not found with id: " + id));
     }
 
     public Course updateCourse(Long id, Course updatedCourse) {
