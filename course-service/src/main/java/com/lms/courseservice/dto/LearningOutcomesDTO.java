@@ -14,13 +14,13 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class LearningOutcomesDTO {
     private Long id;
-    
+
     @NotNull(message = "Course ID is required")
     private Long courseId;
-    
+
     @NotBlank(message = "Outcome text is required")
     private String outcomeText;
-    
+
     @Size(max = 50, message = "Skill category must not exceed 50 characters")
     private String skillCategory;
 }

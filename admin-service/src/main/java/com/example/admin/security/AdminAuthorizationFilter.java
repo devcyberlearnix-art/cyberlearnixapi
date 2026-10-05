@@ -22,6 +22,7 @@ public class AdminAuthorizationFilter extends OncePerRequestFilter {
     protected boolean shouldNotFilter(HttpServletRequest request) {
         String path = request.getRequestURI();
         return !path.startsWith("/api/v1/admin/")
+            || path.startsWith("/api/v1/admin/internal/users/")
                 || path.equals("/api/v1/admin/login")
                 || path.equals("/api/v1/admin/login/otp/request")
                 || path.equals("/api/v1/admin/login/otp/verify")

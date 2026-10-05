@@ -1,6 +1,7 @@
 package com.example.admin.client;
 
 import com.example.admin.security.JwtService;
+import com.cyberlearnix.security.ServiceAuthUtil;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -26,13 +27,15 @@ public class AdminUserServiceClient {
 
     private final RestTemplate restTemplate;
     private final JwtService jwtService;
+    private final ServiceAuthUtil serviceAuthUtil;
 
     @Value("${user-service.url:http://localhost:8091}")
     private String userServiceUrl;
 
-    public AdminUserServiceClient(RestTemplate restTemplate, JwtService jwtService) {
+    public AdminUserServiceClient(RestTemplate restTemplate, JwtService jwtService, ServiceAuthUtil serviceAuthUtil) {
         this.restTemplate = restTemplate;
         this.jwtService = jwtService;
+        this.serviceAuthUtil = serviceAuthUtil;
     }
 
     private HttpHeaders createHeaders() {
@@ -116,12 +119,22 @@ public class AdminUserServiceClient {
     public boolean deleteUser(UUID id) {
         try {
             String url = userServiceUrl + "/api/v1/users/" + id;
-            restTemplate.exchange(url, org.springframework.http.HttpMethod.DELETE, new HttpEntity<>(createHeaders()), Void.class);
+            HttpHeaders headers = createHeaders();
+            headers.set(serviceAuthUtil.getAuthHeaderName(), serviceAuthUtil.generateServiceToken());
+            restTemplate.exchange(url, org.springframework.http.HttpMethod.DELETE, new HttpEntity<>(headers), Void.class);
             System.out.println("✓ User deleted: " + id);
             return true;
+        } catch (HttpStatusCodeException e) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    e.getStatusCode(), extractMessageFromJson(e.getResponseBodyAsString()), e);
+        } catch (org.springframework.web.client.ResourceAccessException e) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.SERVICE_UNAVAILABLE,
+                    "User service is unavailable", e);
         } catch (RestClientException e) {
-            System.err.println("✗ Failed to delete user: " + e.getMessage());
-            return false;
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.BAD_GATEWAY,
+                    "User service deletion request failed", e);
         }
     }
 
@@ -321,7 +334,7 @@ public class AdminUserServiceClient {
             if (data instanceof Map<?, ?> dataMap) {
                 Object users = dataMap.get("users");
                 List<UserDTO> userList = new ArrayList<>();
-                
+
                 if (users instanceof List<?> list) {
                     for (Object item : list) {
                         userList.add(mapToUserDto(item));
@@ -331,7 +344,7 @@ public class AdminUserServiceClient {
                         userList.add(mapToUserDto(item));
                     }
                 }
-                
+
                 Map<String, Object> result = new HashMap<>();
                 result.put("users", userList);
                 result.put("totalUsers", getNumber(dataMap.get("totalUsers")));

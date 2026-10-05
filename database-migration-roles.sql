@@ -3,7 +3,7 @@
 -- ============================================================
 -- Purpose: Migrate legacy role names to new RBAC structure
 -- Date: 2026-08-01
--- 
+--
 -- Old Roles -> New Roles:
 --   ADMIN -> MAIN_ADMIN
 --   SUPER_ADMIN -> MAIN_ADMIN (consolidated)
@@ -17,19 +17,19 @@
 -- ============================================================
 
 -- Update ADMIN role to MAIN_ADMIN
-UPDATE users 
-SET role = 'MAIN_ADMIN' 
+UPDATE users
+SET role = 'MAIN_ADMIN'
 WHERE role = 'ADMIN';
 
 -- Update SUPER_ADMIN role to MAIN_ADMIN (consolidate into MAIN_ADMIN)
-UPDATE users 
-SET role = 'MAIN_ADMIN' 
+UPDATE users
+SET role = 'MAIN_ADMIN'
 WHERE role = 'SUPER_ADMIN';
 
 -- Verify the migration
-SELECT role, COUNT(*) as count 
-FROM users 
-GROUP BY role 
+SELECT role, COUNT(*) as count
+FROM users
+GROUP BY role
 ORDER BY role;
 
 -- ============================================================
@@ -37,19 +37,19 @@ ORDER BY role;
 -- ============================================================
 
 -- Update ADMIN role to MAIN_ADMIN in admins table
-UPDATE admins 
-SET admin_type = 'MAIN_ADMIN' 
+UPDATE admins
+SET admin_type = 'MAIN_ADMIN'
 WHERE admin_type = 'ADMIN';
 
 -- Update SUPER_ADMIN role to MAIN_ADMIN in admins table
-UPDATE admins 
-SET admin_type = 'MAIN_ADMIN' 
+UPDATE admins
+SET admin_type = 'MAIN_ADMIN'
 WHERE admin_type = 'SUPER_ADMIN';
 
 -- Verify the migration
-SELECT admin_type, COUNT(*) as count 
-FROM admins 
-GROUP BY admin_type 
+SELECT admin_type, COUNT(*) as count
+FROM admins
+GROUP BY admin_type
 ORDER BY admin_type;
 
 -- ============================================================
@@ -73,27 +73,27 @@ VALUES ('ROLE_MIGRATION', 'USER', 'Migrated legacy roles (ADMIN, SUPER_ADMIN) to
 -- ============================================================
 
 -- Check for any remaining legacy roles
-SELECT 'Legacy roles in users table' as check_type, 
-       COUNT(*) as count 
-FROM users 
+SELECT 'Legacy roles in users table' as check_type,
+       COUNT(*) as count
+FROM users
 WHERE role IN ('ADMIN', 'SUPER_ADMIN');
 
-SELECT 'Legacy roles in admins table' as check_type, 
-       COUNT(*) as count 
-FROM admins 
+SELECT 'Legacy roles in admins table' as check_type,
+       COUNT(*) as count
+FROM admins
 WHERE admin_type IN ('ADMIN', 'SUPER_ADMIN');
 
 -- Show current role distribution
 SELECT 'Current user role distribution' as check_type,
-       role, 
-       COUNT(*) as count 
-FROM users 
-GROUP BY role 
+       role,
+       COUNT(*) as count
+FROM users
+GROUP BY role
 ORDER BY count DESC;
 
 SELECT 'Current admin type distribution' as check_type,
-       admin_type, 
-       COUNT(*) as count 
-FROM admins 
-GROUP BY admin_type 
+       admin_type,
+       COUNT(*) as count
+FROM admins
+GROUP BY admin_type
 ORDER BY count DESC;

@@ -25,7 +25,6 @@ public class AdminUserService {
     private final AdminRepository adminRepository;
 
 
-
     public AdminUsersResponse getAllUsers(int page, int size) {
 
         Map<String, Object> usersData = userClient.getAllUsers(page, size);
@@ -74,12 +73,10 @@ public class AdminUserService {
     }
 
 
-
     public AdminSingleUserResponse getUserById(UUID id) {
 
         AdminUserServiceClient.UserDTO user = userClient.getUserById(id);
 
-        
 
         if (user == null) {
 
@@ -94,7 +91,6 @@ public class AdminUserService {
                     .build();
 
         }
-
 
 
         UserProfileResponse profile = convertToProfileResponse(user);
@@ -176,7 +172,6 @@ public class AdminUserService {
 
         boolean deleted = userClient.deleteUser(id);
 
-        
 
         if (!deleted) {
 
@@ -193,7 +188,6 @@ public class AdminUserService {
             );
 
         }
-
 
 
         return new AdminDeleteUserResponse(
@@ -214,7 +208,6 @@ public class AdminUserService {
 
                 List<AdminUserServiceClient.UserDTO> instructors = userClient.getAllInstructors(authorization);
 
-        
 
         if (instructors.isEmpty()) {
 
@@ -239,7 +232,6 @@ public class AdminUserService {
         }
 
 
-
         List<AdminUsersResponse.UserInfo> instructorList = instructors.stream()
 
                 .map(user -> AdminUsersResponse.UserInfo.builder()
@@ -257,7 +249,6 @@ public class AdminUserService {
                         .build())
 
                 .toList();
-
 
 
         return AdminUsersResponse.builder()
@@ -281,11 +272,9 @@ public class AdminUserService {
     }
 
 
-
         public AdminInstructorApplicationsResponse getAllInstructorApplicationsDetailed(String authorization) {
 
                 List<AdminUserServiceClient.InstructorApplicationDTO> applications = userClient.getAllInstructorApplications(authorization);
-
 
 
         if (applications.isEmpty()) {
@@ -301,7 +290,6 @@ public class AdminUserService {
                     .build();
 
         }
-
 
 
         AdminInstructorApplicationsResponse.InstructorApplicationDetail[] detailsArray = applications.stream()
@@ -456,7 +444,6 @@ public class AdminUserService {
         }
 
 
-
         AdminApproveInstructorResponse.ApprovedApplicationDetail detail = convertToApprovedDetail(application);
 
         return AdminApproveInstructorResponse.builder()
@@ -493,7 +480,6 @@ public class AdminUserService {
         }
 
 
-
         AdminApproveInstructorResponse.ApprovedApplicationDetail detail = convertToApprovedDetail(application);
 
         return AdminApproveInstructorResponse.builder()
@@ -509,7 +495,6 @@ public class AdminUserService {
                 .build();
 
     }
-
 
 
     public AdminApproveInstructorResponse rejectInstructorApplicationByApplicationId(UUID applicationId) {
@@ -532,7 +517,6 @@ public class AdminUserService {
         }
 
 
-
         AdminApproveInstructorResponse.ApprovedApplicationDetail detail = convertToApprovedDetail(application);
 
         return AdminApproveInstructorResponse.builder()
@@ -552,7 +536,6 @@ public class AdminUserService {
     public AdminApproveInstructorResponse rejectInstructorApplicationByApplicationId(UUID applicationId, String authorizationHeader) {
 
         AdminUserServiceClient.InstructorApplicationDTO application = userClient.rejectInstructorApplication(applicationId, authorizationHeader);
-
 
 
         if (application == null) {
@@ -607,12 +590,10 @@ public class AdminUserService {
     }
 
 
-
     public AdminDeleteUserResponse deleteInstructor(UUID id) {
 
         boolean deleted = userClient.deleteUser(id);
 
-        
 
         if (!deleted) {
 
@@ -631,7 +612,6 @@ public class AdminUserService {
         }
 
 
-
         return new AdminDeleteUserResponse(
 
                 true,
@@ -645,7 +625,6 @@ public class AdminUserService {
         );
 
     }
-
 
 
     private UserProfileResponse convertToProfileResponse(AdminUserServiceClient.UserDTO user) {
@@ -673,18 +652,10 @@ public class AdminUserService {
     }
 
 
-
-
-
-
-
-
-
     private AdminInstructorApplicationsResponse.InstructorApplicationDetail convertToApplicationDetail(AdminUserServiceClient.InstructorApplicationDTO dto) {
 
         AdminInstructorApplicationsResponse.InstructorApplicationDetail detail = new AdminInstructorApplicationsResponse.InstructorApplicationDetail();
 
-        
 
         AdminInstructorApplicationsResponse.ApplicationInfo application = AdminInstructorApplicationsResponse.ApplicationInfo.builder()
 
@@ -700,7 +671,6 @@ public class AdminUserService {
 
         detail.setApplication(application);
 
-        
 
         AdminInstructorApplicationsResponse.UserInfo user = AdminInstructorApplicationsResponse.UserInfo.builder()
 
@@ -724,7 +694,6 @@ public class AdminUserService {
 
         Map<String, Boolean> optionalDocs = resolveOptionalDocuments(dto);
 
-        
 
         AdminInstructorApplicationsResponse.DocumentsInfo documents = AdminInstructorApplicationsResponse.DocumentsInfo.builder()
 
@@ -743,12 +712,10 @@ public class AdminUserService {
     }
 
 
-
     private AdminApproveInstructorResponse.ApprovedApplicationDetail convertToApprovedDetail(AdminUserServiceClient.InstructorApplicationDTO dto) {
 
         AdminApproveInstructorResponse.ApprovedApplicationDetail detail = new AdminApproveInstructorResponse.ApprovedApplicationDetail();
 
-        
 
         AdminApproveInstructorResponse.ApplicationInfo application = AdminApproveInstructorResponse.ApplicationInfo.builder()
 
@@ -764,7 +731,6 @@ public class AdminUserService {
 
         detail.setApplication(application);
 
-        
 
         AdminApproveInstructorResponse.UserInfo user = AdminApproveInstructorResponse.UserInfo.builder()
 
@@ -784,7 +750,6 @@ public class AdminUserService {
 
         detail.setUser(user);
 
-        
 
         Map<String, Boolean> requiredDocs = resolveRequiredDocuments(dto);
 

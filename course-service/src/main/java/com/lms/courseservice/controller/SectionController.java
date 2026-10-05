@@ -53,6 +53,13 @@ public class SectionController {
         return sectionService.getSectionsByCourseId(courseId);
     }
 
+    // Get individual section
+    @GetMapping("/sections/{sectionId}")
+    @Transactional(readOnly = true)
+    public Section getSection(@PathVariable Long sectionId) {
+        return sectionService.getSectionById(sectionId);
+    }
+
     // Instructor/Admin only
     @PatchMapping("/sections/{sectionId}")
     public Section updateSection(@PathVariable Long sectionId,

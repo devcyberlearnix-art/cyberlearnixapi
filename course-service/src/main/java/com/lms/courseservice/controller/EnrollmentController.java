@@ -104,4 +104,12 @@ public class EnrollmentController {
                 })
                 .toList();
     }
+
+    @GetMapping("/course/{courseId}/students")
+    public List<UUID> getEnrolledStudentsByCourseId(@PathVariable Long courseId) {
+        List<Enrollment> enrollments = enrollmentRepository.findByCourseId(courseId);
+        return enrollments.stream()
+                .map(Enrollment::getStudentId)
+                .toList();
+    }
 }

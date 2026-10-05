@@ -38,7 +38,7 @@ public class UnifiedAuthenticationController {
     @PostMapping("/refresh")
     public ResponseEntity<RefreshTokenResponse> refreshToken(
             @RequestHeader(value = "Authorization", required = false) String authorizationHeader) {
-        
+
         // Extract refresh token from Authorization header
         if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(
@@ -51,7 +51,7 @@ public class UnifiedAuthenticationController {
         }
 
         String refreshToken = authorizationHeader.substring(7);
-        
+
         return unifiedAuthenticationService.refreshToken(refreshToken);
     }
 
@@ -63,7 +63,7 @@ public class UnifiedAuthenticationController {
     public ResponseEntity<Map<String, Object>> logout(
             @RequestHeader(value = "Authorization", required = false) String authorizationHeader,
             @RequestBody(required = false) Map<String, String> requestBody) {
-        
+
         String accessToken = null;
         String refreshToken = null;
 
@@ -173,7 +173,7 @@ public class UnifiedAuthenticationController {
     public ResponseEntity<Map<String, Object>> changePassword(
             @RequestBody ChangePasswordRequest request,
             @RequestHeader("Authorization") String authorizationHeader) {
-        
+
         // Extract access token from Authorization header
         if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
             Map<String, Object> response = Map.of(
@@ -185,7 +185,7 @@ public class UnifiedAuthenticationController {
         }
 
         String accessToken = authorizationHeader.substring(7);
-        
+
         // Extract email from token
         String email = null;
         try {
@@ -211,7 +211,7 @@ public class UnifiedAuthenticationController {
     public ResponseEntity<Map<String, Object>> switchRole(
             @RequestBody com.user.register.dto.SwitchRoleRequest request,
             @RequestHeader("Authorization") String authorizationHeader) {
-        
+
         // Extract access token from Authorization header
         if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
             Map<String, Object> response = Map.of(
@@ -223,7 +223,7 @@ public class UnifiedAuthenticationController {
         }
 
         String accessToken = authorizationHeader.substring(7);
-        
+
         // Extract email from token
         String email = null;
         try {

@@ -13,5 +13,6 @@ include 'admin-service'
 include 'instructor-service'
 include 'review-service'
 include 'notification-service'
+include 'dataset-seeder'
 
 project(':payment-service').projectDir = file('payment-service')

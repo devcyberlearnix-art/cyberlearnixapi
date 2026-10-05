@@ -28,18 +28,18 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
-        
+
         String header = request.getHeader("Authorization");
-        
+
         if (header != null && header.startsWith("Bearer ")) {
             String token = header.substring(7);
             try {
                 if (sharedJwtValidator.isTokenValid(token)) {
                     String userId = sharedJwtValidator.extractUserId(token);
                     String role = sharedJwtValidator.extractRole(token);
-                    
+
                     SimpleGrantedAuthority authority = new SimpleGrantedAuthority("ROLE_" + role);
-                    UsernamePasswordAuthenticationToken authentication = 
+                    UsernamePasswordAuthenticationToken authentication =
                             new UsernamePasswordAuthenticationToken(userId, null, Collections.singletonList(authority));
                     SecurityContextHolder.getContext().setAuthentication(authentication);
                 }
@@ -47,7 +47,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 log.error("JWT validation failed", e);
             }
         }
-        
+
         filterChain.doFilter(request, response);
     }
 }

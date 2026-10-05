@@ -16,11 +16,11 @@ public class JwtService {
 
     public String extractUserId(String token) {
         try {
-            return io.jsonwebtoken.Jwts.parserBuilder()
-                .setSigningKey(io.jsonwebtoken.security.Keys.hmacShaKeyFor("8c4e9d2f1a7b6c5d9e3f0a1b7c8d4e5f9a2b6c1d8e7f3a4b5c9d1e6f8a2b7c3".getBytes()))
+            return io.jsonwebtoken.Jwts.parser()
+                .verifyWith(io.jsonwebtoken.security.Keys.hmacShaKeyFor("8c4e9d2f1a7b6c5d9e3f0a1b7c8d4e5f9a2b6c1d8e7f3a4b5c9d1e6f8a2b7c3".getBytes()))
                 .build()
-                .parseClaimsJws(cleanToken(token))
-                .getBody()
+                .parseSignedClaims(cleanToken(token))
+                .getPayload()
                 .getSubject();
         } catch (Exception e) {
             // Fallback: parse without signature validation for testing
@@ -40,11 +40,11 @@ public class JwtService {
 
     public String extractRole(String token) {
         try {
-            return io.jsonwebtoken.Jwts.parserBuilder()
-                .setSigningKey(io.jsonwebtoken.security.Keys.hmacShaKeyFor("8c4e9d2f1a7b6c5d9e3f0a1b7c8d4e5f9a2b6c1d8e7f3a4b5c9d1e6f8a2b7c3".getBytes()))
+            return io.jsonwebtoken.Jwts.parser()
+                .verifyWith(io.jsonwebtoken.security.Keys.hmacShaKeyFor("8c4e9d2f1a7b6c5d9e3f0a1b7c8d4e5f9a2b6c1d8e7f3a4b5c9d1e6f8a2b7c3".getBytes()))
                 .build()
-                .parseClaimsJws(cleanToken(token))
-                .getBody()
+                .parseSignedClaims(cleanToken(token))
+                .getPayload()
                 .get("role", String.class);
         } catch (Exception e) {
             // Fallback: parse without signature validation for testing
@@ -64,11 +64,11 @@ public class JwtService {
 
     public String extractAssignedService(String token) {
         try {
-            return io.jsonwebtoken.Jwts.parserBuilder()
-                .setSigningKey(io.jsonwebtoken.security.Keys.hmacShaKeyFor("8c4e9d2f1a7b6c5d9e3f0a1b7c8d4e5f9a2b6c1d8e7f3a4b5c9d1e6f8a2b7c3".getBytes()))
+            return io.jsonwebtoken.Jwts.parser()
+                .verifyWith(io.jsonwebtoken.security.Keys.hmacShaKeyFor("8c4e9d2f1a7b6c5d9e3f0a1b7c8d4e5f9a2b6c1d8e7f3a4b5c9d1e6f8a2b7c3".getBytes()))
                 .build()
-                .parseClaimsJws(cleanToken(token))
-                .getBody()
+                .parseSignedClaims(cleanToken(token))
+                .getPayload()
                 .get("assignedService", String.class);
         } catch (Exception e) {
             // Fallback: parse without signature validation for testing

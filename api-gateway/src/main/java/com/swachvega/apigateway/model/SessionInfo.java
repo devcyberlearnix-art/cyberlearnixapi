@@ -22,7 +22,7 @@ public class SessionInfo {
     private Instant createdAt;
     private Instant lastAccessedAt;
     private boolean active;
-    
+
     // Additional session metadata
     private String ipAddress;
     private String userAgent;

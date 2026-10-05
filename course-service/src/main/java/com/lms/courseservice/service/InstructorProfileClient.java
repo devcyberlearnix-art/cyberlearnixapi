@@ -31,17 +31,17 @@ public class InstructorProfileClient {
             @Qualifier("instructorProfileCircuitBreaker") CircuitBreaker circuitBreaker,
             @Qualifier("instructorProfileRetry") Retry retry,
             ServiceAuthUtil serviceAuthUtil) {
-        
+
         SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
         factory.setConnectTimeout(Duration.ofSeconds(5));
         factory.setReadTimeout(Duration.ofSeconds(10));
-        
+
         this.restClient = RestClient.builder()
                 .baseUrl(userServiceUrl)
                 .requestFactory(factory)
                 .defaultHeader(serviceAuthUtil.getAuthHeaderName(), serviceAuthUtil.generateServiceToken())
                 .build();
-        
+
         this.circuitBreaker = circuitBreaker;
         this.retry = retry;
         this.serviceAuthUtil = serviceAuthUtil;

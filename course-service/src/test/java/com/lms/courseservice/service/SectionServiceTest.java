@@ -112,4 +112,98 @@ class SectionServiceTest {
         verify(sectionRepository, times(1)).delete(testSection);
         verify(cacheInvalidationService, times(1)).evictCurriculumForCourse(testCourse.getId());
     }
+
+    @Test
+    void testCreateSectionWithBlankTitle() {
+        when(courseRepository.findById(1L)).thenReturn(java.util.Optional.of(testCourse));
+
+        Section blankSection = Section.builder()
+                .title("")
+                .orderIndex(1)
+                .build();
+
+        org.junit.jupiter.api.Assertions.assertThrows(
+                RuntimeException.class,
+                () -> sectionService.createSection(1L, blankSection)
+        );
+    }
+
+    @Test
+    void testCreateSectionWithNullTitle() {
+        when(courseRepository.findById(1L)).thenReturn(java.util.Optional.of(testCourse));
+
+        Section nullSection = Section.builder()
+                .title(null)
+                .orderIndex(1)
+                .build();
+
+        org.junit.jupiter.api.Assertions.assertThrows(
+                RuntimeException.class,
+                () -> sectionService.createSection(1L, nullSection)
+        );
+    }
+
+    @Test
+    void testCreateSectionWithNegativeOrder() {
+        when(courseRepository.findById(1L)).thenReturn(java.util.Optional.of(testCourse));
+
+        Section negativeOrderSection = Section.builder()
+                .title("Test Section")
+                .orderIndex(-1)
+                .build();
+
+        org.junit.jupiter.api.Assertions.assertThrows(
+                RuntimeException.class,
+                () -> sectionService.createSection(1L, negativeOrderSection)
+        );
+    }
+
+    @Test
+    void testUpdateSectionWithBlankTitle() {
+        when(sectionRepository.findById(1L)).thenReturn(java.util.Optional.of(testSection));
+
+        Section blankUpdate = Section.builder()
+                .title("")
+                .build();
+
+        org.junit.jupiter.api.Assertions.assertThrows(
+                RuntimeException.class,
+                () -> sectionService.updateSection(1L, blankUpdate)
+        );
+    }
+
+    @Test
+    void testUpdateSectionWithNegativeOrder() {
+        when(sectionRepository.findById(1L)).thenReturn(java.util.Optional.of(testSection));
+
+        Section negativeOrderUpdate = Section.builder()
+                .orderIndex(-1)
+                .build();
+
+        org.junit.jupiter.api.Assertions.assertThrows(
+                RuntimeException.class,
+                () -> sectionService.updateSection(1L, negativeOrderUpdate)
+        );
+    }
+
+    @Test
+    void testGetSectionById() {
+        when(sectionRepository.findById(1L)).thenReturn(java.util.Optional.of(testSection));
+
+        Section result = sectionService.getSectionById(1L);
+
+        assertThat(result).isNotNull();
+        assertThat(result.getId()).isEqualTo(1L);
+        assertThat(result.getTitle()).isEqualTo("Test Section");
+    }
+
+    @Test
+    void testGetSectionByIdNotFound() {
+        when(sectionRepository.findById(999L)).thenReturn(java.util.Optional.empty());
+
+        org.junit.jupiter.api.Assertions.assertThrows(
+                RuntimeException.class,
+                () -> sectionService.getSectionById(999L)
+        );
+    }
 }

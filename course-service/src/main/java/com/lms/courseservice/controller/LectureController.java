@@ -85,4 +85,11 @@ public class LectureController {
     public List<Lecture> getLectures(@PathVariable Long sectionId) {
         return lectureService.getLecturesBySection(sectionId);
     }
+
+    // Get individual lecture
+    @GetMapping("/lectures/{lectureId}")
+    @Transactional(readOnly = true)
+    public Lecture getLecture(@PathVariable Long lectureId) {
+        return lectureService.getLectureById(lectureId);
+    }
 }

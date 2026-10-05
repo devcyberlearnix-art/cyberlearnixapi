@@ -188,9 +188,9 @@ public class LearningOutcomesService {
 
     private boolean isCourseOwner(Course course, UUID userId) {
         // Check if user is admin by checking security context
-        org.springframework.security.core.Authentication auth = 
+        org.springframework.security.core.Authentication auth =
             org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
-        
+
         if (auth != null && auth.getAuthorities() != null) {
             for (org.springframework.security.core.GrantedAuthority authority : auth.getAuthorities()) {
                 String role = authority.getAuthority();
@@ -199,7 +199,7 @@ public class LearningOutcomesService {
                 }
             }
         }
-        
+
         // Instructors can only modify their own courses
         if (userId == null) {
             return false;

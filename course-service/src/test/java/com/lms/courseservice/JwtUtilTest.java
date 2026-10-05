@@ -4,12 +4,14 @@ import com.lms.courseservice.security.JwtUtil;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
 
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
+@ActiveProfiles("test")
 class JwtUtilTest {
 
     @Autowired
@@ -23,7 +25,7 @@ class JwtUtilTest {
 
         // Test token validation (will fail with invalid token, but tests the method)
         assertNotNull(jwtUtil);
-        
+
         // Test role conversion utility
         assertEquals("MAIN_ADMIN", JwtUtil.toSpringSecurityRole("MAIN_ADMIN"));
         assertEquals("STUDENT", JwtUtil.toSpringSecurityRole("USER"));

@@ -13,7 +13,7 @@ public class CourseFAQResponse {
     private boolean success;
     private String message;
     private CourseFAQData data;
-    
+
     @Data
     @Builder
     @NoArgsConstructor

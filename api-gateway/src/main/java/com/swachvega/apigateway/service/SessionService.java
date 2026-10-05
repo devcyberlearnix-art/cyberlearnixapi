@@ -18,7 +18,7 @@ import java.time.Instant;
 public class SessionService {
 
     private final ReactiveRedisTemplate<String, Object> redisTemplate;
-    
+
     private static final String SESSION_PREFIX = "session:";
     private static final String USER_SESSIONS_PREFIX = "user_sessions:";
     private static final Duration SESSION_TIMEOUT = Duration.ofDays(30); // Refresh token lifetime

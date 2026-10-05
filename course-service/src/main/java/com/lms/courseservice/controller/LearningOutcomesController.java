@@ -39,7 +39,7 @@ public class LearningOutcomesController {
             @PathVariable Long courseId,
             @Valid @RequestBody LearningOutcomesDTO dto,
             @RequestHeader(value = "X-Forwarded-For", required = false) String ipAddress) {
-        
+
         UUID userId = extractUserIdFromContext();
         LearningOutcomesResponse response = learningOutcomesService.createOutcome(courseId, dto, userId, ipAddress);
         return ResponseEntity.ok(response);
@@ -54,7 +54,7 @@ public class LearningOutcomesController {
             @PathVariable Long outcomeId,
             @Valid @RequestBody LearningOutcomesDTO dto,
             @RequestHeader(value = "X-Forwarded-For", required = false) String ipAddress) {
-        
+
         UUID userId = extractUserIdFromContext();
         LearningOutcomesResponse response = learningOutcomesService.updateOutcome(outcomeId, dto, userId, ipAddress);
         return ResponseEntity.ok(response);
@@ -69,7 +69,7 @@ public class LearningOutcomesController {
             @PathVariable Long outcomeId,
             @RequestBody LearningOutcomesDTO dto,
             @RequestHeader(value = "X-Forwarded-For", required = false) String ipAddress) {
-        
+
         UUID userId = extractUserIdFromContext();
         LearningOutcomesResponse response = learningOutcomesService.updateOutcome(outcomeId, dto, userId, ipAddress);
         return ResponseEntity.ok(response);
@@ -83,7 +83,7 @@ public class LearningOutcomesController {
     public ResponseEntity<LearningOutcomesResponse> deleteOutcome(
             @PathVariable Long outcomeId,
             @RequestHeader(value = "X-Forwarded-For", required = false) String ipAddress) {
-        
+
         UUID userId = extractUserIdFromContext();
         LearningOutcomesResponse response = learningOutcomesService.deleteOutcome(outcomeId, userId, ipAddress);
         return ResponseEntity.ok(response);

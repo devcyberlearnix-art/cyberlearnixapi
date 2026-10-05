@@ -17,7 +17,7 @@ public class AdminPrincipal implements org.springframework.security.core.userdet
     private final AssignedService assignedService;
     private final String token;
 
-    public AdminPrincipal(UUID adminId, String email, String role, String adminType, 
+    public AdminPrincipal(UUID adminId, String email, String role, String adminType,
                         AssignedService assignedService, String token) {
         this.adminId = adminId;
         this.email = email;
@@ -28,7 +28,7 @@ public class AdminPrincipal implements org.springframework.security.core.userdet
     }
 
     // Constructor for backward compatibility
-    public AdminPrincipal(UUID adminId, String role, String adminType, 
+    public AdminPrincipal(UUID adminId, String role, String adminType,
                         AssignedService assignedService, String token) {
         this(adminId, null, role, adminType, assignedService, token);
     }

@@ -41,14 +41,14 @@ public class CourseDetailsController {
             }
 
             CourseDetailsDTO courseDetails = courseDetailsService.getCourseDetails(courseId, userId);
-            
+
             // Log audit event
-            auditLogger.logSuccess("COURSE_DETAILS_VIEW", 
-                    userId != null ? userId.toString() : "anonymous", 
-                    "course-service", 
-                    "GET", 
-                    "/api/v1/courses/" + courseId + "/details", 
-                    "Course details fetched for course ID: " + courseId, 
+            auditLogger.logSuccess("COURSE_DETAILS_VIEW",
+                    userId != null ? userId.toString() : "anonymous",
+                    "course-service",
+                    "GET",
+                    "/api/v1/courses/" + courseId + "/details",
+                    "Course details fetched for course ID: " + courseId,
                     ipAddress);
 
             return ResponseEntity.ok(
@@ -60,14 +60,14 @@ public class CourseDetailsController {
                             .build()
             );
         } catch (RuntimeException e) {
-            auditLogger.logFailure("COURSE_DETAILS_VIEW", 
-                    "anonymous", 
-                    "course-service", 
-                    "GET", 
-                    "/api/v1/courses/" + courseId + "/details", 
-                    "Failed to fetch course details: " + e.getMessage(), 
+            auditLogger.logFailure("COURSE_DETAILS_VIEW",
+                    "anonymous",
+                    "course-service",
+                    "GET",
+                    "/api/v1/courses/" + courseId + "/details",
+                    "Failed to fetch course details: " + e.getMessage(),
                     ipAddress);
-            
+
             return ResponseEntity.status(404)
                     .body(ApiResponse.<CourseDetailsDTO>builder()
                             .success(false)

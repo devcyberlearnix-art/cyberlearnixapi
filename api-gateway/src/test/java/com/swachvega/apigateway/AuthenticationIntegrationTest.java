@@ -26,13 +26,13 @@ class AuthenticationIntegrationTest {
                 "session123",
                 "CUSTOMER"
         );
-        
+
         assertNotNull(accessToken);
         assertTrue(accessToken.contains("."));
-        
+
         // Test token validation
         Map<String, Object> claims = jwtTokenProvider.validateAccessToken(accessToken).block();
-        
+
         assertNotNull(claims);
         assertEquals("user123", claims.get("sub"));
         assertEquals("testuser", claims.get("username"));
@@ -44,13 +44,13 @@ class AuthenticationIntegrationTest {
     void testRefreshTokenGeneration() {
         // Test refresh token generation
         String refreshToken = jwtTokenProvider.generateRefreshToken("user123", "session123");
-        
+
         assertNotNull(refreshToken);
         assertTrue(refreshToken.contains("."));
-        
+
         // Test refresh token validation
         Map<String, Object> claims = jwtTokenProvider.validateRefreshToken(refreshToken).block();
-        
+
         assertNotNull(claims);
         assertEquals("user123", claims.get("sub"));
         assertEquals("session123", claims.get("sessionId"));
@@ -66,11 +66,11 @@ class AuthenticationIntegrationTest {
                 "session123",
                 "CUSTOMER"
         );
-        
+
         // Verify token is valid
         Map<String, Object> claims = jwtTokenProvider.validateAccessToken(accessToken).block();
         assertNotNull(claims);
-        
+
         // For a proper expiration test, you'd need to mock the time or use tokens with very short expiration
         // This is a basic structure test
     }
@@ -79,12 +79,12 @@ class AuthenticationIntegrationTest {
     void testTokenExtractionFromHeader() {
         String authHeader = "Bearer abc123def456";
         String token = jwtTokenProvider.extractTokenFromHeader(authHeader);
-        
+
         assertEquals("abc123def456", token);
-        
+
         // Test null header
         assertNull(jwtTokenProvider.extractTokenFromHeader(null));
-        
+
         // Test invalid header
         assertNull(jwtTokenProvider.extractTokenFromHeader("InvalidHeader"));
     }

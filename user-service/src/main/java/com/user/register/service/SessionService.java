@@ -84,6 +84,25 @@ public class SessionService {
         return sessionRepository.findByUser(user);
     }
 
+    public java.util.Optional<UserSession> findByRefreshToken(String refreshToken) {
+        return sessionRepository.findByRefreshToken(refreshToken);
+    }
+
+    @Transactional
+    public void rotateTokens(String oldRefreshToken, String accessToken, String refreshToken) {
+        UserSession session = sessionRepository.findForUpdateByRefreshToken(oldRefreshToken)
+                .orElseThrow(() -> new org.springframework.web.server.ResponseStatusException(
+                        org.springframework.http.HttpStatus.UNAUTHORIZED, "Invalid refresh token"));
+
+        if (session.getAccessToken() != null) {
+            blacklistService.blacklistToken(session.getAccessToken());
+        }
+        blacklistService.blacklistToken(oldRefreshToken);
+        session.setAccessToken(accessToken);
+        session.setRefreshToken(refreshToken);
+        sessionRepository.save(session);
+    }
+
     // Logout single device
     public LogoutResponse logoutDevice(UUID sessionId, HttpServletRequest request) {
 

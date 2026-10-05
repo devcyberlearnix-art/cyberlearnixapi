@@ -13,7 +13,7 @@ public interface PaymentRepository extends JpaRepository<Payment, UUID> {
     @Query("SELECT COALESCE(SUM(p.amount), 0) FROM Payment p WHERE p.course = :course")
     double totalRevenueByCourse(Course course);
     @Query(value = """
-SELECT 
+SELECT
     CONCAT(EXTRACT(YEAR FROM p.paid_at), '-', EXTRACT(MONTH FROM p.paid_at)) AS month,
     SUM(p.amount) AS revenue
 FROM payment p

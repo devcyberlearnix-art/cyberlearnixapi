@@ -1,7 +1,6 @@
 package com.example.admin.security;
 
 
-
 import com.example.admin.entity.AssignedService;
 
 import jakarta.servlet.*;
@@ -22,13 +21,11 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
 
-
 import java.io.IOException;
 
 import java.util.List;
 
 import java.util.UUID;
-
 
 
 @Component
@@ -38,13 +35,11 @@ import java.util.UUID;
 public class JwtAuthFilter implements Filter {
 
 
-
     private final JwtService jwtService;
 
     private final StringRedisTemplate redisTemplate;
 
     private static final String TOKEN_BLACKLIST_PREFIX = "ADMIN:JWT:BLACKLIST:";
-
 
 
     @Override
@@ -110,7 +105,6 @@ public class JwtAuthFilter implements Filter {
     }
 
 
-
     private boolean authenticateBearer(HttpServletRequest req) {
 
         String authHeader = req.getHeader("Authorization");
@@ -121,7 +115,7 @@ public class JwtAuthFilter implements Filter {
 
         }
 
-        
+
         System.out.println("[JwtAuthFilter] Authorization header present: " + (authHeader != null));
         System.out.println("[JwtAuthFilter] Authorization header starts with Bearer: " + (authHeader != null && authHeader.regionMatches(true, 0, "Bearer ", 0, 7)));
 
@@ -134,11 +128,10 @@ public class JwtAuthFilter implements Filter {
         }
 
 
-
         String token = authHeader.substring(7).trim();
         String tokenFingerprint = token.substring(0, Math.min(8, token.length()));
         System.out.println("[JwtAuthFilter] Token extracted, fingerprint: " + tokenFingerprint + ", length: " + token.length());
-        
+
         if (token.isBlank()) {
 
             SecurityContextHolder.clearContext();
@@ -194,7 +187,6 @@ public class JwtAuthFilter implements Filter {
             System.out.println("[JwtAuthFilter] Extracted assignedService: " + assignedService);
 
 
-
             if (role == null || role.isBlank()) {
 
                 role = adminType != null && !adminType.isBlank() ? adminType : "MAIN_ADMIN";
@@ -231,7 +223,6 @@ public class JwtAuthFilter implements Filter {
         }
 
     }
-
 
 
     private void writeJsonError(HttpServletResponse response, int status, String message) throws IOException {

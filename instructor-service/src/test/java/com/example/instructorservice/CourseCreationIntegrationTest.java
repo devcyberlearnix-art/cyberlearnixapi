@@ -35,7 +35,7 @@ class CourseCreationIntegrationTest {
     @BeforeEach
     void setUp() {
         testInstructorId = UUID.randomUUID();
-        
+
         // Create test instructor
         Instructor instructor = new Instructor();
         instructor.setUserId(testInstructorId);
@@ -111,7 +111,7 @@ class CourseCreationIntegrationTest {
 
         // Assert - verify course is persisted in database
         assertTrue(courseRepository.existsById(courseId));
-        
+
         // Retrieve the course from database
         Course retrievedCourse = courseRepository.findById(courseId).orElse(null);
         assertNotNull(retrievedCourse);
@@ -128,7 +128,7 @@ class CourseCreationIntegrationTest {
         draftRequest.setPrice(10.00);
         draftRequest.setCategory("Testing");
         draftRequest.setStatus(Course.CourseStatus.DRAFT);
-        
+
         var draftResponse = courseService.createCourse(testInstructorId, draftRequest, "Bearer test-token");
         assertEquals(Course.CourseStatus.DRAFT, draftResponse.getData().getStatus().getStatus());
 
@@ -139,7 +139,7 @@ class CourseCreationIntegrationTest {
         publishedRequest.setPrice(20.00);
         publishedRequest.setCategory("Testing");
         publishedRequest.setStatus(Course.CourseStatus.PUBLISHED);
-        
+
         var publishedResponse = courseService.createCourse(testInstructorId, publishedRequest, "Bearer test-token");
         assertEquals(Course.CourseStatus.PUBLISHED, publishedResponse.getData().getStatus().getStatus());
 
@@ -150,7 +150,7 @@ class CourseCreationIntegrationTest {
         archivedRequest.setPrice(30.00);
         archivedRequest.setCategory("Testing");
         archivedRequest.setStatus(Course.CourseStatus.ARCHIVED);
-        
+
         var archivedResponse = courseService.createCourse(testInstructorId, archivedRequest, "Bearer test-token");
         assertEquals(Course.CourseStatus.ARCHIVED, archivedResponse.getData().getStatus().getStatus());
     }
@@ -251,7 +251,7 @@ class CourseCreationIntegrationTest {
         createRequest.setDescription("Original description");
         createRequest.setPrice(29.99);
         createRequest.setCategory("Testing");
-        
+
         var createResponse = courseService.createCourse(testInstructorId, createRequest, "Bearer test-token");
         Long courseId = createResponse.getData().getIdentity().getCourseId();
 

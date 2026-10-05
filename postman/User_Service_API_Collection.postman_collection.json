@@ -802,15 +802,6 @@
 						}
 					],
 					"request": {
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{accessToken}}"
-								}
-							]
-						},
 						"method": "POST",
 						"body": {
 							"mode": "formdata",

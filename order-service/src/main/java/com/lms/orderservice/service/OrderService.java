@@ -180,7 +180,7 @@ public class OrderService {
             cartClient.clearCart(userId);
         } catch (Exception e) {
             // Log the failure with context for manual intervention or retry
-            logger.error("Failed to clear cart for userId: {} after order creation. Order ID: {}. Error: {}", 
+            logger.error("Failed to clear cart for userId: {} after order creation. Order ID: {}. Error: {}",
                     userId, savedOrder.getOrderId(), e.getMessage(), e);
             // Cart clear is idempotent (deleteByUserId), so retry is safe
             // Order is valid and persisted, so we return success to the client

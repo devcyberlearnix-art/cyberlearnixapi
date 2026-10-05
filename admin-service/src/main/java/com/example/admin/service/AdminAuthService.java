@@ -43,16 +43,16 @@ public class AdminAuthService {
 
         String email = request.getEmail().trim().toLowerCase();
         log.debug("Admin login lookup email={}", email);
-        
+
         Optional<Admin> adminOptional = adminRepository.findByEmail(email);
         log.debug("Admin found={}", adminOptional.isPresent());
-        
+
         Admin admin = adminOptional
                 .orElseThrow(() ->
                         new BadCredentialsException("Invalid email or password"));
 
-        log.debug("Admin record - id={}, email={}, adminType={}, approvalStatus={}, verified={}", 
-                admin.getId(), admin.getEmail(), admin.getAdminType(), 
+        log.debug("Admin record - id={}, email={}, adminType={}, approvalStatus={}, verified={}",
+                admin.getId(), admin.getEmail(), admin.getAdminType(),
                 admin.getApprovalStatus(), admin.isVerified());
 
         boolean passwordMatches = passwordEncoder.matches(request.getPassword(), admin.getPassword());
@@ -76,7 +76,7 @@ public class AdminAuthService {
         }
 
         if (admin.getAdminType() == com.example.admin.entity.AdminType.SUB_ADMIN) {
-            log.debug("SUB_ADMIN check - approvalStatus={}, verified={}", 
+            log.debug("SUB_ADMIN check - approvalStatus={}, verified={}",
                     admin.getApprovalStatus(), admin.isVerified());
             if (admin.getApprovalStatus() != com.example.admin.entity.AdminApprovalStatus.APPROVED) {
                 throw new BadCredentialsException("Sub Admin account is not approved yet");
@@ -134,7 +134,7 @@ public class AdminAuthService {
                                             String otp,
                                             HttpServletRequest httpRequest) {
         // Admin login should now go through User Service
-        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, 
+        throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                 "Admin login should be performed through User Service at /api/v1/auth/login");
     }
 
@@ -191,10 +191,10 @@ public class AdminAuthService {
         Admin savedAdmin = adminRepository.save(admin);
 
         String ipAddress = extractClientIp(httpRequest);
-        String device = httpRequest != null && httpRequest.getHeader("User-Agent") != null 
+        String device = httpRequest != null && httpRequest.getHeader("User-Agent") != null
                 ? httpRequest.getHeader("User-Agent") : "Unknown Device";
 
-        auditService.logAction(adminId, "ADMIN_PROFILE_UPDATED: " + String.join(", ", updatedFields) 
+        auditService.logAction(adminId, "ADMIN_PROFILE_UPDATED: " + String.join(", ", updatedFields)
                 + " from IP: " + ipAddress + " Device: " + device);
 
         return AdminProfileResponse.builder()
@@ -217,7 +217,7 @@ public class AdminAuthService {
                         HttpStatus.NOT_FOUND, "Admin not found with ID: " + adminId));
 
         String ipAddress = extractClientIp(httpRequest);
-        String device = httpRequest != null && httpRequest.getHeader("User-Agent") != null 
+        String device = httpRequest != null && httpRequest.getHeader("User-Agent") != null
                 ? httpRequest.getHeader("User-Agent") : "Unknown Device";
 
         return AdminProfileResponse.builder()

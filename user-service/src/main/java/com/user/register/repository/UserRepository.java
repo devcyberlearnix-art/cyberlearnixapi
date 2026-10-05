@@ -17,6 +17,10 @@ public interface UserRepository extends JpaRepository<User, UUID> {
         return findFirstByEmail(email);
     }
 
+    @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+    @org.springframework.data.jpa.repository.Query("select u from User u where u.id = :id")
+    Optional<User> findForUpdateById(@org.springframework.data.repository.query.Param("id") UUID id);
+
     Optional<User> findFirstByMobile(String mobile);
     default Optional<User> findByMobile(String mobile) {
         if (mobile == null || mobile.isBlank()) return Optional.empty();

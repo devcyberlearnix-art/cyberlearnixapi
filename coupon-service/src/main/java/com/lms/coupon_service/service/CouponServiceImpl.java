@@ -373,7 +373,7 @@ public class CouponServiceImpl implements CouponService {
                 .perUserLimit(request.getUsageLimitPerUser())
                 .startTime(LocalDateTime.ofInstant(request.getValidFrom(), ZoneOffset.UTC))
                 .endTime(LocalDateTime.ofInstant(request.getValidUntil(), ZoneOffset.UTC))
-                .courses(request.getApplicableCourseIds() != null ? 
+                .courses(request.getApplicableCourseIds() != null ?
                     request.getApplicableCourseIds().stream()
                         .map(Long::valueOf)
                         .toList() : null)
@@ -452,7 +452,7 @@ public class CouponServiceImpl implements CouponService {
                         .build())
                 .createdAt(coupon.getCreatedAt() != null ? coupon.getCreatedAt().atOffset(ZoneOffset.UTC).toInstant()
                         : null)
-                .applicableCourseIds(coupon.getCourses() != null ? 
+                .applicableCourseIds(coupon.getCourses() != null ?
                     coupon.getCourses().stream()
                         .map(String::valueOf)
                         .toList() : null)

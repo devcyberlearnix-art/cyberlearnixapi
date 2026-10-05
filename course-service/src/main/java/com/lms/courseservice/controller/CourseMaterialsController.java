@@ -39,7 +39,7 @@ public class CourseMaterialsController {
             @PathVariable Long courseId,
             @Valid @RequestBody CourseMaterialsDTO dto,
             @RequestHeader(value = "X-Forwarded-For", required = false) String ipAddress) {
-        
+
         UUID userId = extractUserIdFromContext();
         CourseMaterialsResponse response = courseMaterialsService.createMaterial(courseId, dto, userId, ipAddress);
         return ResponseEntity.ok(response);
@@ -54,7 +54,7 @@ public class CourseMaterialsController {
             @PathVariable Long materialId,
             @Valid @RequestBody CourseMaterialsDTO dto,
             @RequestHeader(value = "X-Forwarded-For", required = false) String ipAddress) {
-        
+
         UUID userId = extractUserIdFromContext();
         CourseMaterialsResponse response = courseMaterialsService.updateMaterial(materialId, dto, userId, ipAddress);
         return ResponseEntity.ok(response);
@@ -69,7 +69,7 @@ public class CourseMaterialsController {
             @PathVariable Long materialId,
             @RequestBody CourseMaterialsDTO dto,
             @RequestHeader(value = "X-Forwarded-For", required = false) String ipAddress) {
-        
+
         UUID userId = extractUserIdFromContext();
         CourseMaterialsResponse response = courseMaterialsService.updateMaterial(materialId, dto, userId, ipAddress);
         return ResponseEntity.ok(response);
@@ -83,7 +83,7 @@ public class CourseMaterialsController {
     public ResponseEntity<CourseMaterialsResponse> deleteMaterial(
             @PathVariable Long materialId,
             @RequestHeader(value = "X-Forwarded-For", required = false) String ipAddress) {
-        
+
         UUID userId = extractUserIdFromContext();
         CourseMaterialsResponse response = courseMaterialsService.deleteMaterial(materialId, userId, ipAddress);
         return ResponseEntity.ok(response);

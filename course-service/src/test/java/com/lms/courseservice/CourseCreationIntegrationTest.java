@@ -8,6 +8,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
@@ -16,6 +17,7 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
+@ActiveProfiles("test")
 @Transactional
 class CourseCreationIntegrationTest {
 
@@ -112,7 +114,7 @@ class CourseCreationIntegrationTest {
 
         // Assert - verify course is persisted in database
         assertTrue(courseRepository.existsById(courseId));
-        
+
         // Retrieve the course from database
         Course retrievedCourse = courseRepository.findById(courseId).orElse(null);
         assertNotNull(retrievedCourse);
@@ -196,7 +198,7 @@ class CourseCreationIntegrationTest {
     void testCreateCourseWithInstructorAssociation() {
         // Arrange
         UUID specificInstructorId = UUID.fromString("123e4567-e89b-12d3-a456-426614174000");
-        
+
         CourseRequestDTO request = CourseRequestDTO.builder()
             .title("Instructor Course")
             .description("Course with specific instructor")

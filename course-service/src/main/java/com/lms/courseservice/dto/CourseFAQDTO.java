@@ -13,15 +13,15 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class CourseFAQDTO {
     private Long id;
-    
+
     @NotNull(message = "Course ID is required")
     private Long courseId;
-    
+
     @NotBlank(message = "Question is required")
     private String question;
-    
+
     @NotBlank(message = "Answer is required")
     private String answer;
-    
+
     private Integer displayOrder;
 }

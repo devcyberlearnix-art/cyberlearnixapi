@@ -29,12 +29,12 @@ public class ServiceAuthFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, java.io.IOException {
-        
+
         // Prevent service auth from being disabled in production
         if (!serviceAuthEnabled) {
             if (activeProfile.contains("prod") || activeProfile.contains("production")) {
                 log.error("CRITICAL: Service authentication is disabled in production profile!");
-                response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, 
+                response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
                         "Service authentication must be enabled in production");
                 return;
             }
@@ -45,9 +45,9 @@ public class ServiceAuthFilter extends OncePerRequestFilter {
 
         // Check if this is an internal endpoint
         String path = request.getRequestURI();
-        if (isInternalEndpoint(path)) {
+        if (isInternalEndpoint(path, request.getMethod())) {
             String authHeader = request.getHeader(serviceAuthUtil.getAuthHeaderName());
-            
+
             if (authHeader == null || authHeader.isEmpty()) {
                 log.warn("Missing service auth header for internal endpoint: {}", path);
                 response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Missing service authentication");
@@ -64,8 +64,9 @@ public class ServiceAuthFilter extends OncePerRequestFilter {
         filterChain.doFilter(request, response);
     }
 
-    private boolean isInternalEndpoint(String path) {
+    private boolean isInternalEndpoint(String path, String method) {
         // Define which endpoints require service authentication
-        return path.startsWith("/api/v1/instructors/") && path.contains("/profile");
+        return path.startsWith("/api/v1/instructors/") && path.contains("/profile")
+                || "DELETE".equalsIgnoreCase(method) && path.matches("/api/v1/users/[0-9a-fA-F-]{36}");
     }
 }

@@ -1,7 +1,6 @@
 package com.example.admin.security;
 
 
-
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.context.annotation.Bean;
@@ -23,7 +22,6 @@ import java.util.Arrays;
 import java.util.List;
 
 
-
 @Configuration
 
 @RequiredArgsConstructor
@@ -31,17 +29,14 @@ import java.util.List;
 public class SecurityConfig {
 
 
-
     private final JwtAuthFilter jwtAuthFilter;
 
     private final AdminAuthorizationFilter adminAuthorizationFilter;
 
 
-
     @Bean
 
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-
 
 
         http
@@ -55,6 +50,8 @@ public class SecurityConfig {
                         // Public endpoints (sub-admin registration, login flows, and password recovery
                         // called internally by User Service's unified /api/v1/auth/** fallback)
                         .requestMatchers(
+                            "/actuator/health",
+                            "/api/v1/admin/internal/users/*/refresh-eligibility",
                                 "/api/v1/admins/register",
                                 "/api/v1/admin/register",
                                 "/api/v1/admin/login",
@@ -82,11 +79,9 @@ public class SecurityConfig {
                 .formLogin(form -> form.disable());
 
 
-
         return http.build();
 
     }
-
 
 
     @Bean

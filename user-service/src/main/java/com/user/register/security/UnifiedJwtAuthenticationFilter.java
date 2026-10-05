@@ -53,15 +53,14 @@ public class UnifiedJwtAuthenticationFilter extends OncePerRequestFilter {
                     authorities.add(new SimpleGrantedAuthority("ROLE_MAIN_ADMIN"));
                     authorities.add(new SimpleGrantedAuthority("ROLE_SUB_ADMIN"));
                 }
-                
+
                 UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
                         gatewayUserId,
                         null,
-                        authorities
-                );
+                        authorities);
                 authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                 SecurityContextHolder.getContext().setAuthentication(authentication);
-                
+
                 log.debug("Set authentication from API Gateway for user: {} with role: {}", gatewayUserId, gatewayRole);
             } else {
                 // Fall back to JWT token validation
@@ -69,25 +68,26 @@ public class UnifiedJwtAuthenticationFilter extends OncePerRequestFilter {
 
                 if (StringUtils.hasText(jwt)) {
                     log.debug("JWT token found in request: {}", request.getRequestURI());
-                    
+
                     // Check blacklist if service is available
                     boolean isBlacklisted = false;
                     if (tokenBlacklistService != null) {
                         isBlacklisted = tokenBlacklistService.isBlacklisted(jwt);
                     }
-                    
+
                     log.debug("Token blacklisted: {}", isBlacklisted);
                     log.debug("UnifiedJwtService available: {}", unifiedJwtService != null);
-                    
+
                     if (unifiedJwtService != null) {
                         boolean isValid = unifiedJwtService.validateToken(jwt);
                         boolean isExpired = unifiedJwtService.isTokenExpired(jwt);
                         log.debug("Token valid: {}, Token expired: {}", isValid, isExpired);
                     }
-                    
-                    if (!isBlacklisted && unifiedJwtService != null && unifiedJwtService.validateToken(jwt) && !unifiedJwtService.isTokenExpired(jwt)) {
+
+                    if (!isBlacklisted && unifiedJwtService != null && unifiedJwtService.validateToken(jwt)
+                            && !unifiedJwtService.isTokenExpired(jwt)) {
                         String userId = unifiedJwtService.extractUserId(jwt);
-                        
+
                         // Check if password was changed after token issuance
                         boolean isTokenInvalidated = false;
                         try {
@@ -96,7 +96,8 @@ public class UnifiedJwtAuthenticationFilter extends OncePerRequestFilter {
                                 long lastChangeTime = Long.parseLong(lastChangeStr);
                                 java.util.Date issuedAt = unifiedJwtService.extractIssuedAt(jwt);
                                 if (issuedAt != null && issuedAt.getTime() < lastChangeTime) {
-                                    log.info("Rejecting token for userId={}: token issued at {} is older than last password change at {}", 
+                                    log.info(
+                                            "Rejecting token for userId={}: token issued at {} is older than last password change at {}",
                                             userId, issuedAt.getTime(), lastChangeTime);
                                     isTokenInvalidated = true;
                                 }
@@ -106,7 +107,8 @@ public class UnifiedJwtAuthenticationFilter extends OncePerRequestFilter {
                         }
 
                         if (isTokenInvalidated) {
-                            log.warn("JWT validation failed: token invalidated due to password change for request: {}", request.getRequestURI());
+                            log.warn("JWT validation failed: token invalidated due to password change for request: {}",
+                                    request.getRequestURI());
                         } else {
                             String email = unifiedJwtService.extractEmail(jwt);
                             String role = unifiedJwtService.extractRole(jwt);
@@ -128,28 +130,26 @@ public class UnifiedJwtAuthenticationFilter extends OncePerRequestFilter {
                                 }
                             }
 
+                            // Add admin type as authority if applicable
+                            if (adminType != null && !adminType.equals("NONE")) {
+                                authorities.add(new SimpleGrantedAuthority("ADMIN_TYPE_" + adminType));
+                            }
 
-                        // Add admin type as authority if applicable
-                        if (adminType != null && !adminType.equals("NONE")) {
-                            authorities.add(new SimpleGrantedAuthority("ADMIN_TYPE_" + adminType));
-                        }
+                            // Add assigned service as authority if applicable
+                            if (assignedService != null && !assignedService.equals("NONE")) {
+                                authorities.add(new SimpleGrantedAuthority("SERVICE_" + assignedService));
+                            }
 
-                        // Add assigned service as authority if applicable
-                        if (assignedService != null && !assignedService.equals("NONE")) {
-                            authorities.add(new SimpleGrantedAuthority("SERVICE_" + assignedService));
-                        }
+                            // Create authentication token
+                            UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
+                                    userId,
+                                    null,
+                                    authorities);
+                            authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
 
-                        // Create authentication token
-                        UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-                                userId,
-                                null,
-                                authorities
-                        );
-                        authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                            SecurityContextHolder.getContext().setAuthentication(authentication);
 
-                        SecurityContextHolder.getContext().setAuthentication(authentication);
-
-                        log.info("Set authentication for user: {} with role: {}", email, role);
+                            log.info("Set authentication for user: {} with role: {}", email, role);
                         }
                     } else {
                         log.warn("JWT validation failed or token blacklisted for request: {}", request.getRequestURI());
@@ -169,6 +169,13 @@ public class UnifiedJwtAuthenticationFilter extends OncePerRequestFilter {
         String bearerToken = request.getHeader("Authorization");
         if (StringUtils.hasText(bearerToken) && bearerToken.startsWith("Bearer ")) {
             return bearerToken.substring(7);
+        }
+        if (request.getCookies() != null) {
+            for (jakarta.servlet.http.Cookie cookie : request.getCookies()) {
+                if ("accessToken".equals(cookie.getName()) && StringUtils.hasText(cookie.getValue())) {
+                    return cookie.getValue();
+                }
+            }
         }
         return null;
     }

@@ -1,12 +1,18 @@
 package com.example.admin.config;
 
 import com.cyberlearnix.security.SharedJwtValidator;
+import com.cyberlearnix.security.ServiceAuthUtil;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
 public class JwtConfig {
+
+    @Bean
+    public ServiceAuthUtil serviceAuthUtil() {
+        return new ServiceAuthUtil();
+    }
 
     @Bean
     public SharedJwtValidator sharedJwtValidator(

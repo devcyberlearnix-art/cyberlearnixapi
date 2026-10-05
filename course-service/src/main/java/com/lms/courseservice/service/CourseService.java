@@ -20,9 +20,11 @@ import com.lms.courseservice.exception.EnrollmentException;
 import com.lms.courseservice.repository.LectureRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.http.HttpStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 import com.lms.courseservice.entity.CoursePreview;
 import com.lms.courseservice.entity.Section;
 import com.lms.courseservice.repository.CoursePreviewRepository;
@@ -48,6 +50,11 @@ public class CourseService {
     private final ReviewRatingClient reviewRatingClient;
     private final CacheInvalidationService cacheInvalidationService;
 
+    public Lecture getLectureById(Long lectureId) {
+        return lectureRepository.findByIdWithCourse(lectureId)
+                .orElseThrow(() -> new EnrollmentException("Lecture not found with id: " + lectureId));
+    }
+
     public Course createCourse(Course course) {
         if (course.getStatus() == null || course.getStatus().isBlank()) {
             course.setStatus("DRAFT");
@@ -71,13 +78,14 @@ public class CourseService {
             .searchCount(0L)
             .viewCount(0L)
             .build();
-        
+
         return courseRepository.save(course);
     }
 
     @Transactional(readOnly = true)
-    public List<Course> getAllCourses() {
-        return courseRepository.findAll();
+    public org.springframework.data.domain.Page<Course> getAllCourses(int page, int size, String sortBy, org.springframework.data.domain.Sort.Direction direction) {
+        org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(page, size, org.springframework.data.domain.Sort.by(direction, sortBy));
+        return courseRepository.findAll(pageable);
     }
 
     public Map<String, Object> getCourseStats() {
@@ -180,7 +188,8 @@ public class CourseService {
     @Transactional(readOnly = true)
     public Course getCourseById(Long id) {
         return courseRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Course not found with id: " + id));
+            .orElseThrow(() -> new ResponseStatusException(
+                HttpStatus.NOT_FOUND, "Course not found with id: " + id));
     }
 
     public Course updateCourse(Long id, Course updatedCourse) {
@@ -222,11 +231,11 @@ public class CourseService {
             course.setPremium(updatedCourse.getPremium());
 
         Course savedCourse = courseRepository.save(course);
-        
+
         // Evict cache for this course
         cacheInvalidationService.evictCourseDetailsForCourse(id);
         cacheInvalidationService.evictCurriculumForCourse(id);
-        
+
         return savedCourse;
     }
 
@@ -261,7 +270,7 @@ public class CourseService {
 
         // 5. Finally delete the course
         courseRepository.deleteById(id);
-        
+
         // Evict cache for this course
         cacheInvalidationService.evictCourseDetailsForCourse(id);
         cacheInvalidationService.evictCurriculumForCourse(id);
@@ -341,14 +350,14 @@ public class CourseService {
 
         // Fetch published courses with optional filters
         List<Course> publishedCourses = courseRepository.findByStatusIgnoreCase("PUBLISHED");
-        
+
         // Apply filters if provided
         if (category != null && !category.isBlank()) {
             publishedCourses = publishedCourses.stream()
                 .filter(course -> category.equalsIgnoreCase(course.getCategory()))
                 .collect(Collectors.toList());
         }
-        
+
         if (level != null && !level.isBlank()) {
             publishedCourses = publishedCourses.stream()
                 .filter(course -> level.equalsIgnoreCase(course.getLevel()))
@@ -395,17 +404,17 @@ public class CourseService {
         List<TrendingCourseWithScore> trendingCourses = candidates.stream()
             .map(candidate -> {
                 double trendingScore = calculateTrendingScore(
-                    candidate.course(), 
-                    candidate.ratingSummary(), 
+                    candidate.course(),
+                    candidate.ratingSummary(),
                     candidate.enrollmentCount(),
                     finalMaxSearchCount,
                     finalMaxViewCount,
                     finalMaxEnrollmentCount
                 );
                 return new TrendingCourseWithScore(
-                    candidate.course(), 
-                    candidate.ratingSummary(), 
-                    candidate.enrollmentCount(), 
+                    candidate.course(),
+                    candidate.ratingSummary(),
+                    candidate.enrollmentCount(),
                     trendingScore
                 );
             })
@@ -420,8 +429,8 @@ public class CourseService {
         int startIndex = page * size;
         int endIndex = Math.min(startIndex + size, totalElements);
 
-        List<TrendingCourseWithScore> paginatedCourses = startIndex < totalElements 
-            ? trendingCourses.subList(startIndex, endIndex) 
+        List<TrendingCourseWithScore> paginatedCourses = startIndex < totalElements
+            ? trendingCourses.subList(startIndex, endIndex)
             : List.of();
 
         // Build response
@@ -468,7 +477,7 @@ public class CourseService {
 
         // Calculate weighted trending score as per PRD
         // Search Score (30%) + Enrollment Score (25%) + Rating Score (20%) + View Score (15%) + Premium Score (10%)
-        double trendingScore = 
+        double trendingScore =
             (searchScore * 0.30) +
             (enrollmentScore * 0.25) +
             (ratingScore * 0.20) +
@@ -486,7 +495,7 @@ public class CourseService {
     private TrendingCourseResponse toTrendingCourseResponse(TrendingCourseWithScore trendingCourse) {
         Course course = trendingCourse.course();
         CourseRatingSummary ratingSummary = trendingCourse.ratingSummary();
-        
+
         return TrendingCourseResponse.builder()
             .id(course.getId())
             .title(course.getTitle())
@@ -600,7 +609,7 @@ public class CourseService {
         List<String> categories = parseList(category);
         List<String> levels = parseList(level);
         List<String> languages = parseList(language);
-        
+
         // Convert filter lists to lowercase for case-insensitive matching
         if (categories != null) {
             categories = categories.stream().map(String::toLowerCase).toList();
@@ -748,7 +757,7 @@ public class CourseService {
             default -> org.springframework.data.domain.Sort.unsorted();
         };
     }
-    
+
     private List<String> parseList(String value) {
         if (value == null || value.isBlank()) {
             return null;

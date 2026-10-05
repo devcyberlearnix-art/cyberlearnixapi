@@ -44,7 +44,7 @@ public class PaymentService {
                     );
             System.out.println("Payment service response status: " + response.getStatusCode());
             System.out.println("Payment service response body: " + response.getBody());
-            
+
             // Parse the response manually
             String body = response.getBody();
             if (body == null || body.trim().isEmpty() || body.equals("[]")) {

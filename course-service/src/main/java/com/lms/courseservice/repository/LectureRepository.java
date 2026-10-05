@@ -20,4 +20,10 @@ public interface LectureRepository extends JpaRepository<Lecture, Long> {
             """)
     List<Lecture> findPreviewLecturesByCourseId(Long courseId);
 
+    @Query("""
+            SELECT l FROM Lecture l
+            WHERE l.id = :lectureId
+            """)
+    Optional<Lecture> findByIdWithCourse(Long lectureId);
+
 }

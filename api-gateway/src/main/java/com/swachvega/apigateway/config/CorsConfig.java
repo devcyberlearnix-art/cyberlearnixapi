@@ -15,13 +15,13 @@ import java.util.List;
 @Configuration
 public class CorsConfig {
 
-    @Value("${cors.allowed-origins:http://localhost:3000}")
+    @Value("${cors.allowed-origins:http://localhost:3000,http://localhost:3001,http://localhost:3002,http://localhost:5173,http://localhost:5174,http://127.0.0.1:3000,http://127.0.0.1:5173}")
     private String[] allowedOrigins;
 
     @Value("${cors.allowed-methods:GET,POST,PUT,DELETE,OPTIONS,PATCH}")
     private String[] allowedMethods;
 
-    @Value("${cors.allowed-headers:Authorization,Content-Type,Accept,Origin,X-Requested-With,ngrok-skip-browser-warning}")
+    @Value("${cors.allowed-headers:Authorization,Content-Type,Accept,Origin,X-Requested-With,ngrok-skip-browser-warning,X-User-Id,X-User-Role,X-Auth-Token}")
     private String[] allowedHeaders;
 
     @Value("${cors.allow-credentials:true}")
@@ -34,34 +34,65 @@ public class CorsConfig {
     @Order(Ordered.HIGHEST_PRECEDENCE)
     public CorsWebFilter corsWebFilter() {
         CorsConfiguration corsConfig = new CorsConfiguration();
-        
+
         // Allow configured origins from environment
-        List<String> origins = Arrays.asList(allowedOrigins);
-        origins.forEach(corsConfig::addAllowedOrigin);
-        
-        // Add wildcard for ngrok in development if localhost is allowed
-        if (origins.contains("http://localhost:3000") || origins.contains("http://localhost:*")) {
-            corsConfig.addAllowedOriginPattern("https://*.ngrok-free.app");
-            corsConfig.addAllowedOriginPattern("https://*.ngrok-free.dev");
-            corsConfig.addAllowedOriginPattern("https://*.ngrok.io");
+        if (allowedOrigins != null) {
+            for (String origin : allowedOrigins) {
+                if (origin != null && !origin.trim().isEmpty()) {
+                    String trimmed = origin.trim();
+                    if (trimmed.contains("*")) {
+                        corsConfig.addAllowedOriginPattern(trimmed);
+                    } else {
+                        corsConfig.addAllowedOrigin(trimmed);
+                    }
+                }
+            }
         }
-        
+
+        // Add wildcard patterns for local development and ngrok tunnels
+        corsConfig.addAllowedOriginPattern("http://localhost:*");
+        corsConfig.addAllowedOriginPattern("http://127.0.0.1:*");
+        corsConfig.addAllowedOriginPattern("https://*.ngrok-free.app");
+        corsConfig.addAllowedOriginPattern("https://*.ngrok-free.dev");
+        corsConfig.addAllowedOriginPattern("https://*.ngrok.io");
+
         // Allow configured HTTP methods
-        Arrays.asList(allowedMethods).forEach(corsConfig::addAllowedMethod);
-        
+        if (allowedMethods != null) {
+            for (String method : allowedMethods) {
+                if (method != null && !method.trim().isEmpty()) {
+                    corsConfig.addAllowedMethod(method.trim());
+                }
+            }
+        }
+
         // Allow configured headers
-        Arrays.asList(allowedHeaders).forEach(corsConfig::addAllowedHeader);
-        
+        if (allowedHeaders != null) {
+            for (String header : allowedHeaders) {
+                if (header != null && !header.trim().isEmpty()) {
+                    corsConfig.addAllowedHeader(header.trim());
+                }
+            }
+        }
+        corsConfig.addAllowedHeader("*");
+
+        // Expose headers for frontend clients
+        corsConfig.addExposedHeader("Authorization");
+        corsConfig.addExposedHeader("Content-Type");
+        corsConfig.addExposedHeader("Set-Cookie");
+        corsConfig.addExposedHeader("X-Total-Count");
+        corsConfig.addExposedHeader("Access-Control-Allow-Origin");
+        corsConfig.addExposedHeader("Access-Control-Allow-Credentials");
+
         // Allow credentials (cookies, authorization headers)
         corsConfig.setAllowCredentials(allowCredentials);
-        
+
         // Cache preflight requests
         corsConfig.setMaxAge(maxAge);
-        
+
         // Apply to all paths
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", corsConfig);
-        
+
         return new CorsWebFilter(source);
     }
 }

@@ -3,6 +3,7 @@ package com.lms.courseservice.service;
 import com.lms.courseservice.dto.CourseDetailsDTO;
 import com.lms.courseservice.dto.CourseRatingSummary;
 import com.lms.courseservice.entity.Course;
+import com.lms.courseservice.entity.Enrollment;
 import com.lms.courseservice.repository.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -79,6 +80,8 @@ class CourseDetailsServiceTest {
         // Mock repository calls
         when(courseRepository.findById(1L)).thenReturn(Optional.of(testCourse));
         when(sectionRepository.findByCourseIdWithLectures(1L)).thenReturn(java.util.Arrays.asList());
+        when(enrollmentRepository.findByCourseId(1L)).thenReturn(java.util.List.of(
+            Enrollment.builder().status("ACTIVE").progress(null).build()));
         when(enrollmentRepository.findByStudentIdAndCourseId(any(), any())).thenReturn(Optional.empty());
         CourseRatingSummary ratingSummary = new CourseRatingSummary();
         ratingSummary.setCourseId(1L);
@@ -110,6 +113,8 @@ class CourseDetailsServiceTest {
         assertThat(details.getEnrollmentStatus()).isNotNull();
         assertThat(details.getRatingSummary()).isNotNull();
         assertThat(details.getCourseStats()).isNotNull();
+        assertThat(details.getCourseStats().getAverageProgress()).isZero();
+        assertThat(details.getCourseStats().getCompletionCount()).isZero();
 
         // Verify repository calls
         verify(courseRepository, times(1)).findById(1L);

@@ -98,7 +98,7 @@ class CourseRequirementsServiceTest {
         when(courseRepository.findById(courseId)).thenReturn(Optional.empty());
 
         // Act & Assert
-        assertThrows(RuntimeException.class, () -> 
+        assertThrows(RuntimeException.class, () ->
             courseRequirementsService.createRequirement(courseId, dto, testUserId, "127.0.0.1"));
 
         verify(courseRepository).findById(courseId);
@@ -119,7 +119,7 @@ class CourseRequirementsServiceTest {
         when(courseRepository.findById(courseId)).thenReturn(Optional.of(testCourse));
 
         // Act & Assert
-        assertThrows(RuntimeException.class, () -> 
+        assertThrows(RuntimeException.class, () ->
             courseRequirementsService.createRequirement(courseId, dto, differentUserId, "127.0.0.1"));
 
         verify(courseRepository).findById(courseId);

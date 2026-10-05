@@ -25,7 +25,7 @@ public class CartController {
 
     @PostMapping
     public ResponseEntity<ApiResponse<AddCourseResponse>> addToCart(Authentication auth,
-            @RequestBody CartRequest request) {
+            @jakarta.validation.Valid @RequestBody CartRequest request) {
         String userId = auth.getName();
         AddCourseResponse data = cartService.addToCart(userId, request);
         return ResponseEntity.status(201).body(ApiResponse.success("Course added to cart successfully.", data));
@@ -95,5 +95,14 @@ public class CartController {
 
         cartService.clearFullCart(userId);
         return ResponseEntity.ok(ApiResponse.success("Cart cleared successfully."));
+    }
+
+    @PostMapping("/internal/add")
+    public ResponseEntity<ApiResponse<AddCourseResponse>> addToCartInternal(
+            @RequestHeader("X-User-Id") String userId,
+            @RequestBody com.lms.cart_service.dto.CartRequest request) {
+        
+        AddCourseResponse data = cartService.addToCartInternal(userId, request.getCourseId());
+        return ResponseEntity.status(201).body(ApiResponse.success("Course added to cart successfully.", data));
     }
 }

@@ -21,10 +21,10 @@ public class Payment {
     private String txnId;
 
     private Double amount;
-    
+
     @Enumerated(EnumType.STRING)
     private PaymentStatus status;
-    
+
     private String firstName;
     private String email;
     private String phone;

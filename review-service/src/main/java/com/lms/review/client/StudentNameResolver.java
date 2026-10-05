@@ -1,5 +1,6 @@
 package com.lms.review.client;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.util.UUID;
@@ -8,6 +9,7 @@ import java.util.UUID;
  * Resolves student display names for public review listings.
  * Uses UserClient when enabled; otherwise returns a placeholder.
  */
+@Slf4j
 @Component
 public class StudentNameResolver {
 
@@ -24,16 +26,19 @@ public class StudentNameResolver {
     public String resolve(UUID userId) {
         if (userServiceEnabled && userClient != null) {
             try {
-                UserResponse user = userClient.getUserById(userId);
-                String displayName = user != null ? user.resolveDisplayName() : null;
-                if (displayName != null && !displayName.isBlank()) {
-                    return displayName;
+                UserApiResponse response = userClient.getUserById(userId);
+                if (response != null && response.isSuccess()) {
+                    String displayName = response.resolveDisplayName();
+                    if (displayName != null && !displayName.isBlank()) {
+                        return displayName;
+                    }
                 }
             } catch (Exception ex) {
+                log.warn("Failed to resolve user name for userId={}: {}", userId, ex.getMessage());
                 // Fall through to placeholder
             }
         }
-        // TODO: Integrate with user-service when available in all environments
+        // Fallback to placeholder if service disabled, unavailable, or user not found
         return "Student " + userId;
     }
 }

@@ -62,7 +62,7 @@ public class AdminInstructorController {
                         return profile;
                     })
                     .collect(Collectors.toList());
-            
+
             return ResponseEntity.ok(new ApiResponse<>(
                     true,
                     "Instructors fetched successfully",
@@ -94,7 +94,7 @@ public class AdminInstructorController {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                         .body(new ApiResponse<>(false, "Page size must be between 1 and 100", null, LocalDateTime.now()));
             }
-            
+
             Map<String, Object> applications;
             if (status != null && !status.isBlank()) {
                 try {
@@ -107,7 +107,7 @@ public class AdminInstructorController {
             } else {
                 applications = instructorService.getAllApplicationsPaginated(page, size);
             }
-            
+
             return ResponseEntity.ok(new ApiResponse<>(
                     true,
                     "Instructor applications fetched successfully",
@@ -123,7 +123,7 @@ public class AdminInstructorController {
     /**
      * Deprecated: Use GET /applications?status={status} instead
      * This endpoint is kept for backward compatibility
-     * 
+     *
      * @deprecated Use query parameter version: GET /applications?status={status}
      */
     @Deprecated

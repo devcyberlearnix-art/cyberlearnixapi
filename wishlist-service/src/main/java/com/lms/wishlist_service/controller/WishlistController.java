@@ -22,7 +22,7 @@ public class WishlistController {
      */
     @PostMapping
     public ResponseEntity<ApiResponse<WishlistResponse>> add(Authentication auth,
-            @RequestBody WishlistCreateRequest request) {
+            @jakarta.validation.Valid @RequestBody WishlistCreateRequest request) {
         String userId = auth.getName();
         WishlistResponse data = service.addToWishlist(userId, request.getCourseId().toString());
 

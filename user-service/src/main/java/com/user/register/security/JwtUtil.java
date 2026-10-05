@@ -50,15 +50,16 @@ public class JwtUtil {
     private String generateToken(String subject, long expiration, String type, String role) {
 
         return Jwts.builder()
-                .setId(UUID.randomUUID().toString())
-                .setSubject(subject)
-                .setIssuer(this.issuer)
-                .setAudience(this.audience)
+                .id(UUID.randomUUID().toString())
+                .subject(subject)
+                .issuer(this.issuer)
+                .audience().add(this.audience)
+                .and()
                 .claim("type", type)
-                .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + expiration))
+                .issuedAt(new Date())
+                .expiration(new Date(System.currentTimeMillis() + expiration))
                 .claim("role", role) // ✅ now comes from parameter
-                .signWith(getSecretKey(), SignatureAlgorithm.HS256)
+                .signWith(getSecretKey())
                 .compact();
     }
 
@@ -82,13 +83,13 @@ public class JwtUtil {
 
     private Claims extractAllClaims(String token) {
 
-        return Jwts.parserBuilder()
-                .setSigningKey(getSecretKey())
-                .requireIssuer(this.issuer)
-                .requireAudience(this.audience)
+        return Jwts.parser()
+                .verifyWith(getSecretKey())
+                .require("iss", this.issuer)
+                .require("aud", this.audience)
                 .build()
-                .parseClaimsJws(token)
-                .getBody();
+                .parseSignedClaims(token)
+                .getPayload();
     }
 
     public String extractUserId(String token) {
@@ -174,13 +175,13 @@ public class JwtUtil {
                     org.springframework.http.HttpStatus.UNAUTHORIZED, "JWT token is missing");
         }
         try {
-            Claims claims = Jwts.parserBuilder()
-                    .setSigningKey(getSecretKey())
-                    .requireIssuer(this.issuer)
-                    .requireAudience(this.audience)
+            Claims claims = Jwts.parser()
+                    .verifyWith(getSecretKey())
+                    .require("iss", this.issuer)
+                    .require("aud", this.audience)
                     .build()
-                    .parseClaimsJws(token)
-                    .getBody();
+                    .parseSignedClaims(token)
+                    .getPayload();
             if (!"access".equals(claims.get("type", String.class))) {
                 throw new org.springframework.web.server.ResponseStatusException(
                         org.springframework.http.HttpStatus.UNAUTHORIZED,

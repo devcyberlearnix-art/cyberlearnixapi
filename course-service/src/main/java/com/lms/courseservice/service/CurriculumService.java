@@ -35,7 +35,7 @@ public class CurriculumService {
 
         // Use optimized query to prevent N+1 problem
         List<Section> sections = sectionRepository.findByCourseIdWithLectures(courseId);
-        
+
         List<CourseDetailsDTO.SectionDTO> sectionDTOs = sections.stream()
                 .map(section -> {
                     // Lectures are already loaded via JOIN FETCH
@@ -43,11 +43,11 @@ public class CurriculumService {
                     Integer sectionDuration = lectures.stream()
                             .mapToInt(Lecture::getDuration)
                             .sum();
-                    
+
                     List<CourseDetailsDTO.LectureDTO> lectureDTOs = lectures.stream()
                             .map(this::buildLectureDTO)
                             .collect(Collectors.toList());
-                    
+
                     return CourseDetailsDTO.SectionDTO.builder()
                             .sectionId(section.getId())
                             .title(section.getTitle())
@@ -63,7 +63,7 @@ public class CurriculumService {
         Integer totalDuration = sectionDTOs.stream()
                 .mapToInt(CourseDetailsDTO.SectionDTO::getSectionDuration)
                 .sum();
-        
+
         Integer totalLectures = sectionDTOs.stream()
                 .mapToInt(CourseDetailsDTO.SectionDTO::getLectureCount)
                 .sum();

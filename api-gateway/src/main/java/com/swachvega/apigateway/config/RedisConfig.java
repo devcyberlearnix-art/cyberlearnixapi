@@ -32,7 +32,7 @@ public class RedisConfig {
     @Bean
     public ReactiveRedisConnectionFactory reactiveRedisConnectionFactory() {
         RedisStandaloneConfiguration redisConfig = new RedisStandaloneConfiguration(redisHost, redisPort);
-        
+
         LettuceClientConfiguration clientConfig = LettuceClientConfiguration.builder()
                 .commandTimeout(timeout)
                 .build();
@@ -46,20 +46,20 @@ public class RedisConfig {
     @Bean
     public ReactiveRedisTemplate<String, Object> reactiveRedisTemplate(
             ReactiveRedisConnectionFactory connectionFactory) {
-        
+
         // Create serialization context
-        RedisSerializationContext<String, Object> serializationContext = 
+        RedisSerializationContext<String, Object> serializationContext =
             RedisSerializationContext.<String, Object>newSerializationContext()
                 .key(new StringRedisSerializer())
                 .value(new GenericJackson2JsonRedisSerializer())
                 .hashKey(new StringRedisSerializer())
                 .hashValue(new GenericJackson2JsonRedisSerializer())
                 .build();
-        
+
         // Create and configure template
-        ReactiveRedisTemplate<String, Object> template = 
+        ReactiveRedisTemplate<String, Object> template =
             new ReactiveRedisTemplate<>(connectionFactory, serializationContext);
-        
+
         return template;
     }
 }

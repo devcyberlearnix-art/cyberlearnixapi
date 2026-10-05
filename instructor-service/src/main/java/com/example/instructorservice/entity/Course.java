@@ -76,7 +76,7 @@ public class Course {
         if (this.status == null) {
             this.status = CourseStatus.DRAFT;
         }
-        
+
         if (this.syncStatus == null) {
             this.syncStatus = "PENDING";
         }
