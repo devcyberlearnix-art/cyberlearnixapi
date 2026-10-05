@@ -41,3 +41,6 @@ test_login3.json
 .env.local
 .env.*.local
 run-with-credentials.bat
+
+# Local test configuration files with credentials
+**/application-localtest.properties
