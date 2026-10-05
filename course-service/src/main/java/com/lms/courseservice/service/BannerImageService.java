@@ -1,7 +1,5 @@
 package com.lms.courseservice.service;
 
-import com.cloudinary.Cloudinary;
-import com.cloudinary.utils.ObjectUtils;
 import com.lms.courseservice.dto.BannerImageUploadRequest;
 import com.lms.courseservice.dto.ImageValidationResult;
 import com.lms.courseservice.exception.BannerException;
@@ -15,19 +13,17 @@ import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class BannerImageService {
 
-    private final Cloudinary cloudinary;
+    private final GoogleDriveService googleDriveService;
 
-    @Value("${cloudinary.folder:cyberlearnix}")
-    private String cloudinaryFolder;
+    @Value("${google.folder-id}")
+    private String googleDriveFolderId;
 
     private static final long MAX_FILE_SIZE = 1 * 1024 * 1024; // 1MB
     private static final int RECOMMENDED_WIDTH = 1920;
@@ -115,84 +111,53 @@ public class BannerImageService {
         }
 
         try {
-            String publicId = "banners/" + System.currentTimeMillis() + "_" + imageType;
+            String fileName = "banners/" + System.currentTimeMillis() + "_" + imageType + ".jpg";
+            String imageUrl = googleDriveService.uploadBytes(file.getBytes(), fileName, "image/jpeg");
 
-            Map<String, Object> uploadOptions = new HashMap<>();
-            uploadOptions.put("public_id", publicId);
-            uploadOptions.put("folder", cloudinaryFolder);
-            uploadOptions.put("resource_type", "image");
-            uploadOptions.put("quality", "auto");
-            uploadOptions.put("fetch_format", "auto");
-
-            Map<String, Object> uploadResult = cloudinary.uploader().upload(file.getBytes(), uploadOptions);
-
-            String imageUrl = (String) uploadResult.get("secure_url");
-            String format = (String) uploadResult.get("format");
-            int width = (Integer) uploadResult.get("width");
-            int height = (Integer) uploadResult.get("height");
-            long bytes = ((Number) uploadResult.get("bytes")).longValue();
+            BufferedImage image = ImageIO.read(file.getInputStream());
+            int width = image.getWidth();
+            int height = image.getHeight();
+            long bytes = file.getSize();
 
             return BannerImageUploadRequest.builder()
                     .desktopImageUrl(imageUrl)
                     .mobileImageUrl(imageUrl)
                     .imageWidth(width)
                     .imageHeight(height)
-                    .imageFormat(format)
+                    .imageFormat("jpg")
                     .imageSize(bytes)
                     .build();
 
         } catch (IOException e) {
-            log.error("Error uploading image to Cloudinary", e);
+            log.error("Error uploading image to Google Drive", e);
             throw new BannerException("Failed to upload image: " + e.getMessage());
         } catch (Exception e) {
-            log.error("Cloudinary upload error - CloudName: {}, API Key: {}, Folder: {}",
-                cloudinary.config.cloudName, cloudinary.config.apiKey, cloudinaryFolder, e);
+            log.error("Google Drive upload error - Folder ID: {}", googleDriveFolderId, e);
             throw new BannerException("Failed to upload image to cloud storage: " + e.getMessage());
         }
     }
 
     public String generateMobileImageUrl(String desktopImageUrl) {
-        if (desktopImageUrl == null || !desktopImageUrl.contains("cloudinary")) {
-            return desktopImageUrl;
-        }
-
-        try {
-            return desktopImageUrl.replace("/upload/", "/upload/c_scale,w_768,q_auto,f_auto/");
-        } catch (Exception e) {
-            log.error("Error generating mobile image URL", e);
-            return desktopImageUrl;
-        }
+        // Google Drive doesn't support dynamic image transformation like Cloudinary
+        // Return the same URL for now
+        return desktopImageUrl;
     }
 
     public void deleteImage(String imageUrl) {
-        if (imageUrl == null || !imageUrl.contains("cloudinary")) {
+        if (imageUrl == null) {
             return;
         }
 
         try {
-            String publicId = extractPublicId(imageUrl);
-            if (publicId != null) {
-                cloudinary.uploader().destroy(publicId, ObjectUtils.emptyMap());
-                log.info("Successfully deleted image from Cloudinary: {}", publicId);
-            }
+            googleDriveService.deleteFile(imageUrl);
+            log.info("Successfully deleted image from Google Drive: {}", imageUrl);
         } catch (Exception e) {
-            log.error("Error deleting image from Cloudinary: {}", imageUrl, e);
+            log.error("Error deleting image from Google Drive: {}", imageUrl, e);
         }
     }
 
     private boolean hasValidExtension(String filename) {
         String lowerCaseFilename = filename.toLowerCase();
         return ALLOWED_FORMATS.stream().anyMatch(lowerCaseFilename::endsWith);
-    }
-
-    private String extractPublicId(String imageUrl) {
-        try {
-            String[] parts = imageUrl.split("/");
-            String filename = parts[parts.length - 1];
-            return filename.substring(0, filename.lastIndexOf('.'));
-        } catch (Exception e) {
-            log.error("Error extracting public ID from URL: {}", imageUrl, e);
-            return null;
-        }
     }
 }
