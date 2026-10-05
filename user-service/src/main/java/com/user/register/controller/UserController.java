@@ -43,9 +43,24 @@ public class UserController {
             return ResponseEntity.ok(
                     new ApiResponse<>(true, "User profile fetched successfully", profile, LocalDateTime.now())
             );
+        } catch (io.jsonwebtoken.ExpiredJwtException e) {
+            return ResponseEntity.status(401)
+                    .body(new ApiResponse<>(false, "Access token expired. Please refresh your token.", null, LocalDateTime.now()));
+        } catch (io.jsonwebtoken.JwtException e) {
+            return ResponseEntity.status(401)
+                    .body(new ApiResponse<>(false, "Invalid token: " + e.getMessage(), null, LocalDateTime.now()));
         } catch (RuntimeException e) {
-            return ResponseEntity.status(400)
-                    .body(new ApiResponse<>(false, "Missing or invalid Authorization header", null));
+            String msg = e.getMessage() != null ? e.getMessage() : "Authentication failed";
+            if (msg.contains("Missing authentication") || msg.contains("Authorization")) {
+                return ResponseEntity.status(401)
+                        .body(new ApiResponse<>(false, msg, null, LocalDateTime.now()));
+            } else if (msg.contains("deleted") || msg.contains("suspended")) {
+                return ResponseEntity.status(403)
+                        .body(new ApiResponse<>(false, msg, null, LocalDateTime.now()));
+            } else {
+                return ResponseEntity.status(401)
+                        .body(new ApiResponse<>(false, msg, null, LocalDateTime.now()));
+            }
         }
     }
 

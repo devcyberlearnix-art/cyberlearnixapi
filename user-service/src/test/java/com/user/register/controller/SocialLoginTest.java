@@ -30,6 +30,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
+import com.user.register.util.DynamicDeviceAndLocationResolver;
+
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 class SocialLoginTest {
@@ -63,7 +65,8 @@ class SocialLoginTest {
                 null,
                 null,
                 null,
-                sessionService
+                sessionService,
+                new DynamicDeviceAndLocationResolver()
         );
 
         unifiedAuthenticationController = new UnifiedAuthenticationController(unifiedAuthenticationService);

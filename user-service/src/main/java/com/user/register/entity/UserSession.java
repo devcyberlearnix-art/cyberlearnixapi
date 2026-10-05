@@ -25,7 +25,17 @@ public class UserSession {
     @JoinColumn(name = "user_id")
     private User user;
 
-    private String deviceInfo;   // optional: browser/device info
+    private String deviceInfo;   // optional: raw browser/device info
+    private String deviceId;
+    private String deviceName;
+    private String deviceType;
+    private String browser;
+    private String operatingSystem;
+    private Double latitude;
+    private Double longitude;
+    private String city;
+    private String country;
+
     @Column(columnDefinition = "TEXT")
     private String token;  // if needed
     @Column(columnDefinition = "TEXT")

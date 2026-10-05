@@ -8,6 +8,8 @@ package com.user.register.service;
 
 import com.user.register.dto.unified.*;
 import com.cyberlearnix.commonlibs.dto.UserLoginEvent;
+import com.user.register.util.DynamicDeviceAndLocationResolver;
+import com.user.register.util.DynamicDeviceAndLocationResolver.ClientContext;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -138,6 +140,7 @@ public class UnifiedAuthenticationService {
 
     private final EmailService emailService;
     private final SessionService sessionService;
+    private final DynamicDeviceAndLocationResolver deviceResolver;
 
 
 
@@ -1327,61 +1330,24 @@ public class UnifiedAuthenticationService {
 
 
     private LoginResponse.SessionInfo buildSessionInfo(HttpServletRequest httpRequest) {
-
-
-
-        String ipAddress = httpRequest.getHeader("X-Forwarded-For");
-
-
-
-        if (ipAddress == null || ipAddress.isEmpty() || "unknown".equalsIgnoreCase(ipAddress)) {
-
-
-
-            ipAddress = httpRequest.getRemoteAddr();
-
-
-
-        }
-
-
-
-
-
-
-
-        String userAgent = httpRequest.getHeader("User-Agent");
-
-
-
-        String device = detectDevice(userAgent);
-
-
-
-
-
-
+        ClientContext client = deviceResolver != null ? deviceResolver.resolve(httpRequest) : null;
+        String ipAddress = client != null ? client.getIpAddress() : (httpRequest != null ? httpRequest.getRemoteAddr() : "127.0.0.1");
+        String device = client != null ? client.getDeviceName() : detectDevice(httpRequest != null ? httpRequest.getHeader("User-Agent") : null);
 
         return LoginResponse.SessionInfo.builder()
-
-
-
                 .loginTime(LocalDateTime.now().toString())
-
-
-
                 .ipAddress(ipAddress)
-
-
-
                 .device(device)
-
-
-
+                .deviceId(client != null ? client.getDeviceId() : null)
+                .deviceName(client != null ? client.getDeviceName() : null)
+                .deviceType(client != null ? client.getDeviceType() : "WEB")
+                .browser(client != null ? client.getBrowser() : null)
+                .operatingSystem(client != null ? client.getOperatingSystem() : null)
+                .latitude(client != null ? client.getLatitude() : 0.0)
+                .longitude(client != null ? client.getLongitude() : 0.0)
+                .city(client != null ? client.getCity() : null)
+                .country(client != null ? client.getCountry() : null)
                 .build();
-
-
-
     }
 
 

@@ -9,7 +9,11 @@ import com.user.register.repository.UserRepository;
 import com.user.register.repository.UserSessionRepository;
 import com.user.register.security.JwtUtil;
 
+import com.user.register.util.DynamicDeviceAndLocationResolver;
+import com.user.register.util.DynamicDeviceAndLocationResolver.ClientContext;
+
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -29,29 +33,51 @@ public class SessionService {
     private final UserSessionRepository sessionRepository;
     private final UserRepository userRepository;
     private final TokenBlacklistService blacklistService;
+    private final DynamicDeviceAndLocationResolver deviceResolver;
 
     // ✅ Constructor injection for ALL dependencies
     public SessionService(JwtUtil jwtUtil,
                           UserSessionRepository sessionRepository,
                           UserRepository userRepository,
-                          TokenBlacklistService blacklistService) {
+                          TokenBlacklistService blacklistService,
+                          DynamicDeviceAndLocationResolver deviceResolver) {
         this.jwtUtil = jwtUtil;
         this.sessionRepository = sessionRepository;
         this.userRepository = userRepository;
         this.blacklistService = blacklistService;
+        this.deviceResolver = deviceResolver;
     }
 
-    // Create session at login with tokens
-    public void createSession(User user, HttpServletRequest request, String accessToken, String refreshToken) {
+    // Create session at login with tokens & dynamic device/location resolution
+    public UserSession createSession(User user, HttpServletRequest request, String accessToken, String refreshToken) {
+        return createSession(user, request, null, accessToken, refreshToken);
+    }
+
+    public UserSession createSession(User user, HttpServletRequest request, HttpServletResponse response, String accessToken, String refreshToken) {
+        ClientContext client = deviceResolver.resolve(request, response);
+
         UserSession session = new UserSession();
         session.setUser(user);
-        session.setDeviceInfo(request.getHeader("User-Agent"));
-        session.setIpAddress(getClientIp(request));
+        session.setDeviceInfo(request != null ? request.getHeader("User-Agent") : "Unknown");
+        session.setDeviceId(client.getDeviceId());
+        session.setDeviceName(client.getDeviceName());
+        session.setDeviceType(client.getDeviceType());
+        session.setBrowser(client.getBrowser());
+        session.setOperatingSystem(client.getOperatingSystem());
+        session.setLatitude(client.getLatitude());
+        session.setLongitude(client.getLongitude());
+        session.setCity(client.getCity());
+        session.setCountry(client.getCountry());
+        session.setIpAddress(client.getIpAddress());
         session.setCreatedAt(LocalDateTime.now());
+        session.setExpiresAt(LocalDateTime.now().plusDays(30));
         session.setAccessToken(accessToken);
         session.setRefreshToken(refreshToken);
-        sessionRepository.save(session);
-        log.info("Created session for user {} with token {}", user.getId(), accessToken);
+
+        UserSession saved = sessionRepository.save(session);
+        log.info("Created dynamic session for user {} [Device: {}, Location: {}, {} ({}, {})]",
+                user.getId(), client.getDeviceName(), client.getCity(), client.getCountry(), client.getLatitude(), client.getLongitude());
+        return saved;
     }
 
     public List<UserSession> getSessionsForUser(User user) {
@@ -105,14 +131,24 @@ public class SessionService {
         }
 
         List<SessionDto> revokedSessions = activeSessions.stream()
-                .map(s -> new SessionDto(
-                        s.getId(),
-                        user.getId(),
-                        s.getDeviceInfo(),
-                        s.getIpAddress(),
-                        s.getCreatedAt(),
-                        user.getEmail()
-                ))
+                .map(s -> SessionDto.builder()
+                        .id(s.getId())
+                        .userId(user.getId())
+                        .email(user.getEmail())
+                        .deviceInfo(s.getDeviceInfo())
+                        .deviceId(s.getDeviceId())
+                        .deviceName(s.getDeviceName())
+                        .deviceType(s.getDeviceType())
+                        .browser(s.getBrowser())
+                        .operatingSystem(s.getOperatingSystem())
+                        .latitude(s.getLatitude())
+                        .longitude(s.getLongitude())
+                        .city(s.getCity())
+                        .country(s.getCountry())
+                        .ipAddress(s.getIpAddress())
+                        .loginTime(s.getCreatedAt())
+                        .build()
+                )
                 .toList();
 
         sessionRepository.deleteAll(activeSessions);

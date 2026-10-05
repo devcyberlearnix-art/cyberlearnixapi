@@ -23,10 +23,9 @@ import java.util.Random;
 import java.util.UUID;
 
 import com.user.register.entity.UserSession;
-
-
-
 import com.user.register.util.BearerTokenResolver;
+import com.user.register.util.DynamicDeviceAndLocationResolver;
+import com.user.register.util.DynamicDeviceAndLocationResolver.ClientContext;
 
 import org.springframework.beans.factory.annotation.Value;
 
@@ -124,6 +123,8 @@ public class RegistrationService {
 
     private final org.springframework.web.client.RestTemplate restTemplate;
 
+    private final DynamicDeviceAndLocationResolver deviceResolver;
+
     
 
     @Value("${admin.service.url:http://localhost:8087}")
@@ -167,27 +168,13 @@ public class RegistrationService {
 
 
 
-        // ================= GET CLIENT IP =================
-
-        String ipAddress = request.getHeader("X-Forwarded-For");
-
-        if (ipAddress == null || ipAddress.isEmpty() || "unknown".equalsIgnoreCase(ipAddress)) {
-
-            ipAddress = request.getRemoteAddr();
-
-        }
-
-
-
-        // ================= DEVICE + BROWSER + OS =================
-
+        // ================= DYNAMIC CLIENT RESOLUTION =================
+        ClientContext clientCtx = deviceResolver != null ? deviceResolver.resolve(request) : null;
+        String ipAddress = clientCtx != null ? clientCtx.getIpAddress() : request.getRemoteAddr();
         String userAgent = request.getHeader("User-Agent");
-
-        String device = detectDevice(userAgent);
-
-        String browser = detectBrowser(userAgent);
-
-        String os = detectOS(userAgent);
+        String device = clientCtx != null ? clientCtx.getDeviceName() : detectDevice(userAgent);
+        String browser = clientCtx != null ? clientCtx.getBrowser() : detectBrowser(userAgent);
+        String os = clientCtx != null ? clientCtx.getOperatingSystem() : detectOS(userAgent);
 
         if (device == null || device.isEmpty()) device = "Unknown Device";
 
@@ -1235,22 +1222,25 @@ public class RegistrationService {
 
 
 
-        // Save new session
+        // Save new dynamic session
+        ClientContext clientInfo = deviceResolver != null ? deviceResolver.resolve(request, response) : null;
 
         UserSession userSession = UserSession.builder()
-
                 .user(user)
-
                 .accessToken(accessToken)
-
                 .refreshToken(refreshToken)
-
                 .deviceInfo(userAgent)
-
-                .ipAddress(ipAddress)
-
+                .deviceId(clientInfo != null ? clientInfo.getDeviceId() : UUID.randomUUID().toString())
+                .deviceName(clientInfo != null ? clientInfo.getDeviceName() : detectDevice(userAgent))
+                .deviceType(clientInfo != null ? clientInfo.getDeviceType() : "WEB")
+                .browser(clientInfo != null ? clientInfo.getBrowser() : detectBrowser(userAgent))
+                .operatingSystem(clientInfo != null ? clientInfo.getOperatingSystem() : detectOS(userAgent))
+                .latitude(clientInfo != null ? clientInfo.getLatitude() : 0.0)
+                .longitude(clientInfo != null ? clientInfo.getLongitude() : 0.0)
+                .city(clientInfo != null ? clientInfo.getCity() : "Unknown")
+                .country(clientInfo != null ? clientInfo.getCountry() : "Unknown")
+                .ipAddress(clientInfo != null ? clientInfo.getIpAddress() : ipAddress)
                 .expiresAt(LocalDateTime.now().plusDays(30))
-
                 .build();
 
         userSessionRepository.save(userSession);
@@ -1329,10 +1319,22 @@ public class RegistrationService {
         data.put("status", user.getStatus());
 
         data.put("role", user.getRole());
-
         data.put("isInstructorApproved", user.getIsInstructorApproved());
         data.put("otpSessionId", otpSessionId);
         data.put("otpType", "registration");
+
+        if (clientInfo != null) {
+            data.put("deviceId", clientInfo.getDeviceId());
+            data.put("deviceName", clientInfo.getDeviceName());
+            data.put("deviceType", clientInfo.getDeviceType());
+            data.put("browser", clientInfo.getBrowser());
+            data.put("os", clientInfo.getOperatingSystem());
+            data.put("ipAddress", clientInfo.getIpAddress());
+            data.put("latitude", clientInfo.getLatitude());
+            data.put("longitude", clientInfo.getLongitude());
+            data.put("city", clientInfo.getCity());
+            data.put("country", clientInfo.getCountry());
+        }
 
 
 

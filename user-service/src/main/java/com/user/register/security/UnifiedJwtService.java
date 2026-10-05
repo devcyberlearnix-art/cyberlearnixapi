@@ -101,21 +101,51 @@ public class UnifiedJwtService {
     public Claims extractClaims(String token) {
         var parserBuilder = Jwts.parserBuilder()
                 .setSigningKey(getSigningKey());
-        
+
         if (issuer != null && !issuer.isBlank()) {
             parserBuilder.requireIssuer(issuer);
         }
         if (audience != null && !audience.isBlank()) {
             parserBuilder.requireAudience(audience);
         }
-        
+
         return parserBuilder.build()
                 .parseClaimsJws(token)
                 .getBody();
     }
 
+    /**
+     * Extracts claims without enforcing expiry — useful for reading userId
+     * from tokens that may have just expired (e.g. for refresh scenarios).
+     */
+    public Claims extractClaimsIgnoreExpiry(String token) {
+        try {
+            return Jwts.parserBuilder()
+                    .setSigningKey(getSigningKey())
+                    .build()
+                    .parseClaimsJws(token)
+                    .getBody();
+        } catch (ExpiredJwtException e) {
+            // Return the claims from the expired token — signature is still valid
+            return e.getClaims();
+        }
+    }
+
     public String extractUserId(String token) {
-        return extractClaims(token).getSubject();
+        Claims claims = extractClaims(token);
+        // Prefer explicit userId claim; fall back to sub
+        String userId = claims.get("userId", String.class);
+        return (userId != null && !userId.isBlank()) ? userId : claims.getSubject();
+    }
+
+    /**
+     * Same as extractUserId but works on expired tokens too.
+     * Use only when you explicitly need to identify a user from a stale token.
+     */
+    public String extractUserIdIgnoreExpiry(String token) {
+        Claims claims = extractClaimsIgnoreExpiry(token);
+        String userId = claims.get("userId", String.class);
+        return (userId != null && !userId.isBlank()) ? userId : claims.getSubject();
     }
 
     public String extractEmail(String token) {

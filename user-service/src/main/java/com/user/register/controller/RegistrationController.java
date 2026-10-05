@@ -3,27 +3,18 @@ package com.user.register.controller;
 
 
 import com.user.register.dto.*;
-
 import com.user.register.entity.User;
-
 import com.user.register.entity.UserSession;
-
 import com.user.register.exception.InvalidOtpException;
-
 import com.user.register.exception.LoginFailedException;
-
 import com.user.register.repository.UserRepository;
-
 import com.user.register.repository.UserSessionRepository;
-
 import com.user.register.security.JwtUtil;
-
 import com.user.register.service.RegistrationService;
-
 import com.user.register.service.SessionService;
-
 import com.user.register.service.TokenBlacklistService;
-
+import com.user.register.util.DynamicDeviceAndLocationResolver;
+import com.user.register.util.DynamicDeviceAndLocationResolver.ClientContext;
 import com.user.register.util.SecurityUtils;
 
 import eu.bitwalker.useragentutils.UserAgent;
@@ -93,6 +84,8 @@ public class RegistrationController {
     private final TokenBlacklistService blacklistService;
 
     private final SessionService sessionService;
+
+    private final DynamicDeviceAndLocationResolver deviceResolver;
 
 
 
@@ -282,6 +275,8 @@ public class RegistrationController {
             User savedUser = registrationService.register(user, request);
             Map<String, Object> otpMeta = registrationService.getRegistrationOtpMetadata(savedUser.getEmail());
 
+            ClientContext client = deviceResolver != null ? deviceResolver.resolve(request) : null;
+
             Map<String, Object> responseData = new HashMap<>();
             responseData.put("id", savedUser.getId());
             responseData.put("email", savedUser.getEmail());
@@ -291,6 +286,20 @@ public class RegistrationController {
             responseData.put("effectiveRole", savedUser.getEffectiveRole());
             responseData.put("skills", registerRequest.getSkillsAsList());
             responseData.put("profilePhoto", savedUser.getProfilePhoto() != null ? savedUser.getProfilePhoto() : normalizedProfilePhoto);
+            
+            if (client != null) {
+                responseData.put("deviceId", client.getDeviceId());
+                responseData.put("deviceName", client.getDeviceName());
+                responseData.put("deviceType", client.getDeviceType());
+                responseData.put("browser", client.getBrowser());
+                responseData.put("os", client.getOperatingSystem());
+                responseData.put("ipAddress", client.getIpAddress());
+                responseData.put("latitude", client.getLatitude());
+                responseData.put("longitude", client.getLongitude());
+                responseData.put("city", client.getCity());
+                responseData.put("country", client.getCountry());
+            }
+
             responseData.putAll(otpMeta);
 
             ApiResponse<Map<String, Object>> response = new ApiResponse<>(

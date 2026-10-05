@@ -56,14 +56,24 @@ public class SessionController {
         // Transform to DTO, filtering out expired sessions
         List<SessionDto> sessions = userSessions.stream()
                 .filter(s -> s.getExpiresAt() == null || s.getExpiresAt().isAfter(LocalDateTime.now()))
-                .map(s -> new SessionDto(
-                        s.getId(),
-                        user.getId(),
-                        s.getDeviceInfo(),
-                        s.getIpAddress(),
-                        s.getCreatedAt(),
-                        user.getEmail()
-                ))
+                .map(s -> SessionDto.builder()
+                        .id(s.getId())
+                        .userId(user.getId())
+                        .email(user.getEmail())
+                        .deviceInfo(s.getDeviceInfo())
+                        .deviceId(s.getDeviceId())
+                        .deviceName(s.getDeviceName())
+                        .deviceType(s.getDeviceType())
+                        .browser(s.getBrowser())
+                        .operatingSystem(s.getOperatingSystem())
+                        .latitude(s.getLatitude())
+                        .longitude(s.getLongitude())
+                        .city(s.getCity())
+                        .country(s.getCountry())
+                        .ipAddress(s.getIpAddress())
+                        .loginTime(s.getCreatedAt())
+                        .build()
+                )
                 .toList();
 
         return new ApiResponse<>(

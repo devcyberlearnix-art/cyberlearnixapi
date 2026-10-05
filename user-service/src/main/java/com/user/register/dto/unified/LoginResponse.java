@@ -59,5 +59,14 @@ public class LoginResponse {
         private String loginTime;
         private String ipAddress;
         private String device;
+        private String deviceId;
+        private String deviceName;
+        private String deviceType;
+        private String browser;
+        private String operatingSystem;
+        private Double latitude;
+        private Double longitude;
+        private String city;
+        private String country;
     }
 }

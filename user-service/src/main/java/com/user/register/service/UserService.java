@@ -183,6 +183,12 @@ public class UserService {
 
                 return UUID.fromString(userIdStr);
 
+            } catch (io.jsonwebtoken.ExpiredJwtException e) {
+                // Re-throw as-is so the controller returns a clear 401 "token expired"
+                throw e;
+            } catch (io.jsonwebtoken.JwtException e) {
+                // Re-throw as-is for a clear 401 "invalid token"
+                throw e;
             } catch (Exception e) {
 
                 throw new RuntimeException("Invalid JWT token: " + e.getMessage());
@@ -269,21 +275,23 @@ public class UserService {
 
                 .filter(s -> s.getExpiresAt() == null || s.getExpiresAt().isAfter(LocalDateTime.now()))
 
-                .map(s -> new SessionDto(
-
-                        s.getId(),
-
-                        user.getId(),   // ✅ UUID safe
-
-                        s.getDeviceInfo(),
-
-                        s.getIpAddress(),
-
-                        s.getCreatedAt(),
-
-                        user.getEmail()
-
-                ))
+                .map(s -> SessionDto.builder()
+                        .id(s.getId())
+                        .userId(user.getId())
+                        .email(user.getEmail())
+                        .deviceInfo(s.getDeviceInfo())
+                        .deviceId(s.getDeviceId())
+                        .deviceName(s.getDeviceName())
+                        .deviceType(s.getDeviceType())
+                        .browser(s.getBrowser())
+                        .operatingSystem(s.getOperatingSystem())
+                        .latitude(s.getLatitude())
+                        .longitude(s.getLongitude())
+                        .city(s.getCity())
+                        .country(s.getCountry())
+                        .ipAddress(s.getIpAddress())
+                        .loginTime(s.getCreatedAt())
+                        .build())
 
                 .collect(Collectors.toList());
 
