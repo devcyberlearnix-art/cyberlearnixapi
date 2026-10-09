@@ -1,7 +1,6 @@
 package com.example.admin.security;
 
 
-
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.context.annotation.Bean;
@@ -18,6 +17,9 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.util.Arrays;
+
+import java.util.List;
 
 
 @Configuration
@@ -27,11 +29,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 public class SecurityConfig {
 
 
-
     private final JwtAuthFilter jwtAuthFilter;
 
     private final AdminAuthorizationFilter adminAuthorizationFilter;
-
 
 
     @Bean
@@ -39,8 +39,9 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 
 
-
         http
+
+                .cors(cors -> cors.disable()) // Disable CORS - handled by API Gateway
 
                 .csrf(csrf -> csrf.disable())
 
@@ -49,17 +50,22 @@ public class SecurityConfig {
                         // Public endpoints (sub-admin registration, login flows, and password recovery
                         // called internally by User Service's unified /api/v1/auth/** fallback)
                         .requestMatchers(
+                            "/actuator/health",
+                            "/api/v1/admin/internal/users/*/refresh-eligibility",
                                 "/api/v1/admins/register",
                                 "/api/v1/admin/register",
                                 "/api/v1/admin/login",
                                 "/api/v1/admin/login/otp/request",
                                 "/api/v1/admin/login/otp/verify",
+                                "/api/v1/admin/login/otp/resend",
                                 "/api/v1/admin/password/forgot",
                                 "/api/v1/admin/password/verify-otp",
+                                "/api/v1/admin/password/otp/resend",
                                 "/api/v1/admin/password/reset"
                         ).permitAll()
 
                         // All other admin endpoints require authentication
+                        // Includes: /api/v1/admin/email/change-request, /verify-old, /verify-new
                         .requestMatchers("/api/v1/admin/**").authenticated()
 
                         .anyRequest().denyAll())
@@ -73,11 +79,9 @@ public class SecurityConfig {
                 .formLogin(form -> form.disable());
 
 
-
         return http.build();
 
     }
-
 
 
     @Bean

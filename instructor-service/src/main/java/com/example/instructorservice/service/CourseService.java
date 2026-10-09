@@ -37,6 +37,7 @@ public class CourseService {
 
         public CourseFullResponseDTO createCourse(UUID userId, CourseRequestDTO request, String authorization) {
 
+                // 🔍 Validate instructor exists
                 Instructor instructor = instructorRepository.findByUserId(userId)
                                 .orElseGet(() -> {
                                         Instructor i = new Instructor();
@@ -45,6 +46,20 @@ public class CourseService {
 
                                         return instructorRepository.save(i);
                                 });
+
+                // ✅ Validate request data
+                if (request.getTitle() == null || request.getTitle().trim().isEmpty()) {
+                        throw new ValidationException("Course title is required");
+                }
+                if (request.getDescription() == null || request.getDescription().trim().isEmpty()) {
+                        throw new ValidationException("Course description is required");
+                }
+                if (request.getPrice() == null || request.getPrice() < 0) {
+                        throw new ValidationException("Valid price is required");
+                }
+                if (request.getCategory() == null || request.getCategory().trim().isEmpty()) {
+                        throw new ValidationException("Course category is required");
+                }
 
                 Course.CourseStatus status = request.getStatus();
                 if (status == null) {
@@ -65,6 +80,9 @@ public class CourseService {
                                 .instructor(instructor)
                                 .slug(generateSlug(request.getTitle()))
                                 .tags(request.getTags()) // ✅ safe here
+                                .level(request.getLevel() != null ? request.getLevel() : "BEGINNER")
+                                .language(request.getLanguage() != null ? request.getLanguage() : "en")
+                                .syncStatus("PENDING")
                                 .build();
 
                 // status timestamps
@@ -226,7 +244,7 @@ public class CourseService {
 
                                                 // INSTRUCTOR
                                                 .instructor(CourseFullResponseDTO.InstructorDTO.builder()
-                                                                .instructorId(instructor.getId())
+                                                                .instructorId(instructor.getUserId())
                                                                 .name(instructor.getName())
                                                                 .email(instructor.getEmail())
                                                                 .headline(headline)
@@ -401,6 +419,14 @@ public class CourseService {
 
                 if (request.getStatus() != null) {
                         course.setStatus(request.getStatus());
+                }
+
+                if (request.getLevel() != null) {
+                        course.setLevel(request.getLevel());
+                }
+
+                if (request.getLanguage() != null) {
+                        course.setLanguage(request.getLanguage());
                 }
 
                 // 💾 Save

@@ -23,10 +23,9 @@ import java.util.Random;
 import java.util.UUID;
 
 import com.user.register.entity.UserSession;
-
-
-
 import com.user.register.util.BearerTokenResolver;
+import com.user.register.util.DynamicDeviceAndLocationResolver;
+import com.user.register.util.DynamicDeviceAndLocationResolver.ClientContext;
 
 import org.springframework.beans.factory.annotation.Value;
 
@@ -34,9 +33,6 @@ import org.springframework.http.HttpStatus;
 
 import org.springframework.http.ResponseEntity;
 
-import org.springframework.mail.javamail.JavaMailSender;
-
-import org.springframework.mail.javamail.MimeMessageHelper;
 
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
@@ -45,10 +41,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import org.springframework.web.server.ResponseStatusException;
-
-import com.cloudinary.Cloudinary;
-
-import com.cloudinary.utils.ObjectUtils;
 
 import java.io.ByteArrayOutputStream;
 
@@ -84,7 +76,6 @@ import com.user.register.util.SecurityUtils;
 
 
 
-import jakarta.mail.internet.MimeMessage;
 
 import jakarta.servlet.http.Cookie;
 
@@ -120,7 +111,7 @@ public class RegistrationService {
 
     private final OtpService otpService;
 
-    private final JavaMailSender mailSender;
+    private final EmailService emailService;
 
     private final BCryptPasswordEncoder passwordEncoder; // inject bean
 
@@ -128,9 +119,11 @@ public class RegistrationService {
 
     private final TokenBlacklistService blacklistService;
 
-    private final Cloudinary cloudinary;
+    private final GoogleDriveService googleDriveService;
 
     private final org.springframework.web.client.RestTemplate restTemplate;
+
+    private final DynamicDeviceAndLocationResolver deviceResolver;
 
     
 
@@ -140,18 +133,11 @@ public class RegistrationService {
 
 
 
-    @Value("${cloudinary.folder:cyberlearnix}")
-
-    private String folder;
-
-
-
     @Value("${app.encryption.key:1234567890123456}")
 
     private String encryptionKey;
 
-    @Value("${app.otp.log-value:true}")
-    private boolean logOtpValue;
+
 
     private String confirmPassword;
 
@@ -169,9 +155,6 @@ public class RegistrationService {
 
 
 
-    @Value("${spring.mail.username}")
-
-    private String fromEmail;
 
 
 
@@ -185,27 +168,13 @@ public class RegistrationService {
 
 
 
-        // ================= GET CLIENT IP =================
-
-        String ipAddress = request.getHeader("X-Forwarded-For");
-
-        if (ipAddress == null || ipAddress.isEmpty() || "unknown".equalsIgnoreCase(ipAddress)) {
-
-            ipAddress = request.getRemoteAddr();
-
-        }
-
-
-
-        // ================= DEVICE + BROWSER + OS =================
-
+        // ================= DYNAMIC CLIENT RESOLUTION =================
+        ClientContext clientCtx = deviceResolver != null ? deviceResolver.resolve(request) : null;
+        String ipAddress = clientCtx != null ? clientCtx.getIpAddress() : request.getRemoteAddr();
         String userAgent = request.getHeader("User-Agent");
-
-        String device = detectDevice(userAgent);
-
-        String browser = detectBrowser(userAgent);
-
-        String os = detectOS(userAgent);
+        String device = clientCtx != null ? clientCtx.getDeviceName() : detectDevice(userAgent);
+        String browser = clientCtx != null ? clientCtx.getBrowser() : detectBrowser(userAgent);
+        String os = clientCtx != null ? clientCtx.getOperatingSystem() : detectOS(userAgent);
 
         if (device == null || device.isEmpty()) device = "Unknown Device";
 
@@ -253,10 +222,10 @@ public class RegistrationService {
 
         // ================= MOBILE VALIDATION =================
 
-        if (user.getMobile() == null || !user.getMobile().matches("\\d{6,12}")) {
-
-            throw new RuntimeException("Mobile number must be 6-12 digits");
-
+        int requiredLength = getMobileLengthForCountry(countryCode);
+        String mobilePattern = "\\d{" + requiredLength + "}";
+        if (user.getMobile() == null || !user.getMobile().matches(mobilePattern)) {
+            throw new RuntimeException("Mobile number must be exactly " + requiredLength + " digits for country " + countryCode);
         }
 
 
@@ -311,6 +280,11 @@ public class RegistrationService {
                     throw new RuntimeException("Mobile number already registered");
                 }
 
+                if (normalizedProfilePhoto != null && !normalizedProfilePhoto.isBlank()) {
+                    mobileUser.setProfilePhoto(normalizedProfilePhoto);
+                    userRepository.save(mobileUser);
+                }
+
                 enforceRegistrationOtpSendLimit(mobileUser.getEmail());
                 String otp = generateOTP();
 
@@ -318,7 +292,7 @@ public class RegistrationService {
 
                 // Send OTP email - don't fail registration if email fails
                 try {
-                    sendOtpEmail(mobileUser.getEmail(), otp, "Registration OTP");
+                    emailService.sendOtpEmail(mobileUser.getEmail(), otp);
                 } catch (Exception e) {
                     log.error("Failed to send registration OTP email to: {}", mobileUser.getEmail(), e);
                 }
@@ -366,7 +340,7 @@ public class RegistrationService {
 
                 // Send OTP email - don't fail registration if email fails
                 try {
-                    sendOtpEmail(existingUser.getEmail(), otp, "Registration OTP");
+                    emailService.sendOtpEmail(existingUser.getEmail(), otp);
                 } catch (Exception e) {
                     log.error("Failed to send registration OTP email to: {}", existingUser.getEmail(), e);
                 }
@@ -494,7 +468,7 @@ public class RegistrationService {
 
         // Send OTP email - don't fail registration if email fails
         try {
-            sendOtpEmail(savedUser.getEmail(), otp, "Registration OTP");
+            emailService.sendOtpEmail(savedUser.getEmail(), otp);
         } catch (Exception e) {
             log.error("Failed to send registration OTP email to: {}", savedUser.getEmail(), e);
             // Continue with registration even if email fails
@@ -549,7 +523,7 @@ public class RegistrationService {
 
         String otp = generateOTP();
         try {
-            sendOtpEmail(email, otp, "Registration OTP");
+            emailService.sendOtpEmail(email, otp);
         } catch (Exception exception) {
             log.error("Failed to resend registration OTP email to: {}", email, exception);
             throw new ResponseStatusException(
@@ -615,7 +589,7 @@ public class RegistrationService {
         String otp = generateOTP();
         otpService.createSession(normalizedEmail, "registration", otp, 5, 5);
         try {
-            sendOtpEmail(normalizedEmail, otp, "Registration OTP");
+            emailService.sendOtpEmail(normalizedEmail, otp);
         } catch (Exception exception) {
             log.error("Failed to send registration OTP email to corrected address: {}", normalizedEmail, exception);
         }
@@ -635,35 +609,38 @@ public class RegistrationService {
         }
 
         String normalized = profilePhoto.trim();
-        if (normalized.contains("res.cloudinary.com")) {
+        if (normalized.contains("drive.google.com") || normalized.contains("res.cloudinary.com")) {
             return normalized;
         }
 
-        // If this is likely a web page (not a direct image), keep the URL as-is.
-        String lower = normalized.toLowerCase();
-        if (!(lower.endsWith(".jpg")
-                || lower.endsWith(".jpeg")
-                || lower.endsWith(".png")
-                || lower.endsWith(".webp")
-                || lower.matches(".*\\.(jpg|jpeg|png|webp)(\\?.*)?$"))) {
-            return normalized;
-        }
-
+        // Handle local file paths directly on disk (e.g. C:\path\to\image.jpg or /path/to/image.png)
         try {
-            Map<?, ?> options = ObjectUtils.asMap(
-                    "folder", folder,
-                    "resource_type", "image"
-            );
-            Map<?, ?> uploadResult = cloudinary.uploader().upload(normalized, options);
-            Object secureUrl = uploadResult.get("secure_url");
-            if (secureUrl == null || secureUrl.toString().isBlank()) {
-                throw new RuntimeException("Profile photo upload failed");
+            java.io.File diskFile = new java.io.File(normalized);
+            if (diskFile.exists() && diskFile.isFile()) {
+                byte[] fileBytes = java.nio.file.Files.readAllBytes(diskFile.toPath());
+                return googleDriveService.uploadBytes(fileBytes, diskFile.getName(), "image/jpeg");
             }
-            return secureUrl.toString();
-        } catch (Exception e) {
-            log.warn("Profile photo upload failed for URL [{}], keeping original URL", normalized, e);
-            return normalized;
+        } catch (Exception ignored) {
         }
+
+        // If URL points to local uploads directory, read the local file and upload to Google Drive
+        if (normalized.contains("/uploads/") || normalized.contains("\\uploads\\")) {
+            try {
+                String filename = normalized.substring(Math.max(normalized.lastIndexOf('/'), normalized.lastIndexOf('\\')) + 1);
+                java.io.File localFile = new java.io.File("uploads", filename);
+                if (!localFile.exists()) {
+                    localFile = new java.io.File(filename);
+                }
+                if (localFile.exists()) {
+                    byte[] fileBytes = java.nio.file.Files.readAllBytes(localFile.toPath());
+                    return googleDriveService.uploadBytes(fileBytes, filename, "image/jpeg");
+                }
+            } catch (Exception e) {
+                log.warn("Failed to upload local uploads file to Google Drive: {}", normalized, e);
+            }
+        }
+
+        return normalized;
     }
 
 
@@ -862,80 +839,32 @@ public class RegistrationService {
 
 
 
-    private void sendOtpEmail(String email, String otp, String passwordResetOtp) {
+    /**
+     * Determines required mobile number length based on country code.
+     * Uses a predefined map for known country codes; defaults to 10 digits.
+     */
+    private static final java.util.Map<String, Integer> MOBILE_LENGTHS = java.util.Map.of(
+            "+91", 10,   // India
+            "+1", 10,    // USA / Canada
+            "+44", 10,   // United Kingdom
+            "+61", 9,    // Australia
+            "+49", 11,   // Germany (common length)
+            "+86", 11,   // China
+            "+33", 9,    // France
+            "+34", 9,    // Spain
+            "+81", 10,   // Japan
+            "+7", 10     // Russia
+    );
 
-        try {
-
-            MimeMessage message = mailSender.createMimeMessage();
-
-            MimeMessageHelper helper = new MimeMessageHelper(message, true);
-
-
-
-            helper.setFrom(fromEmail);
-
-            helper.setTo(email);
-
-            helper.setSubject("Registration OTP Verification");
-
-
-
-            // Load HTML template
-
-            String htmlContent = loadTemplate(otp);
-
-
-
-            helper.setText(htmlContent, true); // ✅ true = HTML
-
-
-
-            mailSender.send(message);
-
-
-
-            log.info("Registration OTP email sent successfully to: {}", email);
-            if (logOtpValue) {
-                log.info("Registration OTP value for {} is {}", email, otp);
-            }
-
-
-
-        } catch (Exception e) {
-
-            log.error("Registration OTP email sending failed for: {}", email, e);
-
+    private int getMobileLengthForCountry(String countryCode) {
+        if (countryCode == null) {
+            return 10;
         }
-
+        return MOBILE_LENGTHS.getOrDefault(countryCode, 10);
     }
 
+    // OTP emails are now sent via EmailService — no direct mail sending in this class.
 
-
-    private String loadTemplate(String otp) {
-
-        try {
-
-            InputStream inputStream = getClass()
-
-                    .getResourceAsStream("/templates/otp-email.html");
-
-
-
-            String template = new String(inputStream.readAllBytes());
-
-
-
-            return template.replace("{{OTP}}", otp);
-
-
-
-        } catch (Exception e) {
-
-            throw new RuntimeException("Failed to load email template", e);
-
-        }
-
-    }
 
 
 
@@ -1063,21 +992,12 @@ public class RegistrationService {
 
 
 
-        // 8️⃣ Upload to Cloudinary
-
-        Map<?, ?> options = ObjectUtils.asMap(
-
-                "folder", folder,
-
-                "public_id", fileName,
-
-                "resource_type", "image"
-
+        // 8️⃣ Upload to Google Drive
+        return googleDriveService.uploadBytes(
+                fileBytes,
+                fileName + "." + extension,
+                contentType.equals("image/png") ? "image/png" : contentType.equals("image/webp") ? "image/webp" : "image/jpeg"
         );
-
-        Map<?, ?> uploadResult = cloudinary.uploader().upload(fileBytes, options);
-
-        return (String) uploadResult.get("secure_url");
 
     }
 
@@ -1302,22 +1222,25 @@ public class RegistrationService {
 
 
 
-        // Save new session
+        // Save new dynamic session
+        ClientContext clientInfo = deviceResolver != null ? deviceResolver.resolve(request, response) : null;
 
         UserSession userSession = UserSession.builder()
-
                 .user(user)
-
                 .accessToken(accessToken)
-
                 .refreshToken(refreshToken)
-
                 .deviceInfo(userAgent)
-
-                .ipAddress(ipAddress)
-
+                .deviceId(clientInfo != null ? clientInfo.getDeviceId() : UUID.randomUUID().toString())
+                .deviceName(clientInfo != null ? clientInfo.getDeviceName() : detectDevice(userAgent))
+                .deviceType(clientInfo != null ? clientInfo.getDeviceType() : "WEB")
+                .browser(clientInfo != null ? clientInfo.getBrowser() : detectBrowser(userAgent))
+                .operatingSystem(clientInfo != null ? clientInfo.getOperatingSystem() : detectOS(userAgent))
+                .latitude(clientInfo != null ? clientInfo.getLatitude() : 0.0)
+                .longitude(clientInfo != null ? clientInfo.getLongitude() : 0.0)
+                .city(clientInfo != null ? clientInfo.getCity() : "Unknown")
+                .country(clientInfo != null ? clientInfo.getCountry() : "Unknown")
+                .ipAddress(clientInfo != null ? clientInfo.getIpAddress() : ipAddress)
                 .expiresAt(LocalDateTime.now().plusDays(30))
-
                 .build();
 
         userSessionRepository.save(userSession);
@@ -1396,10 +1319,22 @@ public class RegistrationService {
         data.put("status", user.getStatus());
 
         data.put("role", user.getRole());
-
         data.put("isInstructorApproved", user.getIsInstructorApproved());
         data.put("otpSessionId", otpSessionId);
         data.put("otpType", "registration");
+
+        if (clientInfo != null) {
+            data.put("deviceId", clientInfo.getDeviceId());
+            data.put("deviceName", clientInfo.getDeviceName());
+            data.put("deviceType", clientInfo.getDeviceType());
+            data.put("browser", clientInfo.getBrowser());
+            data.put("os", clientInfo.getOperatingSystem());
+            data.put("ipAddress", clientInfo.getIpAddress());
+            data.put("latitude", clientInfo.getLatitude());
+            data.put("longitude", clientInfo.getLongitude());
+            data.put("city", clientInfo.getCity());
+            data.put("country", clientInfo.getCountry());
+        }
 
 
 
@@ -1974,7 +1909,7 @@ public class RegistrationService {
 
 
 
-        sendOtpEmail(user.getEmail(), otp, "Login OTP");
+        emailService.sendLoginOtp(user.getEmail(), otp);
 
 
 
@@ -2330,7 +2265,7 @@ public class RegistrationService {
 
         // Send OTP email
 
-        sendOtpEmail(user.getEmail(), otp, "Password Reset OTP");
+        emailService.sendPasswordResetOtp(user.getEmail(), otp);
 
 
 

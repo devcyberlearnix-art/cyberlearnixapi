@@ -18,11 +18,11 @@ public class InstructorService {
         return instructorServiceClient.getAllInstructors();
     }
 
-    public InstructorDTO getInstructorById(Long instructorId) {
+    public InstructorDTO getInstructorById(String instructorId) {
         return instructorServiceClient.getInstructorById(instructorId);
     }
 
-    public List<CourseDTO> getCoursesByInstructor(Long instructorId) {
+    public List<CourseDTO> getCoursesByInstructor(String instructorId) {
         return instructorServiceClient.getCoursesByInstructor(instructorId);
     }
 }

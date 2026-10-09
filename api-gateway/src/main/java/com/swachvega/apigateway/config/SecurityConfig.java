@@ -15,6 +15,7 @@ public class SecurityConfig {
     public SecurityWebFilterChain securityWebFilterChain(ServerHttpSecurity http) {
         return http
             .csrf(ServerHttpSecurity.CsrfSpec::disable) // Disable CSRF for REST APIs
+            .cors(ServerHttpSecurity.CorsSpec::disable) // Disable Spring Security CORS - use CorsWebFilter instead
             .authorizeExchange(exchanges -> exchanges
                 .pathMatchers(HttpMethod.OPTIONS, "/**").permitAll() // Allow browser preflight requests
                 .anyExchange().permitAll() // Allow frontend API requests - JWT validation is handled by JwtAuthenticationFilter

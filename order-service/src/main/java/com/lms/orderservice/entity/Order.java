@@ -21,6 +21,9 @@ public class Order {
 
     private LocalDateTime createdAt;
 
+    @Transient
+    private java.util.List<Long> courseIds;
+
     // ✅ ADD GETTERS & SETTERS
 
     public String getOrderId() { return orderId; }
@@ -37,4 +40,7 @@ public class Order {
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+
+    public java.util.List<Long> getCourseIds() { return courseIds; }
+    public void setCourseIds(java.util.List<Long> courseIds) { this.courseIds = courseIds; }
 }

@@ -9,6 +9,7 @@ import com.lms.courseservice.security.JwtUtil;
 import com.lms.courseservice.service.LectureService;
 import com.lms.courseservice.service.SectionService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -47,8 +48,16 @@ public class SectionController {
 
     // Everyone can view
     @GetMapping("/{courseId}/sections")
+    @Transactional(readOnly = true)
     public List<Section> getSections(@PathVariable Long courseId) {
         return sectionService.getSectionsByCourseId(courseId);
+    }
+
+    // Get individual section
+    @GetMapping("/sections/{sectionId}")
+    @Transactional(readOnly = true)
+    public Section getSection(@PathVariable Long sectionId) {
+        return sectionService.getSectionById(sectionId);
     }
 
     // Instructor/Admin only

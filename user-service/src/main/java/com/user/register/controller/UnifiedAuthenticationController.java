@@ -38,7 +38,7 @@ public class UnifiedAuthenticationController {
     @PostMapping("/refresh")
     public ResponseEntity<RefreshTokenResponse> refreshToken(
             @RequestHeader(value = "Authorization", required = false) String authorizationHeader) {
-        
+
         // Extract refresh token from Authorization header
         if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(
@@ -51,7 +51,7 @@ public class UnifiedAuthenticationController {
         }
 
         String refreshToken = authorizationHeader.substring(7);
-        
+
         return unifiedAuthenticationService.refreshToken(refreshToken);
     }
 
@@ -63,7 +63,7 @@ public class UnifiedAuthenticationController {
     public ResponseEntity<Map<String, Object>> logout(
             @RequestHeader(value = "Authorization", required = false) String authorizationHeader,
             @RequestBody(required = false) Map<String, String> requestBody) {
-        
+
         String accessToken = null;
         String refreshToken = null;
 
@@ -102,6 +102,16 @@ public class UnifiedAuthenticationController {
     }
 
     /**
+     * Resend Login OTP
+     * POST /api/v1/auth/login/otp/resend
+     */
+    @PostMapping("/login/otp/resend")
+    public ResponseEntity<Map<String, Object>> resendLoginOtp(
+            @Valid @RequestBody ResendOtpRequest request) {
+        return unifiedAuthenticationService.resendLoginOtp(request);
+    }
+
+    /**
      * Forgot Password
      * POST /api/v1/auth/password/forgot
      */
@@ -119,6 +129,16 @@ public class UnifiedAuthenticationController {
     public ResponseEntity<Map<String, Object>> verifyPasswordOtp(
             @RequestBody VerifyOtpRequest request) {
         return unifiedAuthenticationService.verifyPasswordOtp(request);
+    }
+
+    /**
+     * Resend Password Reset OTP
+     * POST /api/v1/auth/password/otp/resend
+     */
+    @PostMapping("/password/otp/resend")
+    public ResponseEntity<Map<String, Object>> resendPasswordOtp(
+            @Valid @RequestBody ResendOtpRequest request) {
+        return unifiedAuthenticationService.resendPasswordOtp(request);
     }
 
     /**
@@ -153,7 +173,7 @@ public class UnifiedAuthenticationController {
     public ResponseEntity<Map<String, Object>> changePassword(
             @RequestBody ChangePasswordRequest request,
             @RequestHeader("Authorization") String authorizationHeader) {
-        
+
         // Extract access token from Authorization header
         if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
             Map<String, Object> response = Map.of(
@@ -165,7 +185,7 @@ public class UnifiedAuthenticationController {
         }
 
         String accessToken = authorizationHeader.substring(7);
-        
+
         // Extract email from token
         String email = null;
         try {
@@ -191,7 +211,7 @@ public class UnifiedAuthenticationController {
     public ResponseEntity<Map<String, Object>> switchRole(
             @RequestBody com.user.register.dto.SwitchRoleRequest request,
             @RequestHeader("Authorization") String authorizationHeader) {
-        
+
         // Extract access token from Authorization header
         if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
             Map<String, Object> response = Map.of(
@@ -203,7 +223,7 @@ public class UnifiedAuthenticationController {
         }
 
         String accessToken = authorizationHeader.substring(7);
-        
+
         // Extract email from token
         String email = null;
         try {
@@ -219,5 +239,63 @@ public class UnifiedAuthenticationController {
 
         // Delegate to service
         return unifiedAuthenticationService.switchRole(request, email);
+    }
+
+    /**
+     * Common OTP Resend Endpoint
+     * POST /api/v1/auth/otp/resend
+     * Supports: User registration, User login, User password reset, Admin login, Admin password reset
+     */
+    @PostMapping("/otp/resend")
+    public ResponseEntity<Map<String, Object>> resendOtpCommon(
+            @Valid @RequestBody ResendOtpRequest request) {
+        return unifiedAuthenticationService.resendOtpCommon(request);
+    }
+
+    /**
+     * Social Login / Continue with OAuth (Google, GitHub, LinkedIn)
+     * POST /api/v1/auth/social-login
+     */
+    @PostMapping("/social-login")
+    public ResponseEntity<LoginResponse> socialLogin(
+            @Valid @RequestBody SocialLoginRequest request,
+            HttpServletRequest httpRequest) {
+        return unifiedAuthenticationService.socialLogin(request, httpRequest);
+    }
+
+    /**
+     * Social Login with provider in path
+     * POST /api/v1/auth/social-login/{provider}
+     */
+    @PostMapping("/social-login/{provider}")
+    public ResponseEntity<LoginResponse> socialLoginWithProvider(
+            @PathVariable("provider") String provider,
+            @RequestBody SocialLoginRequest request,
+            HttpServletRequest httpRequest) {
+        if (request == null) {
+            request = new SocialLoginRequest();
+        }
+        request.setProvider(provider);
+        return unifiedAuthenticationService.socialLogin(request, httpRequest);
+    }
+
+    /**
+     * Continue with OAuth provider alias endpoint
+     * POST /api/v1/auth/oauth/continue
+     */
+    @PostMapping("/oauth/continue")
+    public ResponseEntity<LoginResponse> oauthContinue(
+            @Valid @RequestBody SocialLoginRequest request,
+            HttpServletRequest httpRequest) {
+        return unifiedAuthenticationService.socialLogin(request, httpRequest);
+    }
+
+    /**
+     * Get available OAuth Providers & Redirect Info
+     * GET /api/v1/auth/oauth/providers
+     */
+    @GetMapping("/oauth/providers")
+    public ResponseEntity<OAuthProviderResponse> getOAuthProviders() {
+        return unifiedAuthenticationService.getOAuthProviders();
     }
 }

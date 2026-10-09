@@ -10,6 +10,23 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class EnrollmentCheckResponse {
+    private boolean success;
+    private String message;
+    private EnrollmentCheckData data;
 
-    private boolean enrolled;
+    public boolean isEnrolled() {
+        return data != null && data.isEnrolled();
+    }
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class EnrollmentCheckData {
+        private Long courseId;
+        private String courseName;
+        private java.util.UUID studentId;
+        private boolean enrolled;
+        private String enrollmentStatus;
+    }
 }

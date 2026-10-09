@@ -7,6 +7,7 @@ import com.lms.courseservice.service.LectureService;
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -20,7 +21,7 @@ public class LectureController {
     private final LectureService lectureService;
 
     // ✅ Instructor/Admin only
-    @PreAuthorize("hasAnyRole('INSTRUCTOR','MAIN_ADMIN','SUB_ADMIN','ADMIN')")
+    @PreAuthorize("hasAnyRole('INSTRUCTOR','MAIN_ADMIN','SUB_ADMIN')")
     @PostMapping("/{sectionId}/lectures")
     public CreateLectureResponse createLecture(@PathVariable Long sectionId,
                                  @RequestBody Lecture lecture) {
@@ -48,7 +49,7 @@ public class LectureController {
     }
 
     // ✅ Instructor/Admin only
-    @PreAuthorize("hasAnyRole('INSTRUCTOR','MAIN_ADMIN','SUB_ADMIN','ADMIN')")
+    @PreAuthorize("hasAnyRole('INSTRUCTOR','MAIN_ADMIN','SUB_ADMIN')")
     @PatchMapping("/{sectionId}/lectures/{lectureId}")
     public Lecture updateLecture(@PathVariable Long sectionId,
                                  @PathVariable Long lectureId,
@@ -58,7 +59,7 @@ public class LectureController {
     }
 
     // ✅ Instructor/Admin only
-    @PreAuthorize("hasAnyRole('INSTRUCTOR','MAIN_ADMIN','SUB_ADMIN','ADMIN')")
+    @PreAuthorize("hasAnyRole('INSTRUCTOR','MAIN_ADMIN','SUB_ADMIN')")
     @DeleteMapping("/{sectionId}/lectures/{lectureId}")
     public DeleteLectureResponse deleteLecture(@PathVariable Long sectionId,
                                              @PathVariable Long lectureId) {
@@ -80,7 +81,15 @@ public class LectureController {
 
     // 🔒 Only enrolled users (handled in service)
     @GetMapping("/{sectionId}/lectures")
+    @Transactional(readOnly = true)
     public List<Lecture> getLectures(@PathVariable Long sectionId) {
         return lectureService.getLecturesBySection(sectionId);
+    }
+
+    // Get individual lecture
+    @GetMapping("/lectures/{lectureId}")
+    @Transactional(readOnly = true)
+    public Lecture getLecture(@PathVariable Long lectureId) {
+        return lectureService.getLectureById(lectureId);
     }
 }

@@ -1,5 +1,6 @@
 package com.lms.wishlist_service.service;
 
+import com.lms.wishlist_service.client.CartClient;
 import com.lms.wishlist_service.client.CourseClient;
 import com.lms.wishlist_service.dto.*;
 import com.lms.wishlist_service.entity.WishlistItem;
@@ -25,6 +26,7 @@ public class WishlistService {
 
     private final WishlistRepository repository;
     private final CourseClient courseClient;
+    private final CartClient cartClient;
 
     /**
      * Adds an item to the database.
@@ -105,15 +107,53 @@ public class WishlistService {
 
     @Transactional
     public MoveToCartResponse moveToCart(String userId, String courseId) {
-        // TODO: replace placeholder logic with a CartClient integration
-        removeFromWishlist(userId, courseId);
+        // Validate course exists before attempting to move to cart
+        validateCourseExists(courseId);
 
-        return MoveToCartResponse.builder()
-                .courseId(courseId)
-                .moveToCartStatus("COURSE_MOVED")
-                .message("Course moved to cart successfully")
-                .movedAt(LocalDateTime.now())
-                .build();
+        try {
+            // Step 1: Add course to cart via Cart Service
+            CartClient.CartAddRequest cartRequest = new CartClient.CartAddRequest(Long.valueOf(courseId));
+            CartClient.CartAddResponse cartResponse = cartClient.addToCartInternal(userId, cartRequest);
+
+            if (cartResponse == null || !cartResponse.success()) {
+                // Cart operation failed - keep item in wishlist
+                String errorMessage = cartResponse != null ? cartResponse.message() : "Failed to add course to cart";
+                return MoveToCartResponse.builder()
+                        .courseId(courseId)
+                        .moveToCartStatus("CART_ADD_FAILED")
+                        .message("Failed to add course to cart: " + errorMessage + ". Item remains in wishlist.")
+                        .movedAt(LocalDateTime.now())
+                        .build();
+            }
+
+            // Step 2: Cart operation successful - remove from wishlist
+            removeFromWishlist(userId, courseId);
+
+            return MoveToCartResponse.builder()
+                    .courseId(courseId)
+                    .moveToCartStatus("COURSE_MOVED")
+                    .message("Course moved to cart successfully")
+                    .movedAt(LocalDateTime.now())
+                    .build();
+
+        } catch (FeignException ex) {
+            // Cart service unavailable - keep item in wishlist
+            String errorMessage = "Cart service unavailable (status: " + ex.status() + ")";
+            return MoveToCartResponse.builder()
+                    .courseId(courseId)
+                    .moveToCartStatus("CART_SERVICE_UNAVAILABLE")
+                    .message(errorMessage + ". Item remains in wishlist.")
+                    .movedAt(LocalDateTime.now())
+                    .build();
+        } catch (Exception ex) {
+            // Unexpected error - keep item in wishlist
+            return MoveToCartResponse.builder()
+                    .courseId(courseId)
+                    .moveToCartStatus("MOVE_FAILED")
+                    .message("Unexpected error: " + ex.getMessage() + ". Item remains in wishlist.")
+                    .movedAt(LocalDateTime.now())
+                    .build();
+        }
     }
 
     /**

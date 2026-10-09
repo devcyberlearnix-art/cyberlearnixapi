@@ -7,7 +7,8 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
@@ -30,4 +31,8 @@ public class Enrollment {
     private String status;
 
     private Double progress;
+
+    private LocalDateTime completedAt;
+
+    private Long lastLectureId;
 }

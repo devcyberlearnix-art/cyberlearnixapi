@@ -34,3 +34,6 @@ WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'lms_wishlist_db')\gex
 
 SELECT 'CREATE DATABASE lms_notification_db'
 WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'lms_notification_db')\gexec
+
+SELECT 'CREATE DATABASE lms_file_db'
+WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'lms_file_db')\gexec

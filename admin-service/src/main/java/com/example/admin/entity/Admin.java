@@ -61,6 +61,21 @@ public class Admin {
     @Column(nullable = false)
     private String lastName;
 
+    @Column(length = 500)
+    private String profilePhoto;
+
+    @Column(length = 10)
+    private String preferredLanguage;
+
+    @Column(length = 50)
+    private String city;
+
+    @Column(length = 50)
+    private String state;
+
+    @Column(length = 50)
+    private String country;
+
     @Column(nullable = false)
     private String mobileNumber;
 
@@ -87,7 +102,18 @@ public class Admin {
     // Track last OTP sent time to control resend
     @Column
     private LocalDateTime lastOtpSentAt;
+
+    @Builder.Default
+    private Integer failedPasswordAttempts = 0;
+
+    @Column
+    private LocalDateTime lockedUntil;
+
     @CreationTimestamp
     @Column(updatable = false, nullable = false)
     private LocalDateTime createdAt;
+
+    @org.hibernate.annotations.UpdateTimestamp
+    @Column
+    private LocalDateTime updatedAt;
 }

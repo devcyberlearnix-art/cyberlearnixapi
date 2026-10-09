@@ -1,5 +1,7 @@
 package com.user.register.service;
 
+import com.user.register.service.SessionService;
+
 
 
 import org.springframework.security.core.Authentication;
@@ -37,14 +39,7 @@ import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
 
 import org.springframework.web.multipart.MultipartFile;
-
-import com.cloudinary.Cloudinary;
-
-
-
 import java.util.ArrayList;
-
-import com.cloudinary.utils.ObjectUtils;
 
 import org.springframework.beans.factory.annotation.Value;
 
@@ -100,15 +95,11 @@ public class UserService {
 
     private AuditLogRepository auditLogRepository;
 
-    private final Cloudinary cloudinary;
+    private final GoogleDriveService googleDriveService;
 
+    private final SessionService sessionService;
 
-
-    @Value("${cloudinary.folder:cyberlearnix}")
-
-    private String folder;
-
-
+    private final TokenBlacklistService tokenBlacklistService;
 
     public UserService(UserRepository userRepository,
 
@@ -120,7 +111,11 @@ public class UserService {
 
                        AuditLogRepository auditLogRepository,
 
-                       Cloudinary cloudinary) {
+                       GoogleDriveService googleDriveService,
+
+                       SessionService sessionService,
+
+                       TokenBlacklistService tokenBlacklistService) {
 
         this.userRepository = userRepository;
 
@@ -132,7 +127,11 @@ public class UserService {
 
         this.auditLogRepository = auditLogRepository;
 
-        this.cloudinary = cloudinary;
+        this.googleDriveService = googleDriveService;
+
+        this.sessionService = sessionService;
+
+        this.tokenBlacklistService = tokenBlacklistService;
 
     }
 
@@ -184,6 +183,12 @@ public class UserService {
 
                 return UUID.fromString(userIdStr);
 
+            } catch (io.jsonwebtoken.ExpiredJwtException e) {
+                // Re-throw as-is so the controller returns a clear 401 "token expired"
+                throw e;
+            } catch (io.jsonwebtoken.JwtException e) {
+                // Re-throw as-is for a clear 401 "invalid token"
+                throw e;
             } catch (Exception e) {
 
                 throw new RuntimeException("Invalid JWT token: " + e.getMessage());
@@ -219,6 +224,12 @@ public class UserService {
             // User exists in local database (students, instructors)
 
             User user = userOptional.get();
+
+            if (user.getStatus() == User.Status.SUSPENDED || user.getStatus() == User.Status.DELETED) {
+
+                throw new RuntimeException("Account has been deleted or suspended");
+
+            }
 
             return buildUserProfileFromUser(user);
 
@@ -264,21 +275,23 @@ public class UserService {
 
                 .filter(s -> s.getExpiresAt() == null || s.getExpiresAt().isAfter(LocalDateTime.now()))
 
-                .map(s -> new SessionDto(
-
-                        s.getId(),
-
-                        user.getId(),   // ✅ UUID safe
-
-                        s.getDeviceInfo(),
-
-                        s.getIpAddress(),
-
-                        s.getCreatedAt(),
-
-                        user.getEmail()
-
-                ))
+                .map(s -> SessionDto.builder()
+                        .id(s.getId())
+                        .userId(user.getId())
+                        .email(user.getEmail())
+                        .deviceInfo(s.getDeviceInfo())
+                        .deviceId(s.getDeviceId())
+                        .deviceName(s.getDeviceName())
+                        .deviceType(s.getDeviceType())
+                        .browser(s.getBrowser())
+                        .operatingSystem(s.getOperatingSystem())
+                        .latitude(s.getLatitude())
+                        .longitude(s.getLongitude())
+                        .city(s.getCity())
+                        .country(s.getCountry())
+                        .ipAddress(s.getIpAddress())
+                        .loginTime(s.getCreatedAt())
+                        .build())
 
                 .collect(Collectors.toList());
 
@@ -457,6 +470,12 @@ public class UserService {
         User user = userRepository.findById(userId)
 
                 .orElseThrow(() -> new RuntimeException("User not found"));
+
+        if (user.getStatus() == User.Status.SUSPENDED || user.getStatus() == User.Status.DELETED) {
+
+            throw new RuntimeException("Account has been deleted or suspended");
+
+        }
 
         try {
 
@@ -658,19 +677,7 @@ public class UserService {
 
 
 
-            Map<?, ?> options = ObjectUtils.asMap(
-
-                    "folder", folder,
-
-                    "public_id", filename,
-
-                    "resource_type", "image"
-
-            );
-
-            Map<?, ?> uploadResult = cloudinary.uploader().upload(fileBytes, options);
-
-            String fileUrl = (String) uploadResult.get("secure_url");
+            String fileUrl = googleDriveService.uploadBytes(fileBytes, filename + "." + extension, contentType);
 
 
 
@@ -782,13 +789,23 @@ public class UserService {
 
 
 
-        // 3️⃣ Soft delete: mark user as SUSPENDED (DB allowed value)
+        // 3️⃣ Soft delete: mark user as DELETED
 
-        user.setStatus(User.Status.SUSPENDED);
+        user.setStatus(User.Status.DELETED);
 
         user.setUpdatedAt(LocalDateTime.now());
 
         userRepository.save(user);
+
+        // 4️⃣ Immediately blacklist the current active token from request header
+        String authHeader = request.getHeader("Authorization");
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            String currentToken = authHeader.substring(7);
+            tokenBlacklistService.blacklistToken(currentToken);
+        }
+
+        // 5️⃣ Blacklist all sessions & tokens of this user
+        sessionService.invalidateAllSessionsForUser(user);
 
 
 
@@ -1076,53 +1093,23 @@ public class UserService {
     }
 
     public UserProfileResponse updateUserStatus(UUID id, String status) {
-
-
-
         User user = userRepository.findById(id)
-
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-
-
-        if ("REJECTED".equalsIgnoreCase(status)) {
-
-            user.setApplicationStatus(User.ApplicationStatus.REJECTED);
-
-            user.setIsInstructorApproved(false);
-
-            syncInstructorApplication(id, com.user.register.entity.InstructorApplication.ApplicationStatus.REJECTED);
-
-        } else if ("ACTIVE".equalsIgnoreCase(status)) {
-
-            user.setApplicationStatus(User.ApplicationStatus.APPROVED);
-
-            user.setIsInstructorApproved(true);
-
-            user.setRole(User.Role.INSTRUCTOR);
-
-            syncInstructorApplication(id, com.user.register.entity.InstructorApplication.ApplicationStatus.APPROVED);
-
+        try {
+            String enumStatus = status.toUpperCase();
+            if ("INACTIVE".equals(enumStatus)) {
+                enumStatus = "SUSPENDED"; // Map INACTIVE to SUSPENDED
+            }
+            user.setStatus(User.Status.valueOf(enumStatus));
+        } catch (IllegalArgumentException e) {
+            throw new RuntimeException("Invalid status: " + status);
         }
-
-        // ✅ fallback (normal user status)
-
-        else {
-
-            user.setStatus(User.Status.valueOf(status.toUpperCase()));
-
-        }
-
-
 
         user.setUpdatedAt(LocalDateTime.now());
-
         userRepository.save(user);
 
-
-
         return getUserById(id);
-
     }
 
     @Transactional

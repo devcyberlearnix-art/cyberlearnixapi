@@ -6,6 +6,8 @@ import com.swachvega.apigateway.security.SimpleJwtTokenProvider;
 
 import io.jsonwebtoken.JwtException;
 
+import org.springframework.data.redis.core.ReactiveRedisTemplate;
+
 import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
@@ -42,6 +44,8 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
 
     private final SimpleJwtTokenProvider jwtTokenProvider;
 
+    private final ReactiveRedisTemplate<String, Object> redisTemplate;
+
 
 
     // Public endpoints that don't require authentication. These values mirror the
@@ -58,6 +62,8 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
             "/api/v1/auth/login",
 
             "/api/v1/auth/login/**",
+            "/api/v1/auth/login/otp/resend",
+            "/api/v1/auth/password/otp/resend",
 
             "/api/v1/auth/register",
 
@@ -75,8 +81,12 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
 
             "/api/v1/auth/password/reset",
 
-            "/api/v1/auth/upload/profile-photo",
-
+            "/api/v1/auth/otp/resend",
+            "/api/v1/auth/social-login",
+            "/api/v1/auth/social-login/**",
+            "/api/v1/auth/oauth/**",
+            "/oauth2/**",
+            "/login/oauth2/**",
             "/api/v1/users/login/social",
 
             // Course service – public course browsing
@@ -139,13 +149,23 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
 
             "/adminservice/swagger-ui/**",
 
-            "/adminservice/v3/api-docs/**");
+            "/adminservice/v3/api-docs/**",
+
+            // Security verification – email CTA links (no login required)
+
+            "/api/v1/security/verify-activity",
+
+            "/api/v1/security/confirm-activity",
+
+            "/api/v1/security/report-compromised");
 
 
 
-    public JwtAuthenticationFilter(SimpleJwtTokenProvider jwtTokenProvider) {
+    public JwtAuthenticationFilter(SimpleJwtTokenProvider jwtTokenProvider, ReactiveRedisTemplate<String, Object> redisTemplate) {
 
         this.jwtTokenProvider = jwtTokenProvider;
+
+        this.redisTemplate = redisTemplate;
 
     }
 
@@ -165,7 +185,11 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
 
         log.info("Processing request: {} {} (normalized: {}) - Checking if public path", method, rawPath, path);
 
-
+        // Skip authentication for OPTIONS preflight requests (CORS)
+        if ("OPTIONS".equalsIgnoreCase(method)) {
+            log.info("OPTIONS preflight request detected, skipping authentication: {}", path);
+            return chain.filter(exchange);
+        }
 
         // Skip authentication for public paths
 
@@ -199,7 +223,10 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
 
         String token = jwtTokenProvider.extractTokenFromHeader(authHeader);
 
-
+        // Token fingerprinting for tracing
+        String tokenFingerprint = token != null ? token.substring(0, Math.min(8, token.length())) : "null";
+        int tokenLength = token != null ? token.length() : 0;
+        log.info("Token fingerprint: {}, length: {} for path: {}", tokenFingerprint, tokenLength, path);
 
         if (token == null || token.isEmpty()) {
 
@@ -209,29 +236,45 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
 
         }
 
-
-
         log.info("Token extracted successfully, validating for path: {}", path);
 
 
 
         // Validate token
 
-        return jwtTokenProvider.validateAccessToken(token)
+        String blacklistKey = "blacklist:token:" + token;
 
-                .doOnNext(claims -> log.info("Token validated successfully for user: {} on path: {}", claims.get("sub"),
+        return redisTemplate.hasKey(blacklistKey)
 
-                        path))
+                .flatMap(isBlacklisted -> {
 
-                .flatMap(claims -> {
+                    if (Boolean.TRUE.equals(isBlacklisted)) {
 
-                    // Add user info to request headers and delegate to downstream service
+                        log.warn("Token is blacklisted (logged out): {}", token.substring(0, Math.min(10, token.length())) + "...");
 
-                    ServerWebExchange modifiedExchange = addUserHeaders(exchange, claims);
+                        return unauthorizedResponse(exchange, "Token has been logged out");
 
-                    log.info("Proceeding to downstream service for path: {}", path);
+                    }
 
-                    return chain.filter(modifiedExchange);
+                    return jwtTokenProvider.validateAccessToken(token)
+
+                            .doOnNext(claims -> {
+                                log.info("Token validated successfully for user: {} on path: {}", claims.get("sub"), path);
+                                log.info("Gateway validated token fingerprint: {}, issuer: {}, audience: {}, subject: {}", 
+                                    tokenFingerprint, claims.get("iss"), claims.get("aud"), claims.get("sub"));
+                            })
+
+                            .flatMap(claims -> {
+
+                                // Add user info to request headers and delegate to downstream service
+
+                                ServerWebExchange modifiedExchange = addUserHeaders(exchange, claims);
+
+                                log.info("Proceeding to downstream service for path: {}", path);
+
+                                return chain.filter(modifiedExchange);
+
+                            });
 
                 })
 

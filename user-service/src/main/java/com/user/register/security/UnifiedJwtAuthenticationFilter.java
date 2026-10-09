@@ -17,6 +17,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import java.util.List;
 
 @Component
@@ -26,6 +27,9 @@ public class UnifiedJwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final UnifiedJwtService unifiedJwtService;
     private final TokenBlacklistService tokenBlacklistService;
+    private final StringRedisTemplate redisTemplate;
+
+    private static final String USER_PWD_CHANGE_PREFIX = "USER:PASSWORD_CHANGE_TIME:";
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
@@ -41,16 +45,22 @@ public class UnifiedJwtAuthenticationFilter extends OncePerRequestFilter {
             if (gatewayUserId != null && gatewayRole != null) {
                 // Use API Gateway authentication
                 List<SimpleGrantedAuthority> authorities = new ArrayList<>();
-                authorities.add(new SimpleGrantedAuthority("ROLE_" + gatewayRole));
-                
+                // Handle role that may or may not already have ROLE_ prefix
+                String authority = gatewayRole.startsWith("ROLE_") ? gatewayRole : "ROLE_" + gatewayRole;
+                authorities.add(new SimpleGrantedAuthority(authority));
+                if (gatewayRole.toUpperCase().contains("ADMIN")) {
+                    authorities.add(new SimpleGrantedAuthority("ROLE_ADMIN"));
+                    authorities.add(new SimpleGrantedAuthority("ROLE_MAIN_ADMIN"));
+                    authorities.add(new SimpleGrantedAuthority("ROLE_SUB_ADMIN"));
+                }
+
                 UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
                         gatewayUserId,
                         null,
-                        authorities
-                );
+                        authorities);
                 authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                 SecurityContextHolder.getContext().setAuthentication(authentication);
-                
+
                 log.debug("Set authentication from API Gateway for user: {} with role: {}", gatewayUserId, gatewayRole);
             } else {
                 // Fall back to JWT token validation
@@ -58,58 +68,89 @@ public class UnifiedJwtAuthenticationFilter extends OncePerRequestFilter {
 
                 if (StringUtils.hasText(jwt)) {
                     log.debug("JWT token found in request: {}", request.getRequestURI());
-                    
+
                     // Check blacklist if service is available
                     boolean isBlacklisted = false;
                     if (tokenBlacklistService != null) {
                         isBlacklisted = tokenBlacklistService.isBlacklisted(jwt);
                     }
-                    
+
                     log.debug("Token blacklisted: {}", isBlacklisted);
                     log.debug("UnifiedJwtService available: {}", unifiedJwtService != null);
-                    
+
                     if (unifiedJwtService != null) {
                         boolean isValid = unifiedJwtService.validateToken(jwt);
                         boolean isExpired = unifiedJwtService.isTokenExpired(jwt);
                         log.debug("Token valid: {}, Token expired: {}", isValid, isExpired);
                     }
-                    
-                    if (!isBlacklisted && unifiedJwtService != null && unifiedJwtService.validateToken(jwt) && !unifiedJwtService.isTokenExpired(jwt)) {
+
+                    if (!isBlacklisted && unifiedJwtService != null && unifiedJwtService.validateToken(jwt)
+                            && !unifiedJwtService.isTokenExpired(jwt)) {
                         String userId = unifiedJwtService.extractUserId(jwt);
-                        String email = unifiedJwtService.extractEmail(jwt);
-                        String role = unifiedJwtService.extractRole(jwt);
-                        String adminType = unifiedJwtService.extractAdminType(jwt);
-                        String assignedService = unifiedJwtService.extractAssignedService(jwt);
 
-                        log.debug("Extracted from JWT - userId: {}, email: {}, role: {}", userId, email, role);
-
-                        // Build authorities
-                        List<SimpleGrantedAuthority> authorities = new ArrayList<>();
-                        if (role != null) {
-                            authorities.add(new SimpleGrantedAuthority("ROLE_" + role));
+                        // Check if password was changed after token issuance
+                        boolean isTokenInvalidated = false;
+                        try {
+                            String lastChangeStr = redisTemplate.opsForValue().get(USER_PWD_CHANGE_PREFIX + userId);
+                            if (lastChangeStr != null) {
+                                long lastChangeTime = Long.parseLong(lastChangeStr);
+                                java.util.Date issuedAt = unifiedJwtService.extractIssuedAt(jwt);
+                                if (issuedAt != null && issuedAt.getTime() < lastChangeTime) {
+                                    log.info(
+                                            "Rejecting token for userId={}: token issued at {} is older than last password change at {}",
+                                            userId, issuedAt.getTime(), lastChangeTime);
+                                    isTokenInvalidated = true;
+                                }
+                            }
+                        } catch (Exception e) {
+                            log.warn("Error checking password change timestamp in Redis: {}", e.getMessage());
                         }
 
-                        // Add admin type as authority if applicable
-                        if (adminType != null && !adminType.equals("NONE")) {
-                            authorities.add(new SimpleGrantedAuthority("ADMIN_TYPE_" + adminType));
+                        if (isTokenInvalidated) {
+                            log.warn("JWT validation failed: token invalidated due to password change for request: {}",
+                                    request.getRequestURI());
+                        } else {
+                            String email = unifiedJwtService.extractEmail(jwt);
+                            String role = unifiedJwtService.extractRole(jwt);
+                            String adminType = unifiedJwtService.extractAdminType(jwt);
+                            String assignedService = unifiedJwtService.extractAssignedService(jwt);
+
+                            log.debug("Extracted from JWT - userId: {}, email: {}, role: {}", userId, email, role);
+
+                            // Build authorities
+                            List<SimpleGrantedAuthority> authorities = new ArrayList<>();
+                            if (role != null) {
+                                // Handle role that may or may not already have ROLE_ prefix
+                                String authority = role.startsWith("ROLE_") ? role : "ROLE_" + role;
+                                authorities.add(new SimpleGrantedAuthority(authority));
+                                if (role.toUpperCase().contains("ADMIN")) {
+                                    authorities.add(new SimpleGrantedAuthority("ROLE_ADMIN"));
+                                    authorities.add(new SimpleGrantedAuthority("ROLE_MAIN_ADMIN"));
+                                    authorities.add(new SimpleGrantedAuthority("ROLE_SUB_ADMIN"));
+                                }
+                            }
+
+                            // Add admin type as authority if applicable
+                            if (adminType != null && !adminType.equals("NONE")) {
+                                authorities.add(new SimpleGrantedAuthority("ADMIN_TYPE_" + adminType));
+                            }
+
+                            // Add assigned service as authority if applicable
+                            if (assignedService != null && !assignedService.equals("NONE")) {
+                                authorities.add(new SimpleGrantedAuthority("SERVICE_" + assignedService));
+                            }
+
+                            // Create authentication token
+                            UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
+                                    userId,
+                                    null,
+                                    authorities);
+                            authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+
+                            SecurityContextHolder.getContext().setAuthentication(authentication);
+
+                            log.info("Set authentication for user: {} with role: {}", email, role);
                         }
-
-                        // Add assigned service as authority if applicable
-                        if (assignedService != null && !assignedService.equals("NONE")) {
-                            authorities.add(new SimpleGrantedAuthority("SERVICE_" + assignedService));
-                        }
-
-                        // Create authentication token
-                        UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-                                userId,
-                                null,
-                                authorities
-                        );
-                        authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-
-                        SecurityContextHolder.getContext().setAuthentication(authentication);
-
-                        log.info("Set authentication for user: {} with role: {}", email, role);
                     } else {
                         log.warn("JWT validation failed or token blacklisted for request: {}", request.getRequestURI());
                     }
@@ -128,6 +169,13 @@ public class UnifiedJwtAuthenticationFilter extends OncePerRequestFilter {
         String bearerToken = request.getHeader("Authorization");
         if (StringUtils.hasText(bearerToken) && bearerToken.startsWith("Bearer ")) {
             return bearerToken.substring(7);
+        }
+        if (request.getCookies() != null) {
+            for (jakarta.servlet.http.Cookie cookie : request.getCookies()) {
+                if ("accessToken".equals(cookie.getName()) && StringUtils.hasText(cookie.getValue())) {
+                    return cookie.getValue();
+                }
+            }
         }
         return null;
     }

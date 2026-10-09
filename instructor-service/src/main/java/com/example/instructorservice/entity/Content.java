@@ -25,6 +25,7 @@ public class Content {
     private String type; // VIDEO / PDF / QUIZ
 
     @Enumerated(EnumType.STRING)
+    @Builder.Default
     private Course.CourseStatus status = Course.CourseStatus.DRAFT;
 
     @ManyToOne(fetch = FetchType.LAZY)

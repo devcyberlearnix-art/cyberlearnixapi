@@ -15,6 +15,7 @@ import org.springframework.web.client.RestTemplate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 @Component
 public class AdminInstructorServiceClient {
@@ -50,7 +51,7 @@ public class AdminInstructorServiceClient {
         }
     }
 
-    public InstructorDTO getInstructorById(Long instructorId) {
+    public InstructorDTO getInstructorById(String instructorId) {
         try {
             String url = instructorServiceUrl + "/api/v1/instructors/" + instructorId;
             ResponseEntity<Map> response = restTemplate.exchange(
@@ -66,7 +67,7 @@ public class AdminInstructorServiceClient {
         }
     }
 
-    public List<CourseDTO> getCoursesByInstructor(Long instructorId) {
+    public List<CourseDTO> getCoursesByInstructor(String instructorId) {
         try {
             String url = instructorServiceUrl + "/api/v1/instructors/" + instructorId + "/courses";
             ResponseEntity<Object[]> response = restTemplate.exchange(
@@ -79,6 +80,22 @@ public class AdminInstructorServiceClient {
         } catch (Exception e) {
             System.err.println("✗ Failed to get courses for instructor: " + e.getMessage());
             return List.of();
+        }
+    }
+
+    public Map<String, Object> getInstructorDashboard(UUID instructorId) {
+        try {
+            String url = instructorServiceUrl + "/api/v1/instructors/" + instructorId + "/dashboard";
+            ResponseEntity<Map> response = restTemplate.exchange(
+                    url,
+                    org.springframework.http.HttpMethod.GET,
+                    new HttpEntity<>(createHeaders()),
+                    Map.class
+            );
+            return response.getBody();
+        } catch (Exception e) {
+            System.err.println("✗ Failed to get dashboard from Instructor Service for " + instructorId + ": " + e.getMessage());
+            return null;
         }
     }
 

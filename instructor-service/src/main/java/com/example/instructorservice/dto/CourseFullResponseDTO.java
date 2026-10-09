@@ -3,7 +3,6 @@ package com.example.instructorservice.dto;
 import com.example.instructorservice.entity.Course;
 import lombok.Builder;
 import lombok.Data;
-import lombok.Singular;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -35,7 +34,6 @@ public class CourseFullResponseDTO {
         private Visibility visibility;
         private Timestamps timestamps;
         private Links links;
-        @Singular("studentProgressData") // <-- ADD THIS
         private List<StudentProgressResponseDTO.StudentProgressData> studentProgress;
 
     }

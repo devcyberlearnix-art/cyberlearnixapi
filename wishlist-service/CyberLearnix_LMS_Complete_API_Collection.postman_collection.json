@@ -1057,7 +1057,7 @@
                             "request": {
                                 "method": "PUT",
                                 "url": {
-                                    "raw": "{{baseUrl}}/api/v1/admin/instructors/applications/:userId/approve",
+                                    "raw": "{{baseUrl}}/api/v1/admin/instructors/applications/:applicationId/approve",
                                     "host": [
                                         "{{baseUrl}}"
                                     ],
@@ -1067,12 +1067,12 @@
                                         "admin",
                                         "instructors",
                                         "applications",
-                                        ":userId",
+                                        ":applicationId",
                                         "approve"
                                     ],
                                     "variable": [
                                         {
-                                            "key": "userId",
+                                            "key": "applicationId",
                                             "value": "user-uuid-here"
                                         }
                                     ]
@@ -1094,7 +1094,7 @@
                             "request": {
                                 "method": "PUT",
                                 "url": {
-                                    "raw": "{{baseUrl}}/api/v1/admin/instructors/applications/:userId/reject",
+                                    "raw": "{{baseUrl}}/api/v1/admin/instructors/applications/:applicationId/reject",
                                     "host": [
                                         "{{baseUrl}}"
                                     ],
@@ -1104,12 +1104,12 @@
                                         "admin",
                                         "instructors",
                                         "applications",
-                                        ":userId",
+                                        ":applicationId",
                                         "reject"
                                     ],
                                     "variable": [
                                         {
-                                            "key": "userId",
+                                            "key": "applicationId",
                                             "value": "user-uuid-here"
                                         }
                                     ]

@@ -3,6 +3,7 @@ package com.user.register.entity;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Entity
 @Table(name = "audit_logs")
@@ -20,10 +21,14 @@ public class AuditLog {
     @JoinColumn(name = "user_id")
     private User user;
 
+    @Column(name = "user_id_snapshot")
+    private UUID userIdSnapshot;
+
     private String action;
 
     private String ipAddress;
     private String device; // <-- Add this field
+    private String status; // <-- Add this field for SUCCESS/FAILURE
 
     @Builder.Default
     private LocalDateTime createdAt = LocalDateTime.now();

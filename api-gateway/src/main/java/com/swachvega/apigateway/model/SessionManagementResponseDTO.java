@@ -18,7 +18,7 @@ public class SessionManagementResponseDTO {
     private List<SessionInfoDTO> sessions;
     private int activeSessionCount;
     private int maxAllowedSessions;
-    
+
     @Data
     @Builder
     @NoArgsConstructor

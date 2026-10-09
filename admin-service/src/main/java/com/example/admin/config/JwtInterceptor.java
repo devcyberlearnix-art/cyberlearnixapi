@@ -13,18 +13,20 @@ public class JwtInterceptor implements ClientHttpRequestInterceptor {
     public ClientHttpResponse intercept(HttpRequest request, byte[] body,
                                         ClientHttpRequestExecution execution) throws IOException {
 
-        String url = request.getURI().toString();
-        
-        // Skip adding auth headers for public endpoints
-        if (url.contains("/api/v1/orders") || url.contains("/api/v1/payments") || url.contains("/api/v1/admin/reviews")) {
-            return execution.execute(request, body);
-        }
-
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
 
-        if (auth != null && auth.getCredentials() != null) {
+        if (auth != null && auth.getCredentials() != null && !auth.getCredentials().toString().isBlank()) {
+
             String token = auth.getCredentials().toString();
-            request.getHeaders().add("Authorization", "Bearer " + token);
+
+            if (!token.startsWith("Bearer ")) {
+
+                token = "Bearer " + token;
+
+            }
+
+            request.getHeaders().set("Authorization", token);
+
         }
 
         return execution.execute(request, body);

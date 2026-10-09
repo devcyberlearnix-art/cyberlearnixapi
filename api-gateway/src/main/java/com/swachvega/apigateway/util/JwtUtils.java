@@ -26,11 +26,11 @@ public class JwtUtils {
     /**
      * Create comprehensive user claims for JWT token
      */
-    public static Map<String, Object> createUserClaims(String userId, String username, String email, 
+    public static Map<String, Object> createUserClaims(String userId, String username, String email,
                                                       String fullName, String phoneNumber, String role,
                                                       String sessionId, Map<String, Object> additionalClaims) {
         Map<String, Object> claims = new HashMap<>();
-        
+
         // Standard claims
         claims.put("sub", userId);
         claims.put("username", username);
@@ -40,20 +40,20 @@ public class JwtUtils {
         claims.put("role", role);
         claims.put("sessionId", sessionId);
         claims.put("type", "access");
-        
+
         // Token metadata
         claims.put("iat", Instant.now().getEpochSecond());
         claims.put("jti", UUID.randomUUID().toString());
-        
+
         // User permissions/features (can be extended)
         claims.put("permissions", getUserPermissions(role));
         claims.put("features", getUserFeatures(role));
-        
+
         // Add any additional claims
         if (additionalClaims != null && !additionalClaims.isEmpty()) {
             claims.putAll(additionalClaims);
         }
-        
+
         return claims;
     }
 
@@ -62,7 +62,7 @@ public class JwtUtils {
      */
     public static Map<String, Object> extractUserInfo(Claims claims) {
         Map<String, Object> userInfo = new HashMap<>();
-        
+
         userInfo.put("userId", claims.getSubject());
         userInfo.put("username", claims.get("username"));
         userInfo.put("email", claims.get("email"));
@@ -72,12 +72,12 @@ public class JwtUtils {
         userInfo.put("sessionId", claims.get("sessionId"));
         userInfo.put("permissions", claims.get("permissions"));
         userInfo.put("features", claims.get("features"));
-        
+
         // Token metadata
         userInfo.put("tokenId", claims.getId());
         userInfo.put("issuedAt", claims.getIssuedAt());
         userInfo.put("expiresAt", claims.getExpiration());
-        
+
         return userInfo;
     }
 
@@ -126,27 +126,27 @@ public class JwtUtils {
             log.warn("Token is expired");
             return false;
         }
-        
+
         // Check if token has required claims
         if (claims.getSubject() == null || claims.get("sessionId") == null) {
             log.warn("Token missing required claims");
             return false;
         }
-        
+
         // Check token type
         String tokenType = (String) claims.get("type");
         if (tokenType == null || (!tokenType.equals("access") && !tokenType.equals("refresh"))) {
             log.warn("Invalid token type: {}", tokenType);
             return false;
         }
-        
+
         return true;
     }
 
     /**
      * Create device info claims
      */
-    public static Map<String, Object> createDeviceInfoClaims(String deviceId, String deviceType, 
+    public static Map<String, Object> createDeviceInfoClaims(String deviceId, String deviceType,
                                                             String osVersion, String appVersion,
                                                             String ipAddress, String userAgent) {
         Map<String, Object> deviceInfo = new HashMap<>();
@@ -157,7 +157,7 @@ public class JwtUtils {
         deviceInfo.put("ipAddress", ipAddress);
         deviceInfo.put("userAgent", userAgent);
         deviceInfo.put("lastUsed", Instant.now().getEpochSecond());
-        
+
         return Map.of("deviceInfo", deviceInfo);
     }
 
@@ -193,7 +193,7 @@ public class JwtUtils {
         long currentTime = System.currentTimeMillis();
         long expirationTime = expiration.getTime();
         long bufferTime = bufferMinutes * 60 * 1000L; // Convert minutes to milliseconds
-        
+
         return (expirationTime - currentTime) <= bufferTime;
     }
 }

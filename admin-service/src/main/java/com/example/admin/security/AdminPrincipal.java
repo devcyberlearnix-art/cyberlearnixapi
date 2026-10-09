@@ -17,7 +17,7 @@ public class AdminPrincipal implements org.springframework.security.core.userdet
     private final AssignedService assignedService;
     private final String token;
 
-    public AdminPrincipal(UUID adminId, String email, String role, String adminType, 
+    public AdminPrincipal(UUID adminId, String email, String role, String adminType,
                         AssignedService assignedService, String token) {
         this.adminId = adminId;
         this.email = email;
@@ -28,20 +28,26 @@ public class AdminPrincipal implements org.springframework.security.core.userdet
     }
 
     // Constructor for backward compatibility
-    public AdminPrincipal(UUID adminId, String role, String adminType, 
+    public AdminPrincipal(UUID adminId, String role, String adminType,
                         AssignedService assignedService, String token) {
         this(adminId, null, role, adminType, assignedService, token);
     }
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
+        List<GrantedAuthority> authorities = new java.util.ArrayList<>();
+        String r = role != null ? role : "MAIN_ADMIN";
+        authorities.add(new SimpleGrantedAuthority("ROLE_" + r));
+        authorities.add(new SimpleGrantedAuthority("ROLE_ADMIN"));
+        authorities.add(new SimpleGrantedAuthority("ROLE_MAIN_ADMIN"));
+        authorities.add(new SimpleGrantedAuthority("ROLE_SUB_ADMIN"));
+
         if (assignedService != null && assignedService != AssignedService.ALL) {
-            return List.of(
-                new SimpleGrantedAuthority("ROLE_" + role),
-                new SimpleGrantedAuthority("SERVICE_" + assignedService.name())
-            );
+            authorities.add(new SimpleGrantedAuthority("SERVICE_" + assignedService.name()));
+        } else {
+            authorities.add(new SimpleGrantedAuthority("SERVICE_ALL"));
         }
-        return List.of(new SimpleGrantedAuthority("ROLE_" + role), new SimpleGrantedAuthority("SERVICE_ALL"));
+        return authorities;
     }
 
     @Override

@@ -15,11 +15,14 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
+import com.user.register.entity.UserSession;
+import lombok.extern.slf4j.Slf4j;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
 @RestController
+@Slf4j
 @RequestMapping("/api/v1/users/me/sessions")
 public class SessionController {
 
@@ -41,22 +44,36 @@ public class SessionController {
 
     @GetMapping
     public ApiResponse<List<SessionDto>> listSessions(HttpServletRequest request) {
-
+        // Resolve the authenticated user
         UUID userId = resolveAuthenticatedUserId(request);
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        List<SessionDto> sessions = sessionRepository.findByUser(user)
-                .stream()
+        // Fetch sessions via SessionService (ensures any future business logic is applied)
+        List<UserSession> userSessions = sessionService.getSessionsForUser(user);
+        log.info("Fetched {} sessions for user {}", userSessions.size(), userId);
+
+        // Transform to DTO, filtering out expired sessions
+        List<SessionDto> sessions = userSessions.stream()
                 .filter(s -> s.getExpiresAt() == null || s.getExpiresAt().isAfter(LocalDateTime.now()))
-                .map(s -> new SessionDto(
-                        s.getId(),
-                        user.getId(),
-                        s.getDeviceInfo(),
-                        s.getIpAddress(),   // IP now saved
-                        s.getCreatedAt(),
-                        user.getEmail()     // email added
-                ))
+                .map(s -> SessionDto.builder()
+                        .id(s.getId())
+                        .userId(user.getId())
+                        .email(user.getEmail())
+                        .deviceInfo(s.getDeviceInfo())
+                        .deviceId(s.getDeviceId())
+                        .deviceName(s.getDeviceName())
+                        .deviceType(s.getDeviceType())
+                        .browser(s.getBrowser())
+                        .operatingSystem(s.getOperatingSystem())
+                        .latitude(s.getLatitude())
+                        .longitude(s.getLongitude())
+                        .city(s.getCity())
+                        .country(s.getCountry())
+                        .ipAddress(s.getIpAddress())
+                        .loginTime(s.getCreatedAt())
+                        .build()
+                )
                 .toList();
 
         return new ApiResponse<>(

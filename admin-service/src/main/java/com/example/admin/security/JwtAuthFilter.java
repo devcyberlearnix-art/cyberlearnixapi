@@ -1,7 +1,6 @@
 package com.example.admin.security;
 
 
-
 import com.example.admin.entity.AssignedService;
 
 import jakarta.servlet.*;
@@ -12,6 +11,7 @@ import jakarta.servlet.http.HttpServletResponse;
 
 import lombok.RequiredArgsConstructor;
 
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.MediaType;
 
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -21,13 +21,11 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
 
-
 import java.io.IOException;
 
 import java.util.List;
 
 import java.util.UUID;
-
 
 
 @Component
@@ -37,49 +35,39 @@ import java.util.UUID;
 public class JwtAuthFilter implements Filter {
 
 
-
     private final JwtService jwtService;
 
+    private final StringRedisTemplate redisTemplate;
+
+    private static final String TOKEN_BLACKLIST_PREFIX = "ADMIN:JWT:BLACKLIST:";
 
 
     @Override
-
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
-
             throws IOException, ServletException {
 
-
-
         HttpServletRequest req = (HttpServletRequest) request;
-
         HttpServletResponse res = (HttpServletResponse) response;
 
-
-
-        String requestURI = req.getRequestURI();
-
-        String method = req.getMethod();
-
-        // Skip authentication for permitAll endpoints
-
-        boolean isPermitAll = isPermitAllEndpoint(requestURI, method);
-
-        if (!isPermitAll) {
-
-            authenticateBearer(req);
-
+        String authHeader = req.getHeader("Authorization");
+        if (authHeader == null || authHeader.isBlank()) {
+            authHeader = req.getHeader("authorization");
         }
 
-
+        // Always authenticate if Authorization header is present
+        if (authHeader != null && authHeader.regionMatches(true, 0, "Bearer ", 0, 7)) {
+            authenticateBearer(req);
+        } else {
+            boolean isPermitAll = isPermitAllEndpoint(req.getRequestURI(), req.getMethod());
+            if (!isPermitAll) {
+                authenticateBearer(req);
+            }
+        }
 
         chain.doFilter(request, response);
-
     }
 
-
-
     private boolean isPermitAllEndpoint(String requestURI, String method) {
-
         // Password recovery endpoints (public - no auth required)
         if (requestURI.equals("/api/v1/admin/password/forgot") && "POST".equalsIgnoreCase(method)) {
             return true;
@@ -90,119 +78,31 @@ public class JwtAuthFilter implements Filter {
         if (requestURI.equals("/api/v1/admin/password/reset") && "POST".equalsIgnoreCase(method)) {
             return true;
         }
-
-        // Course endpoints (public/internal)
-
-        if (requestURI.equals("/api/v1/admin/courses") && "GET".equalsIgnoreCase(method)) {
-
+        if (requestURI.equals("/api/v1/admin/password/otp/resend") && "POST".equalsIgnoreCase(method)) {
             return true;
-
         }
 
-
-
-        if (requestURI.matches("/api/v1/admin/courses/\\d+") && "GET".equalsIgnoreCase(method)) {
-
+        // Login OTP endpoints (public - no auth required)
+        if (requestURI.equals("/api/v1/admin/login/otp/request") && "POST".equalsIgnoreCase(method)) {
             return true;
-
+        }
+        if (requestURI.equals("/api/v1/admin/login/otp/verify") && "POST".equalsIgnoreCase(method)) {
+            return true;
+        }
+        if (requestURI.equals("/api/v1/admin/login/otp/resend") && "POST".equalsIgnoreCase(method)) {
+            return true;
         }
 
-
-
-        if (requestURI.matches("/api/v1/admin/courses/\\d+/approve") && "PUT".equalsIgnoreCase(method)) {
-
+        // Admin registration and login endpoints (public - no auth required)
+        if (requestURI.equals("/api/v1/admin/register") && "POST".equalsIgnoreCase(method)) {
             return true;
-
         }
-
-
-
-        if (requestURI.matches("/api/v1/admin/courses/\\d+/reject") && "PUT".equalsIgnoreCase(method)) {
-
+        if (requestURI.equals("/api/v1/admin/login") && "POST".equalsIgnoreCase(method)) {
             return true;
-
         }
-
-
-
-        if (requestURI.matches("/api/v1/admin/courses/\\d+") && "DELETE".equalsIgnoreCase(method)) {
-
-            return true;
-
-        }
-
-
-
-        if (requestURI.matches("/api/v1/admin/instructors/\\d+/courses") && "GET".equalsIgnoreCase(method)) {
-
-            return true;
-
-        }
-
-
-
-        // Section & Lecture content endpoints (allow internal service calls without
-
-        // admin JWT)
-
-        if (requestURI.matches("/api/v1/admin/courses/\\d+/sections") && "POST".equalsIgnoreCase(method)) {
-
-            return true;
-
-        }
-
-        if (requestURI.matches("/api/v1/admin/sections/\\d+/lectures") && "POST".equalsIgnoreCase(method)) {
-
-            return true;
-
-        }
-
-        if (requestURI.matches("/api/v1/admin/sections/\\d+/lectures/\\d+/approve") && "PUT".equalsIgnoreCase(method)) {
-
-            return true;
-
-        }
-
-        if (requestURI.matches("/api/v1/admin/sections/\\d+/lectures/\\d+/reject") && "PUT".equalsIgnoreCase(method)) {
-
-            return true;
-
-        }
-
-        if (requestURI.matches("/api/v1/admin/sections/\\d+") && "DELETE".equalsIgnoreCase(method)) {
-
-            return true;
-
-        }
-
-        if (requestURI.matches("/api/v1/admin/sections/\\d+/lectures/\\d+") && "DELETE".equalsIgnoreCase(method)) {
-
-            return true;
-
-        }
-
-
-
-        // Admin API endpoints for orders, payments, and reviews
-
-        if (requestURI.equals("/api/v1/admin/payments") && "GET".equalsIgnoreCase(method)) {
-
-            return true;
-
-        }
-
-        if (requestURI.equals("/api/v1/admin/reviews") && "GET".equalsIgnoreCase(method)) {
-
-            return true;
-
-        }
-
-
 
         return false;
-
     }
-
 
 
     private boolean authenticateBearer(HttpServletRequest req) {
@@ -215,6 +115,10 @@ public class JwtAuthFilter implements Filter {
 
         }
 
+
+        System.out.println("[JwtAuthFilter] Authorization header present: " + (authHeader != null));
+        System.out.println("[JwtAuthFilter] Authorization header starts with Bearer: " + (authHeader != null && authHeader.regionMatches(true, 0, "Bearer ", 0, 7)));
+
         if (authHeader == null || !authHeader.regionMatches(true, 0, "Bearer ", 0, 7)) {
 
             SecurityContextHolder.clearContext();
@@ -224,8 +128,9 @@ public class JwtAuthFilter implements Filter {
         }
 
 
-
         String token = authHeader.substring(7).trim();
+        String tokenFingerprint = token.substring(0, Math.min(8, token.length()));
+        System.out.println("[JwtAuthFilter] Token extracted, fingerprint: " + tokenFingerprint + ", length: " + token.length());
 
         if (token.isBlank()) {
 
@@ -235,20 +140,51 @@ public class JwtAuthFilter implements Filter {
 
         }
 
-
+        // ── Reject blacklisted tokens (e.g. after email change) ───────────────
+        try {
+            Boolean isBlacklisted = redisTemplate.hasKey(TOKEN_BLACKLIST_PREFIX + token);
+            if (Boolean.TRUE.equals(isBlacklisted)) {
+                SecurityContextHolder.clearContext();
+                return false;
+            }
+        } catch (Exception ignored) {
+            // Redis unavailable — fail open to avoid blocking valid requests
+        }
 
         try {
-
+            System.out.println("[JwtAuthFilter] Starting token validation");
             UUID adminId = jwtService.extractAdminId(token);
+            System.out.println("[JwtAuthFilter] Extracted adminId: " + adminId);
+
+            // Check if password was changed after token issuance
+            try {
+                String lastChangeStr = redisTemplate.opsForValue().get("ADMIN:PASSWORD_CHANGE_TIME:" + adminId);
+                if (lastChangeStr != null) {
+                    long lastChangeTime = Long.parseLong(lastChangeStr);
+                    java.util.Date issuedAt = jwtService.extractIssuedAt(token);
+                    if (issuedAt != null && issuedAt.getTime() < lastChangeTime) {
+                        System.out.println("[JwtAuthFilter] Rejecting token for adminId=" + adminId
+                                + ": token issued at " + issuedAt.getTime()
+                                + " is older than last password change at " + lastChangeTime);
+                        SecurityContextHolder.clearContext();
+                        return false;
+                    }
+                }
+            } catch (Exception e) {
+                System.err.println("[JwtAuthFilter] Error checking admin password change timestamp in Redis: " + e.getMessage());
+            }
 
             String role = jwtService.extractRole(token);
+            System.out.println("[JwtAuthFilter] Extracted role: " + role);
 
             String adminType = jwtService.extractAdminType(token);
+            System.out.println("[JwtAuthFilter] Extracted adminType: " + adminType);
 
             String email = jwtService.extractEmail(token);
+            System.out.println("[JwtAuthFilter] Extracted email: " + email);
 
             AssignedService assignedService = jwtService.extractAssignedService(token);
-
+            System.out.println("[JwtAuthFilter] Extracted assignedService: " + assignedService);
 
 
             if (role == null || role.isBlank()) {
@@ -263,7 +199,8 @@ public class JwtAuthFilter implements Filter {
 
             }
 
-
+            System.out.println("[JwtAuthFilter] Final role: " + role + ", adminType: " + adminType);
+            System.out.println("[JwtAuthFilter] Creating AdminPrincipal and setting authentication");
 
             AdminPrincipal principal = new AdminPrincipal(adminId, email, role, adminType, assignedService, token);
 
@@ -273,10 +210,12 @@ public class JwtAuthFilter implements Filter {
 
             SecurityContextHolder.getContext().setAuthentication(authentication);
 
+            System.out.println("[JwtAuthFilter] Authentication set successfully");
             return true;
 
         } catch (Exception e) {
-
+            System.err.println("[JwtAuthFilter] Token validation failed: " + e.getMessage());
+            e.printStackTrace();
             SecurityContextHolder.clearContext();
 
             return false;
@@ -284,7 +223,6 @@ public class JwtAuthFilter implements Filter {
         }
 
     }
-
 
 
     private void writeJsonError(HttpServletResponse response, int status, String message) throws IOException {

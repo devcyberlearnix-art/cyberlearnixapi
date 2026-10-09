@@ -1,6 +1,8 @@
 package com.user.register.repository;
 
 import com.user.register.entity.InstructorApplication;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
@@ -8,10 +10,16 @@ import java.util.Optional;
 import java.util.UUID;
 
 public interface InstructorApplicationRepository extends JpaRepository<InstructorApplication, UUID> {
+    void deleteByUserId(UUID userId);
+
 
     Optional<InstructorApplication> findTopByUserIdOrderBySubmittedAtDesc(UUID userId);
 
     List<InstructorApplication> findByStatus(InstructorApplication.ApplicationStatus status);
 
     boolean existsByUserIdAndStatus(UUID userId, InstructorApplication.ApplicationStatus status);
+
+    Page<InstructorApplication> findAll(Pageable pageable);
+
+    Page<InstructorApplication> findByStatus(InstructorApplication.ApplicationStatus status, Pageable pageable);
 }

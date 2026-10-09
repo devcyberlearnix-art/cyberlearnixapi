@@ -26,7 +26,7 @@ public class User {
 
     private String firstName;
     private String lastName;
-    @Column
+    @Column(unique = true, nullable = false)
     private String email;
     private String password;
 
@@ -73,6 +73,9 @@ public class User {
     private String device;
     private String browser;
     private String os;
+
+    @Column(name = "last_device")
+    private String lastDevice;
 
     @Column
     @JsonProperty("mobileNumber")

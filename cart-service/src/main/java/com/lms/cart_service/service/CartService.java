@@ -27,4 +27,10 @@ public interface CartService {
     CheckoutResponse checkoutCart(String userId, String authorization);
 
     CartResponse getCartForOrderService(String userId);
+
+    /**
+     * Internal method for service-to-service calls (e.g., wishlist-to-cart).
+     * Adds a course to cart without requiring authentication.
+     */
+    AddCourseResponse addToCartInternal(String userId, Long courseId);
 }

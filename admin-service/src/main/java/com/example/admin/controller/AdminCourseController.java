@@ -123,14 +123,14 @@ public class AdminCourseController {
      */
     @DeleteMapping("/courses/{courseId}")
     public CourseListResponse deleteCourse(@PathVariable Long courseId) {
-        boolean deleted = courseService.deleteCourse(courseId);
-        List<Object> dataList = List.of();
-
+        Map result = courseService.deleteCourse(courseId);
+        boolean deleted = result != null;
+        List<Object> dataList = deleted ? List.of(result) : List.of();
         return CourseListResponse.builder()
                 .success(deleted)
                 .message(deleted ? "Course deleted successfully" : "Failed to delete course")
                 .data(dataList)
-                .count(0)
+                .count(dataList.size())
                 .timestamp(LocalDateTime.now().toString())
                 .build();
     }
@@ -151,12 +151,14 @@ public class AdminCourseController {
 
     @DeleteMapping("/sections/{sectionId}")
     public CourseListResponse deleteSection(@PathVariable Long sectionId) {
-        boolean ok = courseService.deleteSection(sectionId);
+        Map result = courseService.deleteSection(sectionId);
+        boolean ok = result != null;
+        List<Object> dataList = ok ? List.of(result) : List.of();
         return CourseListResponse.builder()
                 .success(ok)
                 .message(ok ? "Section deleted" : "Failed to delete section")
-                .data(List.of())
-                .count(0)
+                .data(dataList)
+                .count(dataList.size())
                 .timestamp(LocalDateTime.now().toString())
                 .build();
     }
@@ -203,12 +205,14 @@ public class AdminCourseController {
 
     @DeleteMapping("/sections/{sectionId}/lectures/{lectureId}")
     public CourseListResponse deleteLecture(@PathVariable Long sectionId, @PathVariable Long lectureId) {
-        boolean ok = courseService.deleteLecture(sectionId, lectureId);
+        Map result = courseService.deleteLecture(sectionId, lectureId);
+        boolean ok = result != null;
+        List<Object> dataList = ok ? List.of(result) : List.of();
         return CourseListResponse.builder()
                 .success(ok)
                 .message(ok ? "Lecture deleted" : "Failed to delete lecture")
-                .data(List.of())
-                .count(0)
+                .data(dataList)
+                .count(dataList.size())
                 .timestamp(LocalDateTime.now().toString())
                 .build();
     }
@@ -217,7 +221,7 @@ public class AdminCourseController {
      * Get courses by instructor ID (Long)
      */
     @GetMapping("/instructors/{instructorId}/courses")
-    public CourseListResponse getCoursesByInstructor(@PathVariable Long instructorId) {
+    public CourseListResponse getCoursesByInstructor(@PathVariable String instructorId) {
         List<CourseDTO> courses = courseService.getCoursesByInstructor(instructorId);
         List<Object> dataList = new ArrayList<>(courses);
 

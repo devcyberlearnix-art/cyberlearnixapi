@@ -40,7 +40,7 @@ course:
 user:
   service:
     url: ${USER_SERVICE_URL:http://localhost:8091}
-    enabled: ${USER_SERVICE_ENABLED:false}
+    enabled: ${USER_SERVICE_ENABLED:true}
 
 springdoc:
   api-docs:

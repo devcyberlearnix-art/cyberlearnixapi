@@ -26,13 +26,13 @@ public class Course {
 
     @Column(nullable = false)
     private String title;
-    
+
     @Column(columnDefinition = "TEXT")
     private String description;
-    
+
     @Column(nullable = false)
     private String instructor;
-    
+
     @Column(nullable = false)
     private Double price;
 

@@ -7,6 +7,13 @@ package com.user.register.service;
 
 
 import com.user.register.dto.unified.*;
+import com.cyberlearnix.commonlibs.dto.UserLoginEvent;
+import com.user.register.util.DynamicDeviceAndLocationResolver;
+import com.user.register.util.DynamicDeviceAndLocationResolver.ClientContext;
+import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+
 
 
 
@@ -30,10 +37,11 @@ import lombok.RequiredArgsConstructor;
 
 
 import lombok.extern.slf4j.Slf4j;
+import com.user.register.service.SessionService;
 
 
 
-import org.springframework.beans.factory.annotation.Value;
+
 
 
 
@@ -104,6 +112,9 @@ public class UnifiedAuthenticationService {
 
 
     private final UserRepository userRepository;
+    private final KafkaTemplate<String, UserLoginEvent> kafkaTemplate;
+    @Value("${app.kafka.topic.user-login:user-login-topic}")
+    private String userLoginTopic;
 
 
 
@@ -128,6 +139,8 @@ public class UnifiedAuthenticationService {
 
 
     private final EmailService emailService;
+    private final SessionService sessionService;
+    private final DynamicDeviceAndLocationResolver deviceResolver;
 
 
 
@@ -279,7 +292,10 @@ public class UnifiedAuthenticationService {
 
 
 
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Account suspended by admin");
+            // Reactivate suspended account on login
+            user.setStatus(User.Status.ACTIVE);
+            userRepository.save(user);
+            log.info("User {} reactivated from SUSPENDED status on login", user.getId());
 
 
 
@@ -364,6 +380,8 @@ public class UnifiedAuthenticationService {
 
 
         );
+        // Persist session in DB for user-service endpoint
+        sessionService.createSession(user, httpRequest, accessToken, refreshToken);
 
 
 
@@ -499,14 +517,241 @@ public class UnifiedAuthenticationService {
 
 
 
+        // Publish login event to Kafka (non-blocking, decrypted names)
+        try {
+            String firstName = decryptField(user.getFirstName());
+            String lastName  = decryptField(user.getLastName());
+            String fullName  = (firstName != null ? firstName : "") + " " + (lastName != null ? lastName : "");
+            UserLoginEvent event = new UserLoginEvent(
+                    UUID.randomUUID(),
+                    "USER_LOGIN",
+                    user.getId(),
+                    user.getEmail(),
+                    fullName.trim(),
+                    LocalDateTime.now(),
+                    user.getIpAddress(),
+                    user.getDevice(),
+                    user.getBrowser(),
+                    user.getOs(),
+                    "UNKNOWN",
+                    isNewDevice(user)
+            );
+            kafkaTemplate.send(userLoginTopic, user.getId().toString(), event);
+            log.info("UserLoginEvent published for user {} (newDevice={})", user.getId(), event.isNewDevice());
+        } catch (Exception e) {
+            log.error("Failed to publish UserLoginEvent for user {}", user.getId(), e);
+        }
+
+
+
 
 
 
 
         return ResponseEntity.ok(response);
+    }
 
+    /**
+     * Social Login / Continue with OAuth provider (Google, GitHub, LinkedIn)
+     * Authenticates existing user or registers new student user
+     */
+    public ResponseEntity<LoginResponse> socialLogin(SocialLoginRequest request, HttpServletRequest httpRequest) {
+        if (request == null || request.getProvider() == null || request.getProvider().isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Provider is required (google, github, linkedin)");
+        }
 
+        String provider = request.getProvider().trim().toLowerCase();
+        if (!List.of("google", "github", "linkedin").contains(provider)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Unsupported OAuth provider: '" + request.getProvider() + "'. Supported providers are: google, github, linkedin");
+        }
 
+        String email = request.getEmail();
+        if (email == null || email.isBlank()) {
+            if ("github".equals(provider) && request.getProviderId() != null && !request.getProviderId().isBlank()) {
+                email = request.getProviderId() + "@github-user.local";
+            } else {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Email is required for social login with " + provider);
+            }
+        }
+        email = email.trim().toLowerCase();
+
+        Optional<User> userOptional = userRepository.findByEmail(email);
+        User user;
+
+        if (userOptional.isPresent()) {
+            user = userOptional.get();
+
+            if (user.getStatus() == User.Status.LOCKED) {
+                throw new ResponseStatusException(HttpStatus.LOCKED, "Account locked due to too many failed login attempts");
+            }
+
+            if (user.getStatus() == User.Status.SUSPENDED || user.getStatus() == User.Status.PENDING_VERIFICATION) {
+                user.setStatus(User.Status.ACTIVE);
+            }
+
+            if (user.getProvider() == null || user.getProvider().isBlank()) {
+                user.setProvider(provider);
+            }
+            if (request.getProviderId() != null && !request.getProviderId().isBlank() && (user.getProviderId() == null || user.getProviderId().isBlank())) {
+                user.setProviderId(request.getProviderId());
+            }
+            if (request.getProfilePhoto() != null && !request.getProfilePhoto().isBlank() && (user.getProfilePhoto() == null || user.getProfilePhoto().isBlank())) {
+                user.setProfilePhoto(request.getProfilePhoto());
+            }
+            if (request.getFirstName() != null && !request.getFirstName().isBlank() && (user.getFirstName() == null || user.getFirstName().isBlank())) {
+                user.setFirstName(encryptField(request.getFirstName()));
+            }
+            if (request.getLastName() != null && !request.getLastName().isBlank() && (user.getLastName() == null || user.getLastName().isBlank())) {
+                user.setLastName(encryptField(request.getLastName()));
+            }
+
+            user.setLastLoginAt(LocalDateTime.now());
+            user.setLastLogin(LocalDateTime.now());
+            user = userRepository.save(user);
+        } else {
+            // Register new social user
+            user = User.builder()
+                    .email(email)
+                    .role(User.Role.STUDENT)
+                    .status(User.Status.ACTIVE)
+                    .provider(provider)
+                    .providerId(request.getProviderId())
+                    .profilePhoto(request.getProfilePhoto())
+                    .firstName(request.getFirstName() != null ? encryptField(request.getFirstName()) : "")
+                    .lastName(request.getLastName() != null ? encryptField(request.getLastName()) : "")
+                    .createdAt(LocalDateTime.now())
+                    .lastLoginAt(LocalDateTime.now())
+                    .lastLogin(LocalDateTime.now())
+                    .build();
+            user = userRepository.save(user);
+            log.info("Registered new user {} via social login provider {}", user.getId(), provider);
+        }
+
+        // Generate tokens
+        String accessToken = unifiedJwtService.generateAccessToken(
+                user.getId().toString(),
+                user.getEmail(),
+                user.getRole().name(),
+                null,
+                null
+        );
+
+        String refreshToken = unifiedJwtService.generateRefreshToken(
+                user.getId().toString(),
+                user.getEmail(),
+                user.getRole().name()
+        );
+
+        // Persist session
+        sessionService.createSession(user, httpRequest, accessToken, refreshToken);
+
+        // Build user data
+        LoginResponse.UserData userData = LoginResponse.UserData.builder()
+                .id(user.getId())
+                .email(user.getEmail())
+                .firstName(decryptField(user.getFirstName()))
+                .lastName(decryptField(user.getLastName()))
+                .mobileNumber(decryptField(user.getMobile()))
+                .role(user.getRole().name())
+                .adminType("NONE")
+                .assignedService("NONE")
+                .permissions(getPermissionsForRole(user.getRole().name()))
+                .verified(true)
+                .approved(user.getIsInstructorApproved() != null ? user.getIsInstructorApproved() : true)
+                .build();
+
+        LoginResponse.AuthenticationInfo authInfo = LoginResponse.AuthenticationInfo.builder()
+                .accessToken(accessToken)
+                .accessTokenExpiresIn("15 minutes")
+                .refreshToken(refreshToken)
+                .refreshTokenExpiresIn("30 days")
+                .build();
+
+        LoginResponse.SessionInfo sessionInfo = buildSessionInfo(httpRequest);
+
+        LoginResponse response = LoginResponse.builder()
+                .success(true)
+                .message("Social login successful with " + provider)
+                .user(userData)
+                .authentication(authInfo)
+                .sessionInfo(sessionInfo)
+                .timestamp(LocalDateTime.now())
+                .build();
+
+        // Publish login event to Kafka
+        try {
+            String firstName = decryptField(user.getFirstName());
+            String lastName = decryptField(user.getLastName());
+            String fullName = (firstName != null ? firstName : "") + " " + (lastName != null ? lastName : "");
+            UserLoginEvent event = new UserLoginEvent(
+                    UUID.randomUUID(),
+                    "USER_LOGIN",
+                    user.getId(),
+                    user.getEmail(),
+                    fullName.trim(),
+                    LocalDateTime.now(),
+                    user.getIpAddress(),
+                    user.getDevice(),
+                    user.getBrowser(),
+                    user.getOs(),
+                    provider.toUpperCase(),
+                    isNewDevice(user)
+            );
+            kafkaTemplate.send(userLoginTopic, user.getId().toString(), event);
+            log.info("UserLoginEvent published for social login user {} via {}", user.getId(), provider);
+        } catch (Exception e) {
+            log.error("Failed to publish UserLoginEvent for social login user {}", user.getId(), e);
+        }
+
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Get list of supported OAuth providers and authorization metadata
+     */
+    public ResponseEntity<OAuthProviderResponse> getOAuthProviders() {
+        List<OAuthProviderResponse.ProviderInfo> list = List.of(
+                OAuthProviderResponse.ProviderInfo.builder()
+                        .id("google")
+                        .name("Google")
+                        .authorizationUrl("/oauth2/authorization/google")
+                        .icon("https://auth.cyberlearnix.com/icons/google.svg")
+                        .scope("email,profile")
+                        .enabled(true)
+                        .build(),
+                OAuthProviderResponse.ProviderInfo.builder()
+                        .id("github")
+                        .name("GitHub")
+                        .authorizationUrl("/oauth2/authorization/github")
+                        .icon("https://auth.cyberlearnix.com/icons/github.svg")
+                        .scope("read:user,user:email")
+                        .enabled(true)
+                        .build(),
+                OAuthProviderResponse.ProviderInfo.builder()
+                        .id("linkedin")
+                        .name("LinkedIn")
+                        .authorizationUrl("/oauth2/authorization/linkedin")
+                        .icon("https://auth.cyberlearnix.com/icons/linkedin.svg")
+                        .scope("openid,profile,email")
+                        .enabled(true)
+                        .build()
+        );
+
+        return ResponseEntity.ok(OAuthProviderResponse.builder()
+                .success(true)
+                .message("OAuth providers retrieved successfully")
+                .providers(list)
+                .build());
+    }
+
+    private String encryptField(String value) {
+        if (value == null || value.isBlank()) return "";
+        try {
+            return com.user.register.util.SecurityUtils.encrypt(value, "1234567890123456");
+        } catch (Exception e) {
+            return value;
+        }
     }
 
 
@@ -1085,61 +1330,24 @@ public class UnifiedAuthenticationService {
 
 
     private LoginResponse.SessionInfo buildSessionInfo(HttpServletRequest httpRequest) {
-
-
-
-        String ipAddress = httpRequest.getHeader("X-Forwarded-For");
-
-
-
-        if (ipAddress == null || ipAddress.isEmpty() || "unknown".equalsIgnoreCase(ipAddress)) {
-
-
-
-            ipAddress = httpRequest.getRemoteAddr();
-
-
-
-        }
-
-
-
-
-
-
-
-        String userAgent = httpRequest.getHeader("User-Agent");
-
-
-
-        String device = detectDevice(userAgent);
-
-
-
-
-
-
+        ClientContext client = deviceResolver != null ? deviceResolver.resolve(httpRequest) : null;
+        String ipAddress = client != null ? client.getIpAddress() : (httpRequest != null ? httpRequest.getRemoteAddr() : "127.0.0.1");
+        String device = client != null ? client.getDeviceName() : detectDevice(httpRequest != null ? httpRequest.getHeader("User-Agent") : null);
 
         return LoginResponse.SessionInfo.builder()
-
-
-
                 .loginTime(LocalDateTime.now().toString())
-
-
-
                 .ipAddress(ipAddress)
-
-
-
                 .device(device)
-
-
-
+                .deviceId(client != null ? client.getDeviceId() : null)
+                .deviceName(client != null ? client.getDeviceName() : null)
+                .deviceType(client != null ? client.getDeviceType() : "WEB")
+                .browser(client != null ? client.getBrowser() : null)
+                .operatingSystem(client != null ? client.getOperatingSystem() : null)
+                .latitude(client != null ? client.getLatitude() : 0.0)
+                .longitude(client != null ? client.getLongitude() : 0.0)
+                .city(client != null ? client.getCity() : null)
+                .country(client != null ? client.getCountry() : null)
                 .build();
-
-
-
     }
 
 
@@ -1149,57 +1357,25 @@ public class UnifiedAuthenticationService {
 
 
     private String detectDevice(String userAgent) {
-
-
-
+        // Dynamically detect device based on configurable patterns
         if (userAgent == null) return "Unknown Device";
-
-
-
-        userAgent = userAgent.toLowerCase();
-
-
-
-
-
-
-
-        if (userAgent.contains("postman")) return "Postman";
-
-
-
-        if (userAgent.contains("android")) return "Android Mobile";
-
-
-
-        if (userAgent.contains("iphone")) return "iPhone";
-
-
-
-        if (userAgent.contains("ipad")) return "iPad";
-
-
-
-        if (userAgent.contains("windows")) return "Windows Desktop";
-
-
-
-        if (userAgent.contains("mac")) return "Mac Desktop";
-
-
-
-        if (userAgent.contains("linux")) return "Linux Desktop";
-
-
-
-
-
-
-
+        String lower = userAgent.toLowerCase();
+        java.util.LinkedHashMap<String, String> patterns = new java.util.LinkedHashMap<>();
+        patterns.put("postman", "Postman");
+        patterns.put("android", "Android Mobile");
+        patterns.put("iphone", "iPhone");
+        patterns.put("ipad", "iPad");
+        patterns.put("windows", "Windows Desktop");
+        patterns.put("mac", "Mac Desktop");
+        patterns.put("linux", "Linux Desktop");
+        patterns.put("curl", "Curl");
+        patterns.put("insomnia", "Insomnia");
+        for (java.util.Map.Entry<String, String> entry : patterns.entrySet()) {
+            if (lower.contains(entry.getKey())) {
+                return entry.getValue();
+            }
+        }
         return "Unknown Device";
-
-
-
     }
 
 
@@ -1394,28 +1570,14 @@ public class UnifiedAuthenticationService {
 
         String email = request.getEmail();
 
-
-
-
-
-
-
         // Check if user exists in user database
-
-
-
         Optional<User> userOptional = userRepository.findByEmail(email);
         String otpSessionId = null;
         LocalDateTime otpSessionExpiresAt = null;
-
-
-
-
-
-
+        boolean userFound = false;
 
         if (userOptional.isPresent()) {
-
+            userFound = true;
             long cooldown = otpService.getCooldownSeconds(email, "password_reset");
             if (cooldown > 0) {
                 Map<String, Object> response = new HashMap<>();
@@ -1426,129 +1588,81 @@ public class UnifiedAuthenticationService {
                 return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).body(response);
             }
 
-
-
             // Generate OTP for password reset
-
-
-
             String otp = generateOTP();
-
-
-
-                OtpService.OtpSession otpSession = otpService.createSession(email, "password_reset", otp, 5, 5);
-                otpService.markCooldown(email, "password_reset", 30);
-                otpSessionId = otpSession.sessionId();
-                otpSessionExpiresAt = otpSession.expiresAt();
-
-
+            OtpService.OtpSession otpSession = otpService.createSession(email, "password_reset", otp, 5, 5);
+            otpService.markCooldown(email, "password_reset", 30);
+            otpSessionId = otpSession.sessionId();
+            otpSessionExpiresAt = otpSession.expiresAt();
 
             // Send OTP via email
-
             try {
-
-                emailService.sendOtpEmail(email, otp);
-
+                emailService.sendPasswordResetOtp(email, otp);
             } catch (Exception e) {
-
                 log.error("Failed to send password reset OTP email to: {}", email, e);
-
             }
-
-
 
             log.info("Password reset OTP sent to user: {}", email);
 
-
-
         } else {
-
-
-
-            // Try admin service
-
-
-
+            // Try admin service if user is not in local user repository
             try {
-
-
-
-                if (adminServiceUrl != null && restTemplate != null) {
-
-
-
+                if (adminServiceUrl != null && !adminServiceUrl.isBlank() && restTemplate != null) {
                     Map<String, Object> adminRequest = new HashMap<>();
-
-
-
                     adminRequest.put("email", email);
 
-
-
                     String adminUrl = adminServiceUrl + "/api/v1/admin/password/forgot";
-
-
-
                     ResponseEntity<Map> adminResponse = restTemplate.postForEntity(adminUrl, adminRequest, Map.class);
 
-                    // Extract otpSessionId from admin response
                     if (adminResponse.getBody() != null) {
-                        Map<String, Object> adminData = (Map<String, Object>) adminResponse.getBody().get("data");
-                        if (adminData != null) {
-                            Object adminOtpSessionId = adminData.get("otpSessionId");
-                            if (adminOtpSessionId != null) {
-                                otpSessionId = adminOtpSessionId.toString();
-                                Object adminExpiresAt = adminData.get("expiresAt");
-                                if (adminExpiresAt != null) {
-                                    otpSessionExpiresAt = LocalDateTime.parse(adminExpiresAt.toString());
+                        Object successValue = adminResponse.getBody().get("success");
+                        boolean adminSuccess = Boolean.parseBoolean(String.valueOf(successValue));
+                        if (adminSuccess) {
+                            userFound = true;
+                            Map<String, Object> adminData = (Map<String, Object>) adminResponse.getBody().get("data");
+                            if (adminData != null) {
+                                Object adminOtpSessionId = adminData.get("otpSessionId");
+                                if (adminOtpSessionId != null) {
+                                    otpSessionId = adminOtpSessionId.toString();
+                                    Object adminExpiresAt = adminData.get("expiresAt");
+                                    if (adminExpiresAt != null) {
+                                        otpSessionExpiresAt = LocalDateTime.parse(adminExpiresAt.toString());
+                                    }
                                 }
+                            }
+                            log.info("Password reset OTP sent to admin: {}", email);
+                        } else {
+                            Object adminMessage = adminResponse.getBody().get("message");
+                            String safeMessage = adminMessage != null ? adminMessage.toString().toLowerCase(Locale.ROOT) : "";
+                            if (safeMessage.contains("does not exist") || safeMessage.contains("not found") || safeMessage.contains("not registered")) {
+                                userFound = false;
                             }
                         }
                     }
-
-                    log.info("Password reset OTP sent to admin: {}", email);
-
-
                 }
-
-
-
+            } catch (RestClientResponseException e) {
+                log.warn("Admin password reset request failed for email: {} with status {}", email, e.getStatusCode());
+                userFound = false;
+            } catch (ResourceAccessException e) {
+                log.warn("Admin OTP service unreachable for email: {}. Assuming user not found.", email);
+                userFound = false;
             } catch (Exception e) {
                 log.error("Failed to send password reset OTP to admin: {}", email, e);
-                // Return error when Admin Service fails - don't return success with null otpSessionId
-                Map<String, Object> errorResponse = new HashMap<>();
-                errorResponse.put("success", false);
-                errorResponse.put("message", "Failed to process password reset request. Please try again later.");
-                errorResponse.put("timestamp", LocalDateTime.now());
-                return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(errorResponse);
+                userFound = false;
             }
-
-
-
         }
 
-
-
-
-
-
-
-        // Always return success to prevent email enumeration
-
-
+        if (!userFound) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", "Email is not registered. Please register.");
+            response.put("timestamp", LocalDateTime.now());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+        }
 
         Map<String, Object> response = new HashMap<>();
-
-
-
         response.put("success", true);
-
-
-
-        response.put("message", "If the email exists, a password reset OTP has been sent");
-
-
-
+        response.put("message", "Password reset OTP has been sent");
         response.put("timestamp", LocalDateTime.now());
 
         if (otpSessionId != null) {
@@ -1559,12 +1673,6 @@ public class UnifiedAuthenticationService {
             response.put("cooldownSeconds", 30);
             response.put("sessionStartedAt", LocalDateTime.now());
         }
-
-
-
-
-
-
 
         return ResponseEntity.ok(response);
 
@@ -2524,11 +2632,8 @@ public class UnifiedAuthenticationService {
 
 
             // Send OTP via email
-
             try {
-
-                emailService.sendOtpEmail(email, otp);
-
+                emailService.sendLoginOtp(email, otp);
             } catch (Exception e) {
 
                 log.error("Failed to send login OTP email to: {}", email, e);
@@ -2920,6 +3025,215 @@ public class UnifiedAuthenticationService {
 
 
 
+    public ResponseEntity<Map<String, Object>> resendLoginOtp(ResendOtpRequest request) {
+        String otpSessionId = request.getOtpSessionId();
+
+        if (otpSessionId == null || otpSessionId.isBlank()) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", "otpSessionId is required");
+            response.put("timestamp", LocalDateTime.now());
+            return ResponseEntity.badRequest().body(response);
+        }
+
+        // Resolve email from session using OtpService
+        Optional<String> emailOptional = otpService.resolveSessionEmail(otpSessionId, "login");
+        if (emailOptional.isEmpty()) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", "Invalid or expired OTP session");
+            response.put("timestamp", LocalDateTime.now());
+            return ResponseEntity.badRequest().body(response);
+        }
+
+        String email = emailOptional.get();
+
+        // Check if user exists in user-service
+        Optional<User> userOptional = userRepository.findByEmail(email);
+
+        if (userOptional.isPresent()) {
+            // Handle user OTP resend locally
+            User user = userOptional.get();
+
+            // Check existing cooldown
+            long cooldown = otpService.getCooldownSeconds(email, "login");
+            if (cooldown > 0) {
+                Map<String, Object> response = new HashMap<>();
+                response.put("success", false);
+                response.put("message", "Please wait " + cooldown + " seconds before requesting a new OTP.");
+                response.put("timestamp", LocalDateTime.now());
+                return ResponseEntity.badRequest().body(response);
+            }
+
+            // Generate new OTP
+            String newOtp = generateOTP();
+
+            // Send email FIRST
+            try {
+                emailService.sendLoginOtp(email, newOtp);
+            } catch (Exception ex) {
+                Map<String, Object> response = new HashMap<>();
+                response.put("success", false);
+                response.put("message", "Unable to send OTP email right now. Please try again shortly.");
+                response.put("timestamp", LocalDateTime.now());
+                return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(response);
+            }
+
+            // Email succeeded: create new session, delete old session, apply cooldown
+            OtpService.OtpSession newOtpSession = otpService.createSession(email, "login", newOtp, 5, 5);
+            otpService.deleteSession(otpSessionId);
+            otpService.markCooldown(email, "login", 30);
+
+            log.info("Login OTP resent to user: {}", email);
+
+            Map<String, Object> responseData = new HashMap<>();
+            responseData.put("validForMinutes", 5);
+            responseData.put("otpType", "login");
+            responseData.put("email", email);
+            responseData.put("expiresAt", newOtpSession.expiresAt().toString());
+            responseData.put("cooldownSeconds", 30);
+            responseData.put("otpSessionId", newOtpSession.sessionId());
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("message", "Login OTP resent successfully to registered email.");
+            response.put("data", responseData);
+            response.put("timestamp", LocalDateTime.now());
+            return ResponseEntity.ok(response);
+
+        } else {
+            // Forward to admin service for admin accounts
+            try {
+                Map<String, Object> adminRequest = new HashMap<>();
+                adminRequest.put("otpSessionId", otpSessionId);
+
+                String adminUrl = adminServiceUrl + "/api/v1/admin/login/otp/resend";
+                ResponseEntity<Map> adminResponse = restTemplate.postForEntity(adminUrl, adminRequest, Map.class);
+
+                if (adminResponse.getStatusCode() == HttpStatus.OK && adminResponse.getBody() != null) {
+                    return ResponseEntity.ok(adminResponse.getBody());
+                } else {
+                    Map<String, Object> response = new HashMap<>();
+                    response.put("success", false);
+                    response.put("message", "Failed to resend OTP");
+                    response.put("timestamp", LocalDateTime.now());
+                    return ResponseEntity.status(adminResponse.getStatusCode()).body(response);
+                }
+            } catch (Exception e) {
+                log.error("Admin OTP resend failed for email: {}", email, e);
+                Map<String, Object> response = new HashMap<>();
+                response.put("success", false);
+                response.put("message", "Failed to resend OTP. Please try again.");
+                response.put("timestamp", LocalDateTime.now());
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+            }
+        }
+    }
+
+    public ResponseEntity<Map<String, Object>> resendPasswordOtp(ResendOtpRequest request) {
+        String otpSessionId = request.getOtpSessionId();
+
+        if (otpSessionId == null || otpSessionId.isBlank()) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", "otpSessionId is required");
+            response.put("timestamp", LocalDateTime.now());
+            return ResponseEntity.badRequest().body(response);
+        }
+
+        // Resolve email from session using OtpService
+        Optional<String> emailOptional = otpService.resolveSessionEmail(otpSessionId, "password_reset");
+        if (emailOptional.isEmpty()) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", "Invalid or expired OTP session");
+            response.put("timestamp", LocalDateTime.now());
+            return ResponseEntity.badRequest().body(response);
+        }
+
+        String email = emailOptional.get();
+
+        // Check if user exists in user-service
+        Optional<User> userOptional = userRepository.findByEmail(email);
+
+        if (userOptional.isPresent()) {
+            // Handle user OTP resend locally
+            User user = userOptional.get();
+
+            // Check existing cooldown
+            long cooldown = otpService.getCooldownSeconds(email, "password_reset");
+            if (cooldown > 0) {
+                Map<String, Object> response = new HashMap<>();
+                response.put("success", false);
+                response.put("message", "Please wait " + cooldown + " seconds before requesting a new OTP.");
+                response.put("timestamp", LocalDateTime.now());
+                return ResponseEntity.badRequest().body(response);
+            }
+
+            // Generate new OTP
+            String newOtp = generateOTP();
+
+            // Send email FIRST
+            try {
+                emailService.sendPasswordResetOtp(email, newOtp);
+            } catch (Exception ex) {
+                Map<String, Object> response = new HashMap<>();
+                response.put("success", false);
+                response.put("message", "Unable to send OTP email right now. Please try again shortly.");
+                response.put("timestamp", LocalDateTime.now());
+                return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(response);
+            }
+
+            // Email succeeded: create new session, delete old session, apply cooldown
+            OtpService.OtpSession newOtpSession = otpService.createSession(email, "password_reset", newOtp, 5, 5);
+            otpService.deleteSession(otpSessionId);
+            otpService.markCooldown(email, "password_reset", 30);
+
+            log.info("Password reset OTP resent to user: {}", email);
+
+            Map<String, Object> responseData = new HashMap<>();
+            responseData.put("validForMinutes", 5);
+            responseData.put("otpType", "password_reset");
+            responseData.put("email", email);
+            responseData.put("expiresAt", newOtpSession.expiresAt().toString());
+            responseData.put("cooldownSeconds", 30);
+            responseData.put("otpSessionId", newOtpSession.sessionId());
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("message", "Password reset OTP resent successfully to registered email.");
+            response.put("data", responseData);
+            response.put("timestamp", LocalDateTime.now());
+            return ResponseEntity.ok(response);
+
+        } else {
+            // Forward to admin service for admin accounts
+            try {
+                Map<String, Object> adminRequest = new HashMap<>();
+                adminRequest.put("otpSessionId", otpSessionId);
+
+                String adminUrl = adminServiceUrl + "/api/v1/admin/password/otp/resend";
+                ResponseEntity<Map> adminResponse = restTemplate.postForEntity(adminUrl, adminRequest, Map.class);
+
+                if (adminResponse.getStatusCode() == HttpStatus.OK && adminResponse.getBody() != null) {
+                    return ResponseEntity.ok(adminResponse.getBody());
+                } else {
+                    Map<String, Object> response = new HashMap<>();
+                    response.put("success", false);
+                    response.put("message", "Failed to resend OTP");
+                    response.put("timestamp", LocalDateTime.now());
+                    return ResponseEntity.status(adminResponse.getStatusCode()).body(response);
+                }
+            } catch (Exception e) {
+                log.error("Admin password OTP resend failed for email: {}", email, e);
+                Map<String, Object> response = new HashMap<>();
+                response.put("success", false);
+                response.put("message", "Failed to resend OTP. Please try again.");
+                response.put("timestamp", LocalDateTime.now());
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+            }
+        }
+    }
 
     private String generateOTP() {
 
@@ -2933,6 +3247,168 @@ public class UnifiedAuthenticationService {
 
 
 
+    }
+
+    public ResponseEntity<Map<String, Object>> resendOtpCommon(ResendOtpRequest request) {
+        String otpSessionId = request.getOtpSessionId();
+
+        if (otpSessionId == null || otpSessionId.isBlank()) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", "otpSessionId is required");
+            response.put("timestamp", LocalDateTime.now());
+            return ResponseEntity.badRequest().body(response);
+        }
+
+        // Resolve session info (email, otpType, accountType) from Redis
+        OtpService.SessionInfo sessionInfo = otpService.resolveSessionInfo(otpSessionId)
+                .orElse(null);
+
+        if (sessionInfo == null) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", "Invalid or expired OTP session");
+            response.put("timestamp", LocalDateTime.now());
+            return ResponseEntity.badRequest().body(response);
+        }
+
+        String email = sessionInfo.email();
+        String otpType = sessionInfo.otpType();
+        String accountType = sessionInfo.accountType();
+
+        log.info("Common OTP resend - email: {}, otpType: {}, accountType: {}", email, otpType, accountType);
+
+        // Handle based on account type and OTP type
+        if ("USER".equals(accountType)) {
+            return handleUserOtpResend(otpSessionId, email, otpType);
+        } else if ("ADMIN".equals(accountType)) {
+            return handleAdminOtpResend(otpSessionId, email, otpType);
+        } else {
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", "Unknown account type");
+            response.put("timestamp", LocalDateTime.now());
+            return ResponseEntity.badRequest().body(response);
+        }
+    }
+
+    private ResponseEntity<Map<String, Object>> handleUserOtpResend(String otpSessionId, String email, String otpType) {
+        // Check if user exists
+        Optional<User> userOptional = userRepository.findByEmail(email);
+        if (userOptional.isEmpty()) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", "User not found");
+            response.put("timestamp", LocalDateTime.now());
+            return ResponseEntity.badRequest().body(response);
+        }
+
+        User user = userOptional.get();
+
+        // Validate account status based on OTP type
+        if ("registration".equals(otpType)) {
+            if (user.getStatus() != User.Status.PENDING_VERIFICATION) {
+                Map<String, Object> response = new HashMap<>();
+                response.put("success", false);
+                response.put("message", "Email is already verified");
+                response.put("timestamp", LocalDateTime.now());
+                return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
+            }
+        }
+
+        // Check existing cooldown
+        long cooldown = otpService.getCooldownSeconds(email, otpType);
+        if (cooldown > 0) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", "Please wait " + cooldown + " seconds before requesting a new OTP.");
+            response.put("timestamp", LocalDateTime.now());
+            return ResponseEntity.badRequest().body(response);
+        }
+
+        // Generate new OTP
+        String newOtp = generateOTP();
+
+        // Send email FIRST
+        try {
+            if ("login".equalsIgnoreCase(otpType)) {
+                emailService.sendLoginOtp(email, newOtp);
+            } else if ("password_reset".equalsIgnoreCase(otpType)) {
+                emailService.sendPasswordResetOtp(email, newOtp);
+            } else {
+                emailService.sendOtpEmail(email, newOtp);
+            }
+        } catch (Exception ex) {
+            log.error("Failed to resend OTP email to: {}", email, ex);
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", "Unable to send OTP email right now. Please try again shortly.");
+            response.put("timestamp", LocalDateTime.now());
+            return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(response);
+        }
+
+        // Email succeeded: create new session, delete old session, apply cooldown
+        OtpService.OtpSession newOtpSession = otpService.createSession(email, otpType, newOtp, 5, 5);
+        otpService.deleteSession(otpSessionId);
+        otpService.markCooldown(email, otpType, 30);
+
+        log.info("{} OTP resent to user: {}", otpType, email);
+
+        Map<String, Object> responseData = new HashMap<>();
+        responseData.put("validForMinutes", 5);
+        responseData.put("otpType", otpType);
+        responseData.put("email", email);
+        responseData.put("expiresAt", newOtpSession.expiresAt().toString());
+        responseData.put("cooldownSeconds", 30);
+        responseData.put("otpSessionId", newOtpSession.sessionId());
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("success", true);
+        response.put("message", otpType.substring(0, 1).toUpperCase() + otpType.substring(1).replace("_", " ") + " OTP resent successfully to registered email.");
+        response.put("data", responseData);
+        response.put("timestamp", LocalDateTime.now());
+        return ResponseEntity.ok(response);
+    }
+
+    private ResponseEntity<Map<String, Object>> handleAdminOtpResend(String otpSessionId, String email, String otpType) {
+        // Forward to admin service
+        try {
+            Map<String, Object> adminRequest = new HashMap<>();
+            adminRequest.put("otpSessionId", otpSessionId);
+
+            String adminEndpoint;
+            if ("login".equals(otpType)) {
+                adminEndpoint = "/api/v1/admin/login/otp/resend";
+            } else if ("password_reset".equals(otpType)) {
+                adminEndpoint = "/api/v1/admin/password/otp/resend";
+            } else {
+                Map<String, Object> response = new HashMap<>();
+                response.put("success", false);
+                response.put("message", "Unsupported OTP type for admin");
+                response.put("timestamp", LocalDateTime.now());
+                return ResponseEntity.badRequest().body(response);
+            }
+
+            String adminUrl = adminServiceUrl + adminEndpoint;
+            ResponseEntity<Map> adminResponse = restTemplate.postForEntity(adminUrl, adminRequest, Map.class);
+
+            if (adminResponse.getStatusCode() == HttpStatus.OK && adminResponse.getBody() != null) {
+                return ResponseEntity.ok(adminResponse.getBody());
+            } else {
+                Map<String, Object> response = new HashMap<>();
+                response.put("success", false);
+                response.put("message", "Failed to resend OTP");
+                response.put("timestamp", LocalDateTime.now());
+                return ResponseEntity.status(adminResponse.getStatusCode()).body(response);
+            }
+        } catch (Exception e) {
+            log.error("Admin OTP resend failed for email: {}", email, e);
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", "Failed to resend OTP. Please try again.");
+            response.put("timestamp", LocalDateTime.now());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+        }
     }
 
 
@@ -3118,7 +3594,25 @@ public class UnifiedAuthenticationService {
 
 
 
+
+    /**
+     * Determines if the login originated from a new device.
+     * Updates the user's lastDevice for future logins.
+     */
+    private boolean isNewDevice(com.user.register.entity.User user) {
+        String currentDevice = user.getDevice();
+        if (currentDevice == null) {
+            return false;
+        }
+        String previousDevice = user.getLastDevice();
+        boolean isNew = previousDevice == null || !previousDevice.equals(currentDevice);
+        if (isNew) {
+            user.setLastDevice(currentDevice);
+        }
+        return isNew;
+    }
 }
+
 
 
 

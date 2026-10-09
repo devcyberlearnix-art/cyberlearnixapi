@@ -26,15 +26,18 @@ public class Module {
     private String description;
 
     @Column(nullable = false)
+    @Builder.Default
     private String status = "ACTIVE"; // ACTIVE / INACTIVE
 
     @Column(name = "module_order")
     private Integer orderNumber; // Order of module in course
 
     @Column(name = "created_at")
+    @Builder.Default
     private LocalDateTime createdAt = LocalDateTime.now();
 
     @Column(name = "updated_at")
+    @Builder.Default
     private LocalDateTime updatedAt = LocalDateTime.now();
 
     @ManyToOne(fetch = FetchType.LAZY)

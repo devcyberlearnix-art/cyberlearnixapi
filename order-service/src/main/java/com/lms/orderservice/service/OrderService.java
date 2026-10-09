@@ -17,6 +17,8 @@ import com.lms.orderservice.repository.OrderRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.web.server.ResponseStatusException;
 
 
@@ -29,6 +31,8 @@ import java.util.Objects;
 
 @Service
 public class OrderService {
+
+    private static final Logger logger = LoggerFactory.getLogger(OrderService.class);
 
     private final CartClient cartClient;
     private final CouponClient couponClient;
@@ -64,22 +68,6 @@ public class OrderService {
         try {
             ApiResponse<CartResponse> cartApi = cartClient.getCart(userId);
 
-            System.out.println("========== CART DEBUG ==========");
-            System.out.println("UserId = " + userId);
-            System.out.println("Cart API = " + cartApi);
-
-            if (cartApi != null) {
-                System.out.println("Success = " + cartApi.isSuccess());
-                System.out.println("Message = " + cartApi.getMessage());
-
-                if (cartApi.getData() != null) {
-                    System.out.println("Items = " + cartApi.getData().getItems());
-                    System.out.println("Total = " + cartApi.getData().getTotalCartPrice());
-                }
-            }
-
-            System.out.println("================================");
-
             if (cartApi != null && cartApi.isSuccess() && cartApi.getData() != null) {
                 CartResponse data = cartApi.getData();
 
@@ -91,8 +79,11 @@ public class OrderService {
             }
 
         } catch (Exception e) {
-            e.printStackTrace();
-            throw e;
+            logger.warn("Cart service unavailable for userId {}: {}", userId, e.getMessage());
+            if (request.getCourseIds() == null || request.getCourseIds().isEmpty()) {
+                throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE,
+                        "Cart service is unavailable and no courseIds were provided in request: " + e.getMessage(), e);
+            }
         }
 
         // 2) Determine which courseIds to persist as order items
@@ -108,11 +99,18 @@ public class OrderService {
                     .toList();
         }
 
-        validateCourseIds(courseIds);
+        double coursePricesTotal = validateAndGetCoursesPrice(courseIds);
 
         // 3) Apply coupon (optional) per course item using coupon-service validate API
         String couponCode = request.getCouponCode();
-        double finalTotal = cartTotal != null ? cartTotal : 0.0;
+        Double requestedTotal = request.getTotalAmount();
+        double baseTotal;
+        if (requestedTotal != null && requestedTotal > 0.0) {
+            baseTotal = requestedTotal;
+        } else {
+            baseTotal = (cartTotal != null && cartTotal > 0.0) ? cartTotal : coursePricesTotal;
+        }
+        double finalTotal = baseTotal;
         if (couponCode != null && !couponCode.isBlank() && cartItems != null && !cartItems.isEmpty()) {
             finalTotal = 0.0;
             for (CartItem item : cartItems) {
@@ -136,25 +134,8 @@ public class OrderService {
             }
         }
 
-        // 4. Create Order
-        Order order = new Order();
-        order.setUserId(userId);
-        order.setStatus(OrderStatus.PENDING.name());
-        order.setCreatedAt(LocalDateTime.now());
-        order.setTotalAmount(finalTotal);
-
-        Order savedOrder = orderRepository.save(order);
-
-        // 5. Save Order Items (courses)
-        for (Long courseId : courseIds) {
-            OrderItem item = new OrderItem();
-            item.setOrderId(savedOrder.getOrderId());
-            item.setCourseId(courseId);
-
-            orderItemRepository.save(item);
-        }
-
-        // 6) Redeem coupon (optional) per course
+        // 4) Redeem coupon (optional) per course BEFORE order persistence
+        // This ensures consistency: if redemption fails, order is not created with invalid discount
         if (couponCode != null && !couponCode.isBlank()) {
             for (Long courseId : courseIds) {
                 if (courseId == null)
@@ -164,47 +145,95 @@ public class OrderService {
                     redeemRequest.setCouponCode(couponCode);
                     redeemRequest.setCourseId(courseId.toString());
                     couponClient.redeem(redeemRequest);
-                } catch (Exception ignored) {
-                    // do not fail the order if coupon redemption fails; coupon-service can be
-                    // retried later
+                } catch (Exception e) {
+                    // Coupon redemption is required for consistency
+                    // If it fails, we must not create the order with a discount that wasn't applied
+                    throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
+                            "Failed to redeem coupon. Order cannot be created to ensure consistency.", e);
                 }
             }
         }
 
+        // 5. Create Order
+        Order order = new Order();
+        order.setUserId(userId);
+        order.setStatus(OrderStatus.PENDING.name());
+        order.setCreatedAt(LocalDateTime.now());
+        order.setTotalAmount(finalTotal);
+
+        Order savedOrder = orderRepository.save(order);
+
+        // 6. Save Order Items (courses)
+        for (Long courseId : courseIds) {
+            OrderItem item = new OrderItem();
+            item.setOrderId(savedOrder.getOrderId());
+            item.setCourseId(courseId);
+
+            orderItemRepository.save(item);
+        }
+        savedOrder.setCourseIds(courseIds);
+
         // 7) Clear the cart after successful order creation
+        // This happens after order persistence to avoid duplicate orders on retry
+        // Failure is logged but does not fail the order (order is already valid)
         try {
             cartClient.clearCart(userId);
-        } catch (Exception ignored) {
-            // cart clear can be retried; order is already persisted
+        } catch (Exception e) {
+            // Log the failure with context for manual intervention or retry
+            logger.error("Failed to clear cart for userId: {} after order creation. Order ID: {}. Error: {}",
+                    userId, savedOrder.getOrderId(), e.getMessage(), e);
+            // Cart clear is idempotent (deleteByUserId), so retry is safe
+            // Order is valid and persisted, so we return success to the client
         }
 
         return savedOrder;
     }
 
-    private void validateCourseIds(List<Long> courseIds) {
+    private double validateAndGetCoursesPrice(List<Long> courseIds) {
         if (courseIds == null || courseIds.isEmpty()) {
-            return;
+            return 0.0;
         }
 
+        double total = 0.0;
         for (Long courseId : courseIds) {
             if (courseId == null) {
                 continue;
             }
             try {
                 String url = courseServiceUrl + "/api/v1/courses/" + courseId;
-                var response = restTemplate.getForEntity(url, Object.class);
+                var response = restTemplate.getForEntity(url, java.util.Map.class);
                 if (!response.getStatusCode().is2xxSuccessful()) {
                     throw new RuntimeException("Course not found with id: " + courseId);
                 }
+                if (response.getBody() != null) {
+                    Object dataObj = response.getBody().get("data");
+                    if (dataObj instanceof java.util.Map<?, ?> dataMap) {
+                        Object priceObj = dataMap.get("price");
+                        if (priceObj instanceof Number num) {
+                            total += num.doubleValue();
+                        }
+                    }
+                }
             } catch (Exception ex) {
+                logger.warn("Could not validate or fetch course price for id: {}. Error: {}", courseId, ex.getMessage());
                 throw new RuntimeException("Course not found with id: " + courseId, ex);
             }
         }
+        return total;
+    }
+
+    private Order enrichOrder(Order order) {
+        if (order != null && order.getOrderId() != null) {
+            List<OrderItem> items = orderItemRepository.findByOrderId(order.getOrderId());
+            order.setCourseIds(items.stream().map(OrderItem::getCourseId).filter(Objects::nonNull).toList());
+        }
+        return order;
     }
 
     // ✅ Get Order
     public Order getOrder(String orderId) {
         return orderRepository.findById(orderId)
+                .map(this::enrichOrder)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Order not found"));
     }
 
@@ -218,16 +247,44 @@ public class OrderService {
 
     // ✅ Get Orders by User
     public List<Order> getOrdersByUser(String userId) {
-        return orderRepository.findByUserId(userId);
+        List<Order> orders = orderRepository.findByUserId(userId);
+        orders.forEach(this::enrichOrder);
+        return orders;
     }
 
     public List<Order> getAllOrders() {
-        return orderRepository.findAll();
+        List<Order> orders = orderRepository.findAll();
+        orders.forEach(this::enrichOrder);
+        return orders;
+    }
+
+    public java.util.Map<String, Object> getOrderAnalytics() {
+        List<Order> orders = orderRepository.findAll();
+        long totalOrders = orders.size();
+        long completedOrders = orders.stream().filter(o -> OrderStatus.COMPLETED.name().equalsIgnoreCase(o.getStatus())).count();
+        long pendingOrders = orders.stream().filter(o -> OrderStatus.PENDING.name().equalsIgnoreCase(o.getStatus())).count();
+        long cancelledOrders = orders.stream().filter(o -> OrderStatus.CANCELLED.name().equalsIgnoreCase(o.getStatus())).count();
+
+        return java.util.Map.of(
+            "totalOrders", totalOrders,
+            "completedOrders", completedOrders,
+            "pendingOrders", pendingOrders,
+            "cancelledOrders", cancelledOrders
+        );
     }
 
     // ✅ Cancel Order
     public String cancelOrder(String orderId, String userId) {
         Order order = getOrderForUser(orderId, userId);
+
+        transition(order, OrderStatus.CANCELLED);
+        orderRepository.save(order);
+
+        return "Order Cancelled";
+    }
+
+    public String cancelOrderAsAdmin(String orderId) {
+        Order order = getOrder(orderId);
 
         transition(order, OrderStatus.CANCELLED);
         orderRepository.save(order);
@@ -265,17 +322,26 @@ public class OrderService {
         }
     }
 
-    public String refundOrder(String orderId, String userId) {
+    public Order refundOrder(String orderId, String userId) {
         Order order = getOrderForUser(orderId, userId);
 
         if (OrderStatus.REFUNDED.name().equals(order.getStatus())) {
-            return "Order is already refunded";
+            return order;
         }
 
         transition(order, OrderStatus.REFUNDED);
-        orderRepository.save(order);
+        return enrichOrder(orderRepository.save(order));
+    }
 
-        return "Refund processed";
+    public Order refundOrderAsAdmin(String orderId) {
+        Order order = getOrder(orderId);
+
+        if (OrderStatus.REFUNDED.name().equals(order.getStatus())) {
+            return order;
+        }
+
+        transition(order, OrderStatus.REFUNDED);
+        return enrichOrder(orderRepository.save(order));
     }
 
     private void transition(Order order, OrderStatus target) {
@@ -291,10 +357,15 @@ public class OrderService {
             case PENDING -> target == OrderStatus.PAID
                     || target == OrderStatus.COMPLETED
                     || target == OrderStatus.CANCELLED
-                    || target == OrderStatus.FAILED;
-            case PAID -> target == OrderStatus.COMPLETED || target == OrderStatus.REFUNDED;
+                    || target == OrderStatus.FAILED
+                    || target == OrderStatus.REFUNDED;
+            case PAID -> target == OrderStatus.COMPLETED
+                    || target == OrderStatus.REFUNDED
+                    || target == OrderStatus.CANCELLED;
             case COMPLETED -> target == OrderStatus.REFUNDED;
-            case FAILED, CANCELLED, REFUNDED -> false;
+            case CANCELLED -> target == OrderStatus.REFUNDED;
+            case FAILED -> target == OrderStatus.REFUNDED;
+            case REFUNDED -> false;
         };
         if (!allowed) {
             throw new ResponseStatusException(HttpStatus.CONFLICT,

@@ -8,15 +8,17 @@ public class EnrollmentInfo {
     private UUID studentId;
     private String category;
     private String status;
+    private String activeTime;
 
     public EnrollmentInfo() {}
 
-    public EnrollmentInfo(Long courseId, String courseName, UUID studentId, String category, String status) {
+    public EnrollmentInfo(Long courseId, String courseName, UUID studentId, String category, String status, String activeTime) {
         this.courseId = courseId;
         this.courseName = courseName;
         this.studentId = studentId;
         this.category = category;
         this.status = status;
+        this.activeTime = activeTime;
     }
 
     public Long getCourseId() {
@@ -57,5 +59,13 @@ public class EnrollmentInfo {
 
     public void setStatus(String status) {
         this.status = status;
+    }
+
+    public String getActiveTime() {
+        return activeTime;
+    }
+
+    public void setActiveTime(String activeTime) {
+        this.activeTime = activeTime;
     }
 }

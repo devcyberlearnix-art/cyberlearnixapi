@@ -32,6 +32,7 @@ public class Resource {
     private Long fileSize;
 
     @Column(name = "created_at")
+    @Builder.Default
     private LocalDateTime createdAt = LocalDateTime.now();
 
     // ✅ FIX: Add relation to Content

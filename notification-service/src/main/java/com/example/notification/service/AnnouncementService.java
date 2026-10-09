@@ -1,10 +1,12 @@
 package com.example.notification.service;
+import com.example.notification.client.CourseClient;
 import com.example.notification.dto.AnnouncementResponse;
 import com.example.notification.dto.CreateAnnouncementRequest;
 import com.example.notification.dto.DetailedAnnouncementResponse;
 import com.example.notification.entity.Announcement;
 import com.example.notification.repository.AnnouncementRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
@@ -15,11 +17,13 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import java.time.ZoneId;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AnnouncementService {
 
     private final AnnouncementRepository announcementRepository;
+    private final CourseClient courseClient;
 
     public AnnouncementResponse createAnnouncement(CreateAnnouncementRequest request) {
 
@@ -206,11 +210,26 @@ public class AnnouncementService {
     }
 
     // =========================================
-    // ⚠️ YOU MUST IMPLEMENT THIS
+    // Get enrolled students for a course
     // =========================================
     private List<UUID> getAllUsersOfCourse(Long courseId) {
-        // 🔥 Call user-service or DB
-        return Collections.emptyList(); // placeholder
+        if (courseId == null) {
+            log.warn("Course ID is null, returning empty list");
+            return Collections.emptyList();
+        }
+
+        try {
+            List<UUID> enrolledStudents = courseClient.getEnrolledStudentsByCourseId(courseId);
+            if (enrolledStudents == null) {
+                log.warn("Course service returned null for courseId={}", courseId);
+                return Collections.emptyList();
+            }
+            log.info("Retrieved {} enrolled students for courseId={}", enrolledStudents.size(), courseId);
+            return enrolledStudents;
+        } catch (Exception ex) {
+            log.error("Failed to retrieve enrolled students for courseId={}: {}", courseId, ex.getMessage());
+            return Collections.emptyList();
+        }
     }
 
 

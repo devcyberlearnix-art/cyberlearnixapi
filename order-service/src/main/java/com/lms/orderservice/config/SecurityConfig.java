@@ -12,6 +12,9 @@ import org.springframework.http.HttpMethod;
 
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 
+import java.util.Arrays;
+import java.util.List;
+
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
@@ -20,6 +23,7 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtAuthenticationFilter jwtAuthFilter) throws Exception {
 
         http
+                .cors(cors -> cors.disable()) // Disable CORS - handled by API Gateway
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .exceptionHandling(errors -> errors
@@ -38,12 +42,12 @@ public class SecurityConfig {
                                 "/error"
                         ).permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/orders/user/*")
-                        .hasAnyRole("MAIN_ADMIN", "SUB_ADMIN")
+                        .hasAnyRole("MAIN_ADMIN", "SUB_ADMIN", "ADMIN")
                         .requestMatchers(HttpMethod.GET, "/api/v1/orders/admin")
-                        .hasAnyRole("MAIN_ADMIN", "SUB_ADMIN")
+                        .hasAnyRole("MAIN_ADMIN", "SUB_ADMIN", "ADMIN")
                         .requestMatchers(HttpMethod.PUT, "/api/v1/orders/*/status")
-                        .hasAnyRole("MAIN_ADMIN", "SUB_ADMIN")
-                        .requestMatchers("/api/v1/orders/**").hasRole("STUDENT")
+                        .hasAnyRole("MAIN_ADMIN", "SUB_ADMIN", "ADMIN")
+                        .requestMatchers("/api/v1/orders/**").hasAnyRole("STUDENT", "MAIN_ADMIN", "SUB_ADMIN", "ADMIN")
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);

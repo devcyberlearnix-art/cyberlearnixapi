@@ -10,6 +10,7 @@ public class OrderDto {
 
     private String orderId;
     private String userId;
+    private java.util.List<Long> courseIds;
     private Double totalAmount;
     private String status;
     private LocalDateTime createdAt;

@@ -25,9 +25,9 @@ repositories {
 }
 
 ext {
-    set('springCloudVersion', '2023.0.3')
-    set('jjwtVersion', '0.11.5')
-    set('springdocVersion', '2.6.0')
+    set('springCloudVersion', springCloudVersion)
+    set('jjwtVersion', jjwtVersion)
+    set('springdocVersion', springdocVersion)
 }
 
 dependencies {
@@ -48,10 +48,14 @@ dependencies {
 
     implementation "org.springdoc:springdoc-openapi-starter-webmvc-ui:${springdocVersion}"
 
-    compileOnly 'org.projectlombok:lombok'
-    annotationProcessor 'org.projectlombok:lombok'
+    compileOnly "org.projectlombok:lombok:${lombokVersion}"
+    annotationProcessor "org.projectlombok:lombok:${lombokVersion}"
 
-    runtimeOnly 'org.postgresql:postgresql'
+    runtimeOnly "org.postgresql:postgresql:${postgresqlVersion}"
+
+    // H2 in-memory DB for testing and localtest profile
+    runtimeOnly "com.h2database:h2:${h2Version}"
+    testRuntimeOnly "com.h2database:h2:${h2Version}"
 
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.springframework.security:spring-security-test'

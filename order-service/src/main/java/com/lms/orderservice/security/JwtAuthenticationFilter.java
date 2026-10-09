@@ -1,7 +1,6 @@
 package com.lms.orderservice.security;
 
 
-
 import jakarta.servlet.FilterChain;
 
 import jakarta.servlet.ServletException;
@@ -23,13 +22,11 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 
-
 import java.io.IOException;
 
 import java.util.Collections;
 
 import java.util.List;
-
 
 
 import lombok.extern.slf4j.Slf4j;
@@ -71,10 +68,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter  {
             if (userId != null &&
                     SecurityContextHolder.getContext().getAuthentication() == null) {
 
-                List<SimpleGrantedAuthority> authorities =
-                        Collections.singletonList(
-                                new SimpleGrantedAuthority(
-                                        "ROLE_" + toSpringSecurityRole(role)));
+                List<SimpleGrantedAuthority> authorities = new java.util.ArrayList<>();
+                String secRole = toSpringSecurityRole(role);
+                authorities.add(new SimpleGrantedAuthority("ROLE_" + secRole));
+                if (role != null && role.toUpperCase().contains("ADMIN")) {
+                    authorities.add(new SimpleGrantedAuthority("ROLE_ADMIN"));
+                    authorities.add(new SimpleGrantedAuthority("ROLE_MAIN_ADMIN"));
+                    authorities.add(new SimpleGrantedAuthority("ROLE_SUB_ADMIN"));
+                }
 
                 UsernamePasswordAuthenticationToken authentication =
                         new UsernamePasswordAuthenticationToken(

@@ -30,3 +30,17 @@ Thumbs.db
 
 # Local test helper scripts
 seed_test_user.sql
+
+# Local test credentials
+test_login.json
+test_login2.json
+test_login3.json
+
+# Environment variables and secrets
+.env
+.env.local
+.env.*.local
+run-with-credentials.bat
+
+# Local test configuration files with credentials
+**/application-localtest.properties

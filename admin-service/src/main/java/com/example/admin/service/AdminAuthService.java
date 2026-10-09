@@ -43,16 +43,16 @@ public class AdminAuthService {
 
         String email = request.getEmail().trim().toLowerCase();
         log.debug("Admin login lookup email={}", email);
-        
+
         Optional<Admin> adminOptional = adminRepository.findByEmail(email);
         log.debug("Admin found={}", adminOptional.isPresent());
-        
+
         Admin admin = adminOptional
                 .orElseThrow(() ->
                         new BadCredentialsException("Invalid email or password"));
 
-        log.debug("Admin record - id={}, email={}, adminType={}, approvalStatus={}, verified={}", 
-                admin.getId(), admin.getEmail(), admin.getAdminType(), 
+        log.debug("Admin record - id={}, email={}, adminType={}, approvalStatus={}, verified={}",
+                admin.getId(), admin.getEmail(), admin.getAdminType(),
                 admin.getApprovalStatus(), admin.isVerified());
 
         boolean passwordMatches = passwordEncoder.matches(request.getPassword(), admin.getPassword());
@@ -76,7 +76,7 @@ public class AdminAuthService {
         }
 
         if (admin.getAdminType() == com.example.admin.entity.AdminType.SUB_ADMIN) {
-            log.debug("SUB_ADMIN check - approvalStatus={}, verified={}", 
+            log.debug("SUB_ADMIN check - approvalStatus={}, verified={}",
                     admin.getApprovalStatus(), admin.isVerified());
             if (admin.getApprovalStatus() != com.example.admin.entity.AdminApprovalStatus.APPROVED) {
                 throw new BadCredentialsException("Sub Admin account is not approved yet");
@@ -134,7 +134,7 @@ public class AdminAuthService {
                                             String otp,
                                             HttpServletRequest httpRequest) {
         // Admin login should now go through User Service
-        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, 
+        throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                 "Admin login should be performed through User Service at /api/v1/auth/login");
     }
 
@@ -143,28 +143,66 @@ public class AdminAuthService {
                                               HttpServletRequest httpRequest) {
 
         Admin admin = adminRepository.findById(adminId)
-                .orElseThrow(() -> new RuntimeException("Admin not found"));
+                .orElseThrow(() -> new org.springframework.web.server.ResponseStatusException(
+                        HttpStatus.NOT_FOUND, "Admin not found with ID: " + adminId));
 
-        if (request.getEmail() != null) admin.setEmail(request.getEmail());
-        if (request.getPassword() != null) admin.setPassword(passwordEncoder.encode(request.getPassword()));
+        java.util.List<String> updatedFields = new java.util.ArrayList<>();
 
-        adminRepository.save(admin);
+        if (request.getFirstName() != null && !request.getFirstName().trim().isEmpty()) {
+            admin.setFirstName(sanitizeInput(request.getFirstName()));
+            updatedFields.add("firstName");
+        }
 
-        String ipAddress = httpRequest.getRemoteAddr();
-        String device = httpRequest.getHeader("User-Agent");
-        if (device == null) device = "Unknown";
+        if (request.getLastName() != null && !request.getLastName().trim().isEmpty()) {
+            admin.setLastName(sanitizeInput(request.getLastName()));
+            updatedFields.add("lastName");
+        }
 
-        auditService.logAction(adminId, "ADMIN_PROFILE_UPDATED");
+        if (request.getProfilePhoto() != null) {
+            admin.setProfilePhoto(request.getProfilePhoto().trim());
+            updatedFields.add("profilePhoto");
+        }
+
+        if (request.getPreferredLanguage() != null && !request.getPreferredLanguage().trim().isEmpty()) {
+            admin.setPreferredLanguage(request.getPreferredLanguage().trim().toUpperCase());
+            updatedFields.add("preferredLanguage");
+        }
+
+        if (request.getCity() != null) {
+            admin.setCity(sanitizeInput(request.getCity()));
+            updatedFields.add("city");
+        }
+
+        if (request.getState() != null) {
+            admin.setState(sanitizeInput(request.getState()));
+            updatedFields.add("state");
+        }
+
+        if (request.getCountry() != null) {
+            admin.setCountry(sanitizeInput(request.getCountry()));
+            updatedFields.add("country");
+        }
+
+        if (updatedFields.isEmpty()) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    HttpStatus.BAD_REQUEST, "No valid fields provided for update");
+        }
+
+        Admin savedAdmin = adminRepository.save(admin);
+
+        String ipAddress = extractClientIp(httpRequest);
+        String device = httpRequest != null && httpRequest.getHeader("User-Agent") != null
+                ? httpRequest.getHeader("User-Agent") : "Unknown Device";
+
+        auditService.logAction(adminId, "ADMIN_PROFILE_UPDATED: " + String.join(", ", updatedFields)
+                + " from IP: " + ipAddress + " Device: " + device);
+
         return AdminProfileResponse.builder()
                 .success(true)
                 .message("Admin profile updated successfully")
                 .timestamp(LocalDateTime.now().toString())
                 .data(AdminProfileResponse.DataInfo.builder()
-                        .admin(AdminProfileResponse.AdminInfo.builder()
-                                .id(admin.getId())
-                                .email(admin.getEmail())
-                                .role(admin.getRole())
-                                .build())
+                        .admin(mapToAdminInfo(savedAdmin))
                         .ipAddress(ipAddress)
                         .device(device)
                         .build())
@@ -175,34 +213,59 @@ public class AdminAuthService {
                                            HttpServletRequest httpRequest) {
 
         Admin admin = adminRepository.findById(adminId)
-                .orElseThrow(() -> new RuntimeException("Admin not found"));
+                .orElseThrow(() -> new org.springframework.web.server.ResponseStatusException(
+                        HttpStatus.NOT_FOUND, "Admin not found with ID: " + adminId));
 
-        String ipAddress = httpRequest.getRemoteAddr();
-
-        if (ipAddress.equals("0:0:0:0:0:0:0:1")) {
-            ipAddress = "127.0.0.1";
-        }
-
-        String device = httpRequest.getHeader("User-Agent");
-
-        if (device == null) {
-            device = "Unknown Device";
-        }
+        String ipAddress = extractClientIp(httpRequest);
+        String device = httpRequest != null && httpRequest.getHeader("User-Agent") != null
+                ? httpRequest.getHeader("User-Agent") : "Unknown Device";
 
         return AdminProfileResponse.builder()
                 .success(true)
                 .message("Admin profile fetched successfully")
                 .timestamp(LocalDateTime.now().toString())
                 .data(AdminProfileResponse.DataInfo.builder()
-                        .admin(AdminProfileResponse.AdminInfo.builder()
-                                .id(admin.getId())
-                                .email(admin.getEmail())
-                                .role(admin.getRole())
-                                .build())
+                        .admin(mapToAdminInfo(admin))
                         .ipAddress(ipAddress)
                         .device(device)
                         .build())
                 .build();
+    }
+
+    private AdminProfileResponse.AdminInfo mapToAdminInfo(Admin admin) {
+        return AdminProfileResponse.AdminInfo.builder()
+                .id(admin.getId())
+                .email(admin.getEmail())
+                .role(admin.getRole())
+                .adminType(admin.getAdminType() != null ? admin.getAdminType().name() : null)
+                .firstName(admin.getFirstName())
+                .lastName(admin.getLastName())
+                .profilePhoto(admin.getProfilePhoto())
+                .preferredLanguage(admin.getPreferredLanguage())
+                .city(admin.getCity())
+                .state(admin.getState())
+                .country(admin.getCountry())
+                .updatedAt(admin.getUpdatedAt() != null ? admin.getUpdatedAt().toString() : null)
+                .build();
+    }
+
+    private String sanitizeInput(String input) {
+        if (input == null) return null;
+        return input.trim().replaceAll("<[^>]*>", "");
+    }
+
+    private String extractClientIp(HttpServletRequest httpRequest) {
+        if (httpRequest == null) return "127.0.0.1";
+        String ip = httpRequest.getHeader("X-Forwarded-For");
+        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
+            ip = httpRequest.getRemoteAddr();
+        } else {
+            ip = ip.split(",")[0].trim();
+        }
+        if ("0:0:0:0:0:0:0:1".equals(ip)) {
+            ip = "127.0.0.1";
+        }
+        return ip;
     }
 
     public LogoutResponse logout(UUID adminId, HttpServletRequest httpRequest) {
@@ -601,7 +664,7 @@ public class AdminAuthService {
         otpService.markCooldown(email, "password_reset", 30);
 
         try {
-            emailService.sendOtp(admin.getEmail(), otp);
+            emailService.sendPasswordResetOtp(admin.getEmail(), otp);
         } catch (RuntimeException ex) {
             throw new ResponseStatusException(
                     HttpStatus.SERVICE_UNAVAILABLE,
@@ -913,6 +976,96 @@ public class AdminAuthService {
                 .build();
     }
 
+    public LoginOtpResponse resendLoginOtp(ResendOtpRequest request) {
+        String otpSessionId = request.getOtpSessionId();
+
+        if (otpSessionId == null || otpSessionId.isBlank()) {
+            return LoginOtpResponse.builder()
+                    .success(false)
+                    .message("otpSessionId is required")
+                    .timestamp(LocalDateTime.now().toString())
+                    .build();
+        }
+
+        // Resolve email from S1 using OtpService
+        Optional<String> emailOptional = otpService.resolveSessionEmail(otpSessionId, "login");
+        if (emailOptional.isEmpty()) {
+            return LoginOtpResponse.builder()
+                    .success(false)
+                    .message("Invalid or expired OTP session")
+                    .timestamp(LocalDateTime.now().toString())
+                    .build();
+        }
+
+        String email = emailOptional.get();
+
+        // Find the admin using resolved email
+        Optional<Admin> adminOptional = adminRepository.findByEmail(email);
+        if (adminOptional.isEmpty()) {
+            return LoginOtpResponse.builder()
+                    .success(false)
+                    .message("Admin with this email does not exist")
+                    .timestamp(LocalDateTime.now().toString())
+                    .build();
+        }
+
+        Admin admin = adminOptional.get();
+
+        // Validate admin status/verification
+        if (!admin.isVerified()) {
+            return LoginOtpResponse.builder()
+                    .success(false)
+                    .message("Email is not verified. Complete registration first.")
+                    .timestamp(LocalDateTime.now().toString())
+                    .build();
+        }
+
+        // Check existing cooldown
+        long cooldown = otpService.getCooldownSeconds(email, "login");
+        if (cooldown > 0) {
+            return LoginOtpResponse.builder()
+                    .success(false)
+                    .message("Please wait " + cooldown + " seconds before requesting a new OTP.")
+                    .timestamp(LocalDateTime.now().toString())
+                    .build();
+        }
+
+        // Generate new OTP
+        String newOtp = generateOtp();
+
+        // Send email FIRST
+        try {
+            emailService.sendOtp(admin.getEmail(), newOtp);
+        } catch (RuntimeException ex) {
+            // Email failed: keep S1, do not create S2, do not delete S1, do not apply new cooldown
+            throw new ResponseStatusException(
+                    HttpStatus.SERVICE_UNAVAILABLE,
+                    "Unable to send OTP email right now. Please try again shortly."
+            );
+        }
+
+        // Email succeeded: create S2, delete S1, apply cooldown
+        OtpService.OtpSession newOtpSession = otpService.createSession(email, "login", newOtp, 5, 5);
+        otpService.deleteSession(otpSessionId); // Delete S1
+        otpService.markCooldown(email, "login", 30);
+
+        log.info("Login OTP resent to admin: {}", admin.getEmail());
+
+        return LoginOtpResponse.builder()
+                .success(true)
+                .message("Login OTP resent successfully to registered email.")
+                .data(LoginOtpResponse.OtpData.builder()
+                        .validForMinutes(5)
+                        .otpType("login")
+                        .email(encryptionService.encrypt(admin.getEmail()))
+                        .expiresAt(newOtpSession.expiresAt().toString())
+                        .cooldownSeconds(30)
+                        .otpSessionId(newOtpSession.sessionId())
+                        .build())
+                .timestamp(LocalDateTime.now().toString())
+                .build();
+    }
+
     public ForgotPasswordResponse sendResetOtp(String email) {
         Optional<Admin> adminOptional = adminRepository.findByEmail(email);
 
@@ -951,7 +1104,7 @@ public class AdminAuthService {
         adminRepository.save(admin);
 
         // Send OTP via email
-        emailService.sendOtp(admin.getEmail(), otp);
+        emailService.sendPasswordResetOtp(admin.getEmail(), otp);
 
         log.info("Password reset OTP sent to admin: {}", admin.getEmail());
 
@@ -964,6 +1117,96 @@ public class AdminAuthService {
                         .validForMinutes(5)
                         .expiresAt(expiry.toString())
                         .cooldownSeconds(30)
+                        .build())
+                .timestamp(LocalDateTime.now().toString())
+                .build();
+    }
+
+    public ForgotPasswordResponse resendPasswordOtp(ResendOtpRequest request) {
+        String otpSessionId = request.getOtpSessionId();
+
+        if (otpSessionId == null || otpSessionId.isBlank()) {
+            return ForgotPasswordResponse.builder()
+                    .success(false)
+                    .message("otpSessionId is required")
+                    .timestamp(LocalDateTime.now().toString())
+                    .build();
+        }
+
+        // Resolve email from S1 using OtpService
+        Optional<String> emailOptional = otpService.resolveSessionEmail(otpSessionId, "password_reset");
+        if (emailOptional.isEmpty()) {
+            return ForgotPasswordResponse.builder()
+                    .success(false)
+                    .message("Invalid or expired OTP session")
+                    .timestamp(LocalDateTime.now().toString())
+                    .build();
+        }
+
+        String email = emailOptional.get();
+
+        // Find the admin using resolved email
+        Optional<Admin> adminOptional = adminRepository.findByEmail(email);
+        if (adminOptional.isEmpty()) {
+            return ForgotPasswordResponse.builder()
+                    .success(false)
+                    .message("Admin with this email does not exist")
+                    .timestamp(LocalDateTime.now().toString())
+                    .build();
+        }
+
+        Admin admin = adminOptional.get();
+
+        // Validate admin status/verification
+        if (!admin.isVerified()) {
+            return ForgotPasswordResponse.builder()
+                    .success(false)
+                    .message("Email is not verified. Complete registration first.")
+                    .timestamp(LocalDateTime.now().toString())
+                    .build();
+        }
+
+        // Check existing cooldown
+        long cooldown = otpService.getCooldownSeconds(email, "password_reset");
+        if (cooldown > 0) {
+            return ForgotPasswordResponse.builder()
+                    .success(false)
+                    .message("Please wait " + cooldown + " seconds before requesting a new OTP.")
+                    .timestamp(LocalDateTime.now().toString())
+                    .build();
+        }
+
+        // Generate new OTP
+        String newOtp = generateOtp();
+
+        // Send email FIRST
+        try {
+            emailService.sendPasswordResetOtp(admin.getEmail(), newOtp);
+        } catch (RuntimeException ex) {
+            // Email failed: keep S1, do not create S2, do not delete S1, do not apply new cooldown
+            throw new ResponseStatusException(
+                    HttpStatus.SERVICE_UNAVAILABLE,
+                    "Unable to send OTP email right now. Please try again shortly."
+            );
+        }
+
+        // Email succeeded: create S2, delete S1, apply cooldown
+        OtpService.OtpSession newOtpSession = otpService.createSession(email, "password_reset", newOtp, 5, 5);
+        otpService.deleteSession(otpSessionId); // Delete S1
+        otpService.markCooldown(email, "password_reset", 30);
+
+        log.info("Password reset OTP resent to admin: {}", admin.getEmail());
+
+        return ForgotPasswordResponse.builder()
+                .success(true)
+                .message("Password reset OTP resent successfully to registered email.")
+                .data(ForgotPasswordResponse.ForgotPasswordData.builder()
+                        .email(encryptionService.encrypt(admin.getEmail()))
+                        .otpType("password_reset")
+                        .validForMinutes(5)
+                        .expiresAt(newOtpSession.expiresAt().toString())
+                        .cooldownSeconds(30)
+                        .otpSessionId(newOtpSession.sessionId())
                         .build())
                 .timestamp(LocalDateTime.now().toString())
                 .build();

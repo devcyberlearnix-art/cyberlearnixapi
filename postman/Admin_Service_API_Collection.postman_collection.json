@@ -354,12 +354,12 @@
 						},
 						"method": "PUT",
 						"url": {
-							"raw": "{{baseUrl}}/api/v1/admin/instructors/applications/:userId/approve",
+							"raw": "{{baseUrl}}/api/v1/admin/instructors/applications/:applicationId/approve",
 							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "admin", "instructors", "applications", ":userId", "approve"],
+							"path": ["api", "v1", "admin", "instructors", "applications", ":applicationId", "approve"],
 							"variable": [
 								{
-									"key": "userId",
+									"key": "applicationId",
 									"value": "user-uuid-here"
 								}
 							]
@@ -382,12 +382,12 @@
 						},
 						"method": "PUT",
 						"url": {
-							"raw": "{{baseUrl}}/api/v1/admin/instructors/applications/:userId/reject",
+							"raw": "{{baseUrl}}/api/v1/admin/instructors/applications/:applicationId/reject",
 							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "admin", "instructors", "applications", ":userId", "reject"],
+							"path": ["api", "v1", "admin", "instructors", "applications", ":applicationId", "reject"],
 							"variable": [
 								{
-									"key": "userId",
+									"key": "applicationId",
 									"value": "user-uuid-here"
 								}
 							]

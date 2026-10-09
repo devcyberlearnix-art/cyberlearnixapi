@@ -66,6 +66,12 @@ public class PaymentController {
         return ResponseEntity.ok(paymentService.getAllPayments());
     }
 
+    // GET /payments/revenue - Revenue report
+    @GetMapping("/revenue")
+    public ResponseEntity<Map<String, Object>> getRevenueReport() {
+        return ResponseEntity.ok(paymentService.getRevenueReport());
+    }
+
     // 1. POST /payments/create
     @PostMapping("/create")
     public ResponseEntity<PaymentResponse> createPayment(@RequestBody PaymentRequest request) {

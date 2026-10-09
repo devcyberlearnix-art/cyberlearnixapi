@@ -3,6 +3,9 @@ package com.lms.courseservice.controller;
 import com.lms.courseservice.dto.ApiResponse;
 
 import com.lms.courseservice.dto.CourseInfo;
+import com.lms.courseservice.dto.CourseListResponse;
+import com.lms.courseservice.dto.CourseByIdResponse;
+import com.lms.courseservice.dto.CourseRequestDTO;
 import com.lms.courseservice.dto.DeleteCourseResponse;
 import com.lms.courseservice.dto.EnrollCourseResponse;
 import com.lms.courseservice.dto.EnrollmentInfo;
@@ -10,14 +13,20 @@ import com.lms.courseservice.dto.EnrolledStudentInfo;
 import com.lms.courseservice.dto.EnrolledStudentsResponse;
 
 import com.lms.courseservice.dto.FeaturedCourseResponse;
-
+import com.lms.courseservice.dto.TrendingCoursesResponse;
+import com.lms.courseservice.dto.TrendingResponseData;
 import com.lms.courseservice.entity.Course;
 import com.lms.courseservice.security.JwtUtil;
 import com.lms.courseservice.service.CourseService;
+import com.lms.courseservice.service.CourseDetailsService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import java.math.BigDecimal;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -26,25 +35,87 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/v1/courses")
 @RequiredArgsConstructor
+@Slf4j
 public class CourseController {
 
     private final CourseService courseService;
+    private final CourseDetailsService courseDetailsService;
     private final JwtUtil jwtUtil;
 
     /**
      * Create Course (Instructor/Admin only - enforced by SecurityConfig)
      */
     @PostMapping
-    public Course createCourse(@RequestBody Course course) {
-        return courseService.createCourse(course);
+    public ResponseEntity<ApiResponse<Course>> createCourse(@Valid @RequestBody CourseRequestDTO courseRequest) {
+        Course course = courseService.createCourseFromDTO(courseRequest);
+        return ResponseEntity.ok(
+            ApiResponse.<Course>builder()
+                .success(true)
+                .message("Course created successfully")
+                .data(course)
+                .timestamp(Instant.now().toString())
+                .build()
+        );
     }
 
     /**
      * Get All Courses (Public)
      */
     @GetMapping
-    public List<Course> getAllCourses() {
-        return courseService.getAllCourses();
+    @Transactional(readOnly = true)
+    public ResponseEntity<org.springframework.data.domain.Page<Course>> getAllCourses(
+            @RequestParam(required = true) Integer page,
+            @RequestParam(required = true) Integer size,
+            @RequestParam(required = false) String sortBy,
+            @RequestParam(required = false) String sortDir) {
+
+        if (page < 0) {
+            throw new IllegalArgumentException("Page number must be >= 0");
+        }
+        if (size <= 0) {
+            throw new IllegalArgumentException("Page size must be > 0");
+        }
+
+        String sortField = (sortBy != null && !sortBy.isEmpty()) ? sortBy : "id";
+        org.springframework.data.domain.Sort.Direction direction =
+                (sortDir != null && sortDir.equalsIgnoreCase("desc")) ?
+                org.springframework.data.domain.Sort.Direction.DESC :
+                org.springframework.data.domain.Sort.Direction.ASC;
+
+        return ResponseEntity.ok(courseService.getAllCourses(page, size, sortField, direction));
+    }
+
+    /**
+     * Get Course List with Filters (Public - Phase 1)
+     * Returns published courses with optional filtering
+     */
+    @GetMapping("/list")
+    public ResponseEntity<CourseListResponse> getCourseList(
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) String category,
+            @RequestParam(required = false) String level,
+            @RequestParam(required = false) String language,
+            @RequestParam(required = false) BigDecimal minPrice,
+            @RequestParam(required = false) BigDecimal maxPrice,
+            @RequestParam(required = false) Boolean premium,
+            @RequestParam(required = false) Boolean free,
+            @RequestParam(required = false) Boolean paid,
+            @RequestParam(required = false) String sort,
+            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false) Integer size) {
+        try {
+            CourseListResponse response = courseService.getCourseList(
+                search, category, level, language, minPrice, maxPrice, premium, free, paid, sort, page, size);
+            return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException e) {
+            CourseListResponse errorResponse = CourseListResponse.builder()
+                .success(false)
+                .message(e.getMessage())
+                .data(null)
+                .timestamp(java.time.Instant.now().toString())
+                .build();
+            return ResponseEntity.badRequest().body(errorResponse);
+        }
     }
 
     @GetMapping("/stats")
@@ -57,19 +128,69 @@ public class CourseController {
         return courseService.getFeaturedCourses(limit);
     }
 
+    /**
+     * Get Trending Courses (Public - No Authentication Required)
+     * Returns paginated trending courses sorted by calculated trending score
+     */
+    @GetMapping("/trending")
+    public ResponseEntity<TrendingCoursesResponse> getTrendingCourses(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) String category,
+            @RequestParam(required = false) String level) {
+        try {
+            TrendingCoursesResponse response = courseService.getTrendingCourses(page, size, category, level);
+            return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException e) {
+            TrendingCoursesResponse errorResponse = TrendingCoursesResponse.builder()
+                .success(false)
+                .message(e.getMessage())
+                .data(null)
+                .timestamp(java.time.Instant.now().toString())
+                .build();
+            return ResponseEntity.badRequest().body(errorResponse);
+        }
+    }
+
     @PostMapping("/{courseId}/impressions")
-    public void trackCourseImpression(
+    public ResponseEntity<ApiResponse<Void>> trackCourseImpression(
             @PathVariable Long courseId,
             @RequestParam(defaultValue = "HOME") String source) {
         courseService.trackImpression(courseId, source);
+        
+        return ResponseEntity.ok(
+            ApiResponse.<Void>builder()
+                .success(true)
+                .message("Course impression tracked successfully")
+                .timestamp(Instant.now().toString())
+                .build()
+        );
     }
 
     /**
      * Get Course by ID (Public)
      */
     @GetMapping("/{id}")
-    public Course getCourse(@PathVariable Long id) {
-        return courseService.getCourseById(id);
+    @Transactional(readOnly = true)
+    public CourseByIdResponse getCourse(
+            @PathVariable Long id,
+            @RequestHeader(value = "Authorization", required = false) String authorization) {
+        Course course = courseService.getCourseById(id);
+        UUID userId = null;
+        if (authorization != null && authorization.startsWith("Bearer ")) {
+            try {
+                userId = jwtUtil.extractUserId(authorization.substring(7));
+            } catch (Exception ignored) {
+                // Public course details remain available when an optional token is invalid.
+            }
+        }
+
+        try {
+            return CourseByIdResponse.from(course, courseDetailsService.getCourseDetails(id, userId));
+        } catch (RuntimeException exception) {
+            log.error("Failed to build course detail response for course {}", id, exception);
+            throw exception;
+        }
     }
 
     /**
@@ -154,16 +275,17 @@ public class CourseController {
     public EnrollCourseResponse enroll(@PathVariable Long courseId) {
         UUID userId = extractUserIdFromContext();
         courseService.enrollFreeCourse(courseId, userId);
-        
+
         Course course = courseService.getCourseById(courseId);
         EnrollmentInfo info = new EnrollmentInfo(
                 course.getId(),
                 course.getTitle(),
                 userId,
                 course.getCategory(),
-                "Enrolled"
+                "Enrolled",
+                java.time.LocalDateTime.now().toString()
         );
-        
+
         return new EnrollCourseResponse(true,
             "Student enrolled in the course successfully.",
             info);
