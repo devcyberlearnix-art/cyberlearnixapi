@@ -15,7 +15,7 @@ import lombok.Data;
         "profilePhoto", "city", "state", "country", "organization", "preferredLanguage",
         "skills", "fieldOfStudy", "highestQualification", "role", "status",
         "isInstructorApproved", "failedLoginAttempts",
-        "createdAt", "updatedAt", "lastLoginAt",
+        "createdAt", "updatedAt", "lastLogin",
         "loginDevice", "loginIp", "sessionId","Os","browser","useragent",
         "accessToken", "refreshToken", "expiresInSeconds"
 })
@@ -52,7 +52,7 @@ public class LoginResponse {
     private LocalDateTime updatedAt;
 
     // ✅ Session info
-    private LocalDateTime lastLoginAt;
+    private LocalDateTime lastLogin;
     private String loginDevice;
     private String loginIp;
     private String sessionId;

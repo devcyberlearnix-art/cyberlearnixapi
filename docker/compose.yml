@@ -113,11 +113,16 @@ services:
       JWT_AUDIENCE: ${JWT_AUDIENCE:-cyberlearnix-clients}
       DB_HOST: postgres
       DB_PORT: 5432
-      SPRING_MAIL_HOST: ${SMTP_HOST:-smtp.gmail.com}
-      SPRING_MAIL_PORT: ${SMTP_PORT:-587}
-      SPRING_MAIL_SMTP_AUTH: ${SMTP_AUTH:-true}
-      SPRING_MAIL_SMTP_STARTTLS: ${SMTP_STARTTLS:-true}
-      SPRING_MAIL_SMTP_STARTTLS_REQUIRED: ${SMTP_STARTTLS_REQUIRED:-true}
+      SPRING_MAIL_HOST: ${SMTP_HOST:-mailhog}
+      SPRING_MAIL_PORT: ${SMTP_PORT:-1025}
+      SPRING_MAIL_SMTP_AUTH: ${SMTP_AUTH:-false}
+      SPRING_MAIL_SMTP_STARTTLS: ${SMTP_STARTTLS:-false}
+      SPRING_MAIL_SMTP_STARTTLS_REQUIRED: ${SMTP_STARTTLS_REQUIRED:-false}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-dummy-client-id}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-dummy-client-secret}
+      GOOGLE_REFRESH_TOKEN: ${GOOGLE_REFRESH_TOKEN:-dummy-refresh-token}
+      GOOGLE_FOLDER_ID: ${GOOGLE_FOLDER_ID:-dummy-folder-id}
+      APP_OTP_LOG_VALUE: ${APP_OTP_LOG_VALUE:-false}
     depends_on:
       postgres:
         condition: service_healthy
@@ -151,6 +156,10 @@ services:
       REVIEW_SERVICE_URL: http://review-service:8089
       DB_HOST: postgres
       DB_PORT: 5432
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-dummy-client-id}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-dummy-client-secret}
+      GOOGLE_REFRESH_TOKEN: ${GOOGLE_REFRESH_TOKEN:-dummy-refresh-token}
+      GOOGLE_FOLDER_ID: ${GOOGLE_FOLDER_ID:-dummy-folder-id}
     depends_on:
       postgres:
         condition: service_healthy
@@ -226,6 +235,8 @@ services:
       JAVA_TOOL_OPTIONS: ${API_GATEWAY_JAVA_OPTS:--Xms128m -Xmx384m -XX:+UseG1GC -XX:+ExitOnOutOfMemoryError}
       SPRING_PROFILES_ACTIVE: production
       CORS_ALLOWED_ORIGINS: http://localhost:3000,http://localhost:3001,http://localhost:3002,http://localhost:5173,http://localhost:5174,http://127.0.0.1:3000,http://127.0.0.1:5173
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
       USER_SERVICE_URL: http://user-service:8091
       USERSERVICE_URL: http://user-service:8091
       ADMIN_SERVICE_URL: http://admin-service:8087
@@ -238,8 +249,6 @@ services:
       INSTRUCTOR_SERVICE_URL: http://instructor-service:8088
       REVIEWSERVICE_URL: http://review-service:8089
       NOTIFICATIONSERVICE_URL: http://notification-service:8093
-      SPRING_DATA_REDIS_HOST: redis
-      SPRING_DATA_REDIS_PORT: 6379
       JWT_SECRET: ${JWT_SECRET:-8c4e9d2f1a7b6c5d9e3f0a1b7c8d4e5f9a2b6c1d8e7f3a4b5c9d1e6f8a2b7c3}
       JWT_ACCESS_TOKEN_SECRET: ${JWT_SECRET:-8c4e9d2f1a7b6c5d9e3f0a1b7c8d4e5f9a2b6c1d8e7f3a4b5c9d1e6f8a2b7c3}
       JWT_REFRESH_TOKEN_SECRET: ${JWT_SECRET:-8c4e9d2f1a7b6c5d9e3f0a1b7c8d4e5f9a2b6c1d8e7f3a4b5c9d1e6f8a2b7c3}
@@ -407,6 +416,10 @@ services:
       COURSE_SERVICE_URL: http://course-service:8083
       DB_HOST: postgres
       DB_PORT: 5432
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-dummy-client-id}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-dummy-client-secret}
+      GOOGLE_REFRESH_TOKEN: ${GOOGLE_REFRESH_TOKEN:-dummy-refresh-token}
+      GOOGLE_FOLDER_ID: ${GOOGLE_FOLDER_ID:-dummy-folder-id}
     depends_on:
       postgres:
         condition: service_healthy
@@ -471,35 +484,6 @@ services:
         condition: service_healthy
       mailhog:
         condition: service_started
-      kafka:
-        condition: service_healthy
-    restart: unless-stopped
-
-  file-service:
-    build:
-      context: ..
-      dockerfile: file-service/Dockerfile
-    image: cyberlearnix/file-service:latest
-    container_name: cyberlearnix-file-service
-    ports:
-      - "8094:8094"
-    environment:
-      SERVER_PORT: 8094
-      JAVA_TOOL_OPTIONS: ${FILE_SERVICE_JAVA_OPTS:--Xms128m -Xmx512m -XX:+UseG1GC -XX:+ExitOnOutOfMemoryError}
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/lms_file_db
-      SPRING_DATASOURCE_USERNAME: ${DB_USER:-cyberlearnix}
-      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-cyberlearnix123}
-      JWT_SECRET: ${JWT_ACCESS_SECRET:-myVerySecretKeyForAccessTokenThatIsAtLeast32Chars}
-      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
-      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
-      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
-      GOOGLE_REFRESH_TOKEN: ${GOOGLE_REFRESH_TOKEN}
-      GOOGLE_FOLDER_ID: ${GOOGLE_FOLDER_ID:-1nLiT67PMJLS_fDw4M_jJ_qOdA0qenQYJ}
-      DB_HOST: postgres
-      DB_PORT: 5432
-    depends_on:
-      postgres:
-        condition: service_healthy
       kafka:
         condition: service_healthy
     restart: unless-stopped

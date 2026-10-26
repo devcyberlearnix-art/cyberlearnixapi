@@ -43,7 +43,8 @@ public class OtpService {
     public record OtpSendClaim(boolean allowed, boolean hourlyLimitReached, long retryAfterSeconds) {}
 
     public String generateOtp() {
-        return String.valueOf(new Random().nextInt(900000) + 100000);
+        java.security.SecureRandom random = new java.security.SecureRandom();
+        return String.format("%06d", random.nextInt(1000000));
     }
 
     public OtpSession createSession(String email, String otpType, String otp, int validMinutes, int maxAttempts) {

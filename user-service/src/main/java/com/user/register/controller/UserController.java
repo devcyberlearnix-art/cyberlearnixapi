@@ -4,19 +4,26 @@ import com.user.register.dto.ApiResponse;
 import com.user.register.dto.UpdateUserProfileRequest;
 import com.user.register.dto.UserProfileResponse;
 import com.user.register.entity.User;
+import com.user.register.exception.ProfilePhotoException;
 import com.user.register.service.UserService;
+import com.user.register.service.GoogleDriveService;
 import com.user.register.security.UnifiedJwtService;
 import com.cyberlearnix.security.ServiceAuthUtil;
 import com.user.register.service.TokenBlacklistService;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import lombok.extern.slf4j.Slf4j;
 import java.time.LocalDateTime;
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/v1/users")
 public class UserController {
@@ -25,13 +32,16 @@ public class UserController {
     private final UnifiedJwtService unifiedJwtService;
     private final ServiceAuthUtil serviceAuthUtil;
     private final TokenBlacklistService tokenBlacklistService;
+    private final GoogleDriveService googleDriveService;
 
     public UserController(UserService userService, UnifiedJwtService unifiedJwtService,
-            ServiceAuthUtil serviceAuthUtil, TokenBlacklistService tokenBlacklistService) {
+            ServiceAuthUtil serviceAuthUtil, TokenBlacklistService tokenBlacklistService,
+            GoogleDriveService googleDriveService) {
         this.userService = userService;
         this.unifiedJwtService = unifiedJwtService;
         this.serviceAuthUtil = serviceAuthUtil;
         this.tokenBlacklistService = tokenBlacklistService;
+        this.googleDriveService = googleDriveService;
     }
 
     @GetMapping("/stats")
@@ -74,13 +84,19 @@ public class UserController {
     @PutMapping("/me")
     public ResponseEntity<ApiResponse<UserProfileResponse>> updateProfile(
             HttpServletRequest request,
-            @RequestBody UpdateUserProfileRequest updateRequest
+            @Valid @RequestBody UpdateUserProfileRequest updateRequest
     ) {
+        if (updateRequest == null || updateRequest.isEmpty()) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.BAD_REQUEST, "At least one profile field must be provided for update");
+        }
         try {
             UserProfileResponse updatedProfile = userService.updateUserProfile(request, updateRequest);
             return ResponseEntity.ok(
                     new ApiResponse<>(true, "Profile updated successfully", updatedProfile, LocalDateTime.now())
             );
+        } catch (org.springframework.web.server.ResponseStatusException e) {
+            throw e;
         } catch (RuntimeException e) {
             return ResponseEntity.status(400)
                     .body(new ApiResponse<>(false, e.getMessage(), null, LocalDateTime.now()));
@@ -97,9 +113,63 @@ public class UserController {
             return ResponseEntity.ok(
                     new ApiResponse<>(true, "Profile photo updated successfully", updatedProfile, LocalDateTime.now())
             );
-        } catch (RuntimeException e) {
+        } catch (ProfilePhotoException e) {
             return ResponseEntity.status(400)
                     .body(new ApiResponse<>(false, e.getMessage(), null, LocalDateTime.now()));
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(500)
+                    .body(new ApiResponse<>(false, "An unexpected error occurred while uploading photo", null, LocalDateTime.now()));
+        }
+    }
+
+    @DeleteMapping("/me/photo")
+    public ResponseEntity<ApiResponse<UserProfileResponse>> removeProfilePhoto(HttpServletRequest request) {
+        try {
+            UserProfileResponse updatedProfile = userService.removeProfilePhoto(request);
+            return ResponseEntity.ok(
+                    new ApiResponse<>(true, "Profile photo removed successfully", updatedProfile, LocalDateTime.now())
+            );
+        } catch (ProfilePhotoException e) {
+            return ResponseEntity.status(400)
+                    .body(new ApiResponse<>(false, e.getMessage(), null, LocalDateTime.now()));
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(500)
+                    .body(new ApiResponse<>(false, "An unexpected error occurred while removing photo", null, LocalDateTime.now()));
+        }
+    }
+
+    @PutMapping("/me/cover-photo")
+    public ResponseEntity<ApiResponse<UserProfileResponse>> uploadCoverPhoto(
+            HttpServletRequest request,
+            @RequestParam("file") MultipartFile file
+    ) {
+        try {
+            UserProfileResponse updatedProfile = userService.uploadCoverPhoto(request, file);
+            return ResponseEntity.ok(
+                    new ApiResponse<>(true, "Cover photo updated successfully", updatedProfile, LocalDateTime.now())
+            );
+        } catch (ProfilePhotoException e) {
+            return ResponseEntity.status(400)
+                    .body(new ApiResponse<>(false, e.getMessage(), null, LocalDateTime.now()));
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(500)
+                    .body(new ApiResponse<>(false, "An unexpected error occurred while uploading cover photo", null, LocalDateTime.now()));
+        }
+    }
+
+    @DeleteMapping("/me/cover-photo")
+    public ResponseEntity<ApiResponse<UserProfileResponse>> removeCoverPhoto(HttpServletRequest request) {
+        try {
+            UserProfileResponse updatedProfile = userService.removeCoverPhoto(request);
+            return ResponseEntity.ok(
+                    new ApiResponse<>(true, "Cover photo removed successfully", updatedProfile, LocalDateTime.now())
+            );
+        } catch (ProfilePhotoException e) {
+            return ResponseEntity.status(400)
+                    .body(new ApiResponse<>(false, e.getMessage(), null, LocalDateTime.now()));
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(500)
+                    .body(new ApiResponse<>(false, "An unexpected error occurred while removing cover photo", null, LocalDateTime.now()));
         }
     }
 
@@ -108,13 +178,37 @@ public class UserController {
             @RequestParam("file") MultipartFile file
     ) {
         try {
-            String photoUrl = userService.uploadPhotoPublic(file);
-            return ResponseEntity.ok(
-                    new ApiResponse<>(true, "Photo uploaded successfully", Map.of("url", photoUrl), LocalDateTime.now())
-            );
+            // TODO: Implement photo upload using GoogleDriveService
+            return ResponseEntity.status(501)
+                    .body(new ApiResponse<>(false, "Photo upload not yet implemented", null, LocalDateTime.now()));
         } catch (RuntimeException e) {
             return ResponseEntity.status(400)
                     .body(new ApiResponse<>(false, e.getMessage(), null, LocalDateTime.now()));
+        }
+    }
+
+    /**
+     * Proxy endpoint to serve profile photos from Google Drive using service account credentials.
+     * This bypasses permission issues by using the service account to fetch the image.
+     */
+    @GetMapping("/photo/{fileId}")
+    public ResponseEntity<byte[]> servePhoto(@PathVariable String fileId) {
+        try {
+            String extractedFileId = googleDriveService.extractFileId(fileId);
+            String actualFileId = extractedFileId != null ? extractedFileId : fileId;
+
+            byte[] imageBytes = googleDriveService.downloadFileBytes(actualFileId);
+
+            // Get actual MIME type from Google Drive metadata instead of guessing from file ID
+            String contentType = googleDriveService.getFileMimeType(actualFileId);
+
+            return ResponseEntity.ok()
+                    .contentType(org.springframework.http.MediaType.parseMediaType(contentType))
+                    .cacheControl(org.springframework.http.CacheControl.maxAge(7, java.util.concurrent.TimeUnit.DAYS))
+                    .body(imageBytes);
+        } catch (IOException e) {
+            log.error("Failed to serve photo from Google Drive: {}", e.getMessage(), e);
+            return ResponseEntity.notFound().build();
         }
     }
 
@@ -287,5 +381,19 @@ public class UserController {
         } catch (Exception e) {
             return false;
         }
+    }
+
+    /**
+     * Global exception handler for validation errors
+     */
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<ApiResponse<UserProfileResponse>> handleValidationExceptions(
+            MethodArgumentNotValidException ex) {
+        String errors = ex.getBindingResult().getFieldErrors().stream()
+                .map(error -> error.getField() + ": " + error.getDefaultMessage())
+                .reduce((a, b) -> a + "; " + b)
+                .orElse("Validation failed");
+        return ResponseEntity.status(400)
+                .body(new ApiResponse<>(false, errors, null, LocalDateTime.now()));
     }
 }

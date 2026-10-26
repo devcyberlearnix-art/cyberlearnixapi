@@ -2,6 +2,7 @@ package com.user.register.security;
 
 
 
+import com.cyberlearnix.error.ApiSecurityErrorWriter;
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.context.annotation.Bean;
@@ -11,6 +12,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.http.HttpMethod;
 
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 
@@ -49,7 +51,11 @@ public class UnifiedSecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .cors(cors -> cors.disable()) // Disable CORS - handled by API Gateway
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .exceptionHandling(ex -> ex.authenticationEntryPoint(unauthorizedHandler))
+                .exceptionHandling(ex -> ex
+                        .authenticationEntryPoint(unauthorizedHandler)
+                        .accessDeniedHandler((request, response, accessDeniedException) ->
+                                ApiSecurityErrorWriter.write(request, response, 403, "FORBIDDEN", "Insufficient permissions")))
+                .addFilterBefore(new com.cyberlearnix.logging.TraceIdFilter(), org.springframework.security.web.context.SecurityContextHolderFilter.class)
                 .authorizeHttpRequests(auth -> auth
                         // Public endpoints
                         .requestMatchers(
@@ -87,7 +93,9 @@ public class UnifiedSecurityConfig {
 
                         // User management endpoints (require authentication)
                         .requestMatchers("/api/v1/users/me").authenticated()
-                        .requestMatchers("/api/v1/users/me/photo").authenticated()
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/users/me/photo").authenticated()
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/users/me/photo").authenticated()
+                        .requestMatchers("/api/v1/users/photo/**").authenticated()
                         .requestMatchers("/api/v1/users/me/sessions/**").authenticated()
 
                         // Email change — all three steps require an authenticated user
@@ -106,6 +114,7 @@ public class UnifiedSecurityConfig {
                         // Instructor application endpoints
                         .requestMatchers("/api/v1/instructors/applications").authenticated()
                         .requestMatchers("/api/v1/instructors/applications/me").authenticated()
+                        .requestMatchers("/api/v1/instructors/*/profile", "/api/v1/instructors/{instructorId}/profile").authenticated()
 
                         // Student endpoints
                         .requestMatchers("/api/v1/students/**").hasAnyRole("STUDENT", "INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN")

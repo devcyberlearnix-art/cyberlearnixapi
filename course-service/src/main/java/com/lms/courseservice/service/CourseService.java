@@ -52,7 +52,8 @@ public class CourseService {
 
     public Lecture getLectureById(Long lectureId) {
         return lectureRepository.findByIdWithCourse(lectureId)
-                .orElseThrow(() -> new EnrollmentException("Lecture not found with id: " + lectureId));
+                .orElseThrow(() -> new org.springframework.web.server.ResponseStatusException(
+                        HttpStatus.NOT_FOUND, "Lecture not found with id: " + lectureId));
     }
 
     public Course createCourse(Course course) {

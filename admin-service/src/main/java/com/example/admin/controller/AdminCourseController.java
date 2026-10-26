@@ -51,25 +51,33 @@ public class AdminCourseController {
     @GetMapping("/courses/{courseId}")
     public CourseListResponse getCourseById(@PathVariable Long courseId) {
         CourseDTO course = courseService.getCourseById(courseId);
-        List<Object> dataList = course != null ? List.of(course) : List.of();
+        if (course == null) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    HttpStatus.NOT_FOUND, "Course not found");
+        }
 
         return CourseListResponse.builder()
-                .success(course != null)
-                .message(course != null ? "Course fetched successfully" : "Course not found")
-                .data(dataList)
-                .count(dataList.size())
+                .success(true)
+                .message("Course fetched successfully")
+                .data(List.of(course))
+                .count(1)
                 .timestamp(LocalDateTime.now().toString())
                 .build();
     }
 
     @GetMapping("/content/{courseId}")
     public CourseListResponse getCourseContent(@PathVariable Long courseId) {
+        CourseDTO course = courseService.getCourseById(courseId);
+        if (course == null) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    HttpStatus.NOT_FOUND, "Course not found");
+        }
         List<Object> content = courseService.getCourseContent(courseId);
         return CourseListResponse.builder()
                 .success(true)
                 .message("Course content fetched successfully")
                 .data(content)
-                .count(content.size())
+                .count(content != null ? content.size() : 0)
                 .timestamp(LocalDateTime.now().toString())
                 .build();
     }
@@ -81,23 +89,23 @@ public class AdminCourseController {
     public CourseListResponse approveCourse(@PathVariable Long courseId) {
         try {
             CourseDTO approvedCourse = courseService.approveCourse(courseId);
-            List<Object> dataList = approvedCourse != null ? List.of(approvedCourse) : List.of();
+            if (approvedCourse == null) {
+                throw new org.springframework.web.server.ResponseStatusException(
+                        HttpStatus.NOT_FOUND, "Course not found");
+            }
 
             return CourseListResponse.builder()
-                    .success(approvedCourse != null)
-                    .message(approvedCourse != null ? "Course approved successfully" : "Failed to approve course")
-                    .data(dataList)
-                    .count(dataList.size())
+                    .success(true)
+                    .message("Course approved successfully")
+                    .data(List.of(approvedCourse))
+                    .count(1)
                     .timestamp(LocalDateTime.now().toString())
                     .build();
+        } catch (org.springframework.web.server.ResponseStatusException ex) {
+            throw ex;
         } catch (RuntimeException ex) {
-            return CourseListResponse.builder()
-                    .success(false)
-                    .message("Failed to approve course: " + ex.getMessage())
-                    .data(List.of())
-                    .count(0)
-                    .timestamp(LocalDateTime.now().toString())
-                    .build();
+            throw new org.springframework.web.server.ResponseStatusException(
+                    HttpStatus.NOT_FOUND, "Failed to approve course: " + ex.getMessage());
         }
     }
 
@@ -107,13 +115,16 @@ public class AdminCourseController {
     @PutMapping("/courses/{courseId}/reject")
     public CourseListResponse rejectCourse(@PathVariable Long courseId) {
         CourseDTO rejectedCourse = courseService.rejectCourse(courseId);
-        List<Object> dataList = rejectedCourse != null ? List.of(rejectedCourse) : List.of();
+        if (rejectedCourse == null) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    HttpStatus.NOT_FOUND, "Course not found");
+        }
 
         return CourseListResponse.builder()
-                .success(rejectedCourse != null)
-                .message(rejectedCourse != null ? "Course rejected successfully" : "Failed to reject course")
-                .data(dataList)
-                .count(dataList.size())
+                .success(true)
+                .message("Course rejected successfully")
+                .data(List.of(rejectedCourse))
+                .count(1)
                 .timestamp(LocalDateTime.now().toString())
                 .build();
     }
@@ -124,13 +135,15 @@ public class AdminCourseController {
     @DeleteMapping("/courses/{courseId}")
     public CourseListResponse deleteCourse(@PathVariable Long courseId) {
         Map result = courseService.deleteCourse(courseId);
-        boolean deleted = result != null;
-        List<Object> dataList = deleted ? List.of(result) : List.of();
+        if (result == null) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    HttpStatus.NOT_FOUND, "Course not found");
+        }
         return CourseListResponse.builder()
-                .success(deleted)
-                .message(deleted ? "Course deleted successfully" : "Failed to delete course")
-                .data(dataList)
-                .count(dataList.size())
+                .success(true)
+                .message("Course deleted successfully")
+                .data(List.of(result))
+                .count(1)
                 .timestamp(LocalDateTime.now().toString())
                 .build();
     }
@@ -138,13 +151,20 @@ public class AdminCourseController {
     // --- Section endpoints ---
     @PostMapping("/courses/{courseId}/sections")
     public CourseListResponse createSection(@PathVariable Long courseId, @RequestBody Map<String, Object> sectionPayload) {
+        if (sectionPayload == null || sectionPayload.isEmpty()) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    HttpStatus.BAD_REQUEST, "Section payload is required");
+        }
         Map result = courseService.createSection(courseId, sectionPayload);
-        List<Object> dataList = result != null ? List.of(result) : List.of();
+        if (result == null) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    HttpStatus.NOT_FOUND, "Course not found or failed to create section");
+        }
         return CourseListResponse.builder()
-                .success(result != null)
-                .message(result != null ? "Section created" : "Failed to create section")
-                .data(dataList)
-                .count(dataList.size())
+                .success(true)
+                .message("Section created")
+                .data(List.of(result))
+                .count(1)
                 .timestamp(LocalDateTime.now().toString())
                 .build();
     }
@@ -152,13 +172,15 @@ public class AdminCourseController {
     @DeleteMapping("/sections/{sectionId}")
     public CourseListResponse deleteSection(@PathVariable Long sectionId) {
         Map result = courseService.deleteSection(sectionId);
-        boolean ok = result != null;
-        List<Object> dataList = ok ? List.of(result) : List.of();
+        if (result == null) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    HttpStatus.NOT_FOUND, "Section not found");
+        }
         return CourseListResponse.builder()
-                .success(ok)
-                .message(ok ? "Section deleted" : "Failed to delete section")
-                .data(dataList)
-                .count(dataList.size())
+                .success(true)
+                .message("Section deleted")
+                .data(List.of(result))
+                .count(1)
                 .timestamp(LocalDateTime.now().toString())
                 .build();
     }
@@ -166,13 +188,20 @@ public class AdminCourseController {
     // --- Lecture endpoints ---
     @PostMapping("/sections/{sectionId}/lectures")
     public CourseListResponse createLecture(@PathVariable Long sectionId, @RequestBody Map<String, Object> lecturePayload) {
+        if (lecturePayload == null || lecturePayload.isEmpty()) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    HttpStatus.BAD_REQUEST, "Lecture payload is required");
+        }
         Map result = courseService.createLecture(sectionId, lecturePayload);
-        List<Object> dataList = result != null ? List.of(result) : List.of();
+        if (result == null) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    HttpStatus.NOT_FOUND, "Section not found or failed to create lecture");
+        }
         return CourseListResponse.builder()
-                .success(result != null)
-                .message(result != null ? "Lecture created" : "Failed to create lecture")
-                .data(dataList)
-                .count(dataList.size())
+                .success(true)
+                .message("Lecture created")
+                .data(List.of(result))
+                .count(1)
                 .timestamp(LocalDateTime.now().toString())
                 .build();
     }
@@ -180,12 +209,15 @@ public class AdminCourseController {
     @PutMapping("/sections/{sectionId}/lectures/{lectureId}/approve")
     public CourseListResponse approveLecture(@PathVariable Long sectionId, @PathVariable Long lectureId) {
         Map result = courseService.updateLecturePreview(sectionId, lectureId, true);
-        List<Object> dataList = result != null ? List.of(result) : List.of();
+        if (result == null) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    HttpStatus.NOT_FOUND, "Lecture not found");
+        }
         return CourseListResponse.builder()
-                .success(result != null)
-                .message(result != null ? "Lecture approved" : "Failed to approve lecture")
-                .data(dataList)
-                .count(dataList.size())
+                .success(true)
+                .message("Lecture approved")
+                .data(List.of(result))
+                .count(1)
                 .timestamp(LocalDateTime.now().toString())
                 .build();
     }
@@ -193,12 +225,15 @@ public class AdminCourseController {
     @PutMapping("/sections/{sectionId}/lectures/{lectureId}/reject")
     public CourseListResponse rejectLecture(@PathVariable Long sectionId, @PathVariable Long lectureId) {
         Map result = courseService.updateLecturePreview(sectionId, lectureId, false);
-        List<Object> dataList = result != null ? List.of(result) : List.of();
+        if (result == null) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    HttpStatus.NOT_FOUND, "Lecture not found");
+        }
         return CourseListResponse.builder()
-                .success(result != null)
-                .message(result != null ? "Lecture rejected" : "Failed to reject lecture")
-                .data(dataList)
-                .count(dataList.size())
+                .success(true)
+                .message("Lecture rejected")
+                .data(List.of(result))
+                .count(1)
                 .timestamp(LocalDateTime.now().toString())
                 .build();
     }
@@ -206,13 +241,15 @@ public class AdminCourseController {
     @DeleteMapping("/sections/{sectionId}/lectures/{lectureId}")
     public CourseListResponse deleteLecture(@PathVariable Long sectionId, @PathVariable Long lectureId) {
         Map result = courseService.deleteLecture(sectionId, lectureId);
-        boolean ok = result != null;
-        List<Object> dataList = ok ? List.of(result) : List.of();
+        if (result == null) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    HttpStatus.NOT_FOUND, "Lecture not found");
+        }
         return CourseListResponse.builder()
-                .success(ok)
-                .message(ok ? "Lecture deleted" : "Failed to delete lecture")
-                .data(dataList)
-                .count(dataList.size())
+                .success(true)
+                .message("Lecture deleted")
+                .data(List.of(result))
+                .count(1)
                 .timestamp(LocalDateTime.now().toString())
                 .build();
     }

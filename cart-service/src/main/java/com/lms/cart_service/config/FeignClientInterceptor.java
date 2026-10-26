@@ -17,10 +17,26 @@ public class FeignClientInterceptor implements RequestInterceptor {
         if (attributes != null) {
             HttpServletRequest request = attributes.getRequest();
             String authHeader = request.getHeader("Authorization");
-
-            if (authHeader != null) {
-                // Forwards the 'Bearer <token>' to the next service
+            if (authHeader != null && !authHeader.isBlank()) {
                 template.header("Authorization", authHeader);
+            }
+
+            String traceId = (String) request.getAttribute("X-Trace-Id");
+            if (traceId == null || traceId.isBlank()) {
+                traceId = request.getHeader("X-Trace-Id");
+            }
+            if (traceId != null && !traceId.isBlank()) {
+                template.header("X-Trace-Id", traceId);
+            }
+
+            String userId = request.getHeader("X-User-Id");
+            if (userId != null && !userId.isBlank()) {
+                template.header("X-User-Id", userId);
+            }
+
+            String userRole = request.getHeader("X-User-Role");
+            if (userRole != null && !userRole.isBlank()) {
+                template.header("X-User-Role", userRole);
             }
         }
     }

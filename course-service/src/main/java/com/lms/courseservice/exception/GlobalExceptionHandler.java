@@ -1,110 +1,83 @@
 package com.lms.courseservice.exception;
 
-import com.lms.courseservice.dto.ApiResponse;
+import com.cyberlearnix.error.ApiErrorResponse;
+import com.cyberlearnix.error.BaseGlobalExceptionHandler;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-import java.time.Instant;
-import java.util.HashMap;
-import java.util.Map;
-
 @RestControllerAdvice
-public class GlobalExceptionHandler {
+public class GlobalExceptionHandler extends BaseGlobalExceptionHandler {
 
     @ExceptionHandler(EnrollmentException.class)
-    public ResponseEntity<ApiResponse<Void>> handleEnrollmentException(EnrollmentException ex) {
-        ApiResponse<Void> response = ApiResponse.<Void>builder()
-            .success(false)
-            .message(ex.getMessage())
-            .timestamp(Instant.now().toString())
-            .build();
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
-    }
-
-    @ExceptionHandler(RuntimeException.class)
-    public ResponseEntity<ApiResponse<Void>> handleRuntimeException(RuntimeException ex) {
-        ApiResponse<Void> response = ApiResponse.<Void>builder()
-            .success(false)
-            .message(ex.getMessage())
-            .timestamp(Instant.now().toString())
-            .build();
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
-    }
-
-    @ExceptionHandler(org.springframework.security.access.AccessDeniedException.class)
-    public ResponseEntity<ApiResponse<Void>> handleAccessDeniedException(org.springframework.security.access.AccessDeniedException ex) {
-        ApiResponse<Void> response = ApiResponse.<Void>builder()
-            .success(false)
-            .message("Access denied: " + ex.getMessage())
-            .timestamp(Instant.now().toString())
-            .build();
-        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
-    }
-
-    @ExceptionHandler(org.springframework.security.core.AuthenticationException.class)
-    public ResponseEntity<ApiResponse<Void>> handleAuthenticationException(org.springframework.security.core.AuthenticationException ex) {
-        ApiResponse<Void> response = ApiResponse.<Void>builder()
-            .success(false)
-            .message("Authentication failed: " + ex.getMessage())
-            .timestamp(Instant.now().toString())
-            .build();
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
+    public ResponseEntity<ApiErrorResponse> handleEnrollmentException(
+            EnrollmentException ex, HttpServletRequest request) {
+        return buildResponse(HttpStatus.CONFLICT, "ENROLLMENT_CONFLICT", ex.getMessage(), request, ex);
     }
 
     @ExceptionHandler(BannerException.class)
-    public ResponseEntity<ApiResponse<Void>> handleBannerException(BannerException ex) {
-        ApiResponse<Void> response = ApiResponse.<Void>builder()
-            .success(false)
-            .message(ex.getMessage())
-            .timestamp(Instant.now().toString())
-            .build();
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+    public ResponseEntity<ApiErrorResponse> handleBannerException(
+            BannerException ex, HttpServletRequest request) {
+        String msg = ex.getMessage() != null ? ex.getMessage() : "Banner error";
+        HttpStatus status = msg.toLowerCase().contains("not found") ? HttpStatus.NOT_FOUND : HttpStatus.BAD_REQUEST;
+        String code = status == HttpStatus.NOT_FOUND ? "RESOURCE_NOT_FOUND" : "BANNER_ERROR";
+        return buildResponse(status, code, msg, request, ex);
     }
 
     @ExceptionHandler(LiveClassException.class)
-    public ResponseEntity<ApiResponse<Void>> handleLiveClassException(LiveClassException ex) {
-        ApiResponse<Void> response = ApiResponse.<Void>builder()
-            .success(false)
-            .message(ex.getMessage())
-            .timestamp(Instant.now().toString())
-            .build();
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+    public ResponseEntity<ApiErrorResponse> handleLiveClassException(
+            LiveClassException ex, HttpServletRequest request) {
+        String msg = ex.getMessage() != null ? ex.getMessage() : "Live class error";
+        HttpStatus status = msg.toLowerCase().contains("not found") ? HttpStatus.NOT_FOUND : HttpStatus.BAD_REQUEST;
+        String code = status == HttpStatus.NOT_FOUND ? "RESOURCE_NOT_FOUND" : "LIVE_CLASS_ERROR";
+        return buildResponse(status, code, msg, request, ex);
     }
 
     @ExceptionHandler(LiveClassAttendanceException.class)
-    public ResponseEntity<ApiResponse<Void>> handleLiveClassAttendanceException(LiveClassAttendanceException ex) {
-        ApiResponse<Void> response = ApiResponse.<Void>builder()
-            .success(false)
-            .message(ex.getMessage())
-            .timestamp(Instant.now().toString())
-            .build();
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+    public ResponseEntity<ApiErrorResponse> handleLiveClassAttendanceException(
+            LiveClassAttendanceException ex, HttpServletRequest request) {
+        String msg = ex.getMessage() != null ? ex.getMessage() : "Live class attendance error";
+        HttpStatus status = msg.toLowerCase().contains("not found") ? HttpStatus.NOT_FOUND : HttpStatus.BAD_REQUEST;
+        String code = status == HttpStatus.NOT_FOUND ? "RESOURCE_NOT_FOUND" : "ATTENDANCE_ERROR";
+        return buildResponse(status, code, msg, request, ex);
     }
 
-    @ExceptionHandler(org.springframework.web.bind.MethodArgumentNotValidException.class)
-    public ResponseEntity<Map<String, Object>> handleValidationException(
-            org.springframework.web.bind.MethodArgumentNotValidException ex) {
-        Map<String, Object> response = new HashMap<>();
-        response.put("success", false);
-        response.put("message", "Validation failed");
-        response.put("errorCode", "VALIDATION_ERROR");
+    @ExceptionHandler(QuizException.class)
+    public ResponseEntity<ApiErrorResponse> handleQuizException(
+            QuizException ex, HttpServletRequest request) {
+        String msg = ex.getMessage() != null ? ex.getMessage() : "Quiz error";
+        HttpStatus status = msg.toLowerCase().contains("not found") ? HttpStatus.NOT_FOUND : HttpStatus.BAD_REQUEST;
+        String code = status == HttpStatus.NOT_FOUND ? "RESOURCE_NOT_FOUND" : "QUIZ_ERROR";
+        return buildResponse(status, code, msg, request, ex);
+    }
 
-        java.util.List<Map<String, String>> errors = ex.getBindingResult()
-            .getFieldErrors()
-            .stream()
-            .map(error -> {
-                Map<String, String> errorMap = new HashMap<>();
-                errorMap.put("field", error.getField());
-                errorMap.put("message", error.getDefaultMessage());
-                return errorMap;
-            })
-            .collect(java.util.stream.Collectors.toList());
+    @ExceptionHandler(AssignmentException.class)
+    public ResponseEntity<ApiErrorResponse> handleAssignmentException(
+            AssignmentException ex, HttpServletRequest request) {
+        String msg = ex.getMessage() != null ? ex.getMessage() : "Assignment error";
+        HttpStatus status = msg.toLowerCase().contains("not found") ? HttpStatus.NOT_FOUND : HttpStatus.BAD_REQUEST;
+        String code = status == HttpStatus.NOT_FOUND ? "RESOURCE_NOT_FOUND" : "ASSIGNMENT_ERROR";
+        return buildResponse(status, code, msg, request, ex);
+    }
 
-        response.put("errors", errors);
-        response.put("timestamp", Instant.now().toString());
+    @ExceptionHandler(CertificateException.class)
+    public ResponseEntity<ApiErrorResponse> handleCertificateException(
+            CertificateException ex, HttpServletRequest request) {
+        String msg = ex.getMessage() != null ? ex.getMessage() : "Certificate error";
+        HttpStatus status = msg.toLowerCase().contains("not found") ? HttpStatus.NOT_FOUND : HttpStatus.BAD_REQUEST;
+        String code = status == HttpStatus.NOT_FOUND ? "RESOURCE_NOT_FOUND" : "CERTIFICATE_ERROR";
+        return buildResponse(status, code, msg, request, ex);
+    }
 
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+    @ExceptionHandler(RuntimeException.class)
+    public ResponseEntity<ApiErrorResponse> handleRuntimeException(
+            RuntimeException ex, HttpServletRequest request) {
+        String msg = ex.getMessage() != null ? ex.getMessage() : "Bad request";
+        if (msg.toLowerCase().contains("not found")) {
+            return buildResponse(HttpStatus.NOT_FOUND, "RESOURCE_NOT_FOUND", msg, request, ex);
+        }
+        return buildResponse(HttpStatus.BAD_REQUEST, "BAD_REQUEST", msg, request, ex);
     }
 }

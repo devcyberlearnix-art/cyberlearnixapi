@@ -1,46 +1,30 @@
 package com.lms.orderservice.exception;
 
 import com.cyberlearnix.error.ApiErrorResponse;
+import com.cyberlearnix.error.BaseGlobalExceptionHandler;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
-import org.springframework.web.server.ResponseStatusException;
-
-import java.time.Instant;
-import java.util.UUID;
 
 @RestControllerAdvice
-public class GlobalExceptionHandler {
+public class GlobalExceptionHandler extends BaseGlobalExceptionHandler {
 
-    @ExceptionHandler(ResponseStatusException.class)
-    public ResponseEntity<ApiErrorResponse> handleStatus(
-            ResponseStatusException exception, HttpServletRequest request) {
-        HttpStatus status = HttpStatus.valueOf(exception.getStatusCode().value());
-        return build(status, status.name(), exception.getReason(), request);
-    }
-
+    @Override
     @ExceptionHandler(IllegalArgumentException.class)
-    public ResponseEntity<ApiErrorResponse> handleValidation(
+    public ResponseEntity<ApiErrorResponse> handleIllegalArgument(
             IllegalArgumentException exception, HttpServletRequest request) {
-        return build(HttpStatus.UNPROCESSABLE_ENTITY, "VALIDATION_ERROR", exception.getMessage(), request);
+        return buildResponse(HttpStatus.UNPROCESSABLE_ENTITY, "VALIDATION_ERROR", exception.getMessage(), request, exception);
     }
 
-    @ExceptionHandler(Exception.class)
-    public ResponseEntity<ApiErrorResponse> handleUnexpected(Exception exception, HttpServletRequest request) {
-        return build(HttpStatus.INTERNAL_SERVER_ERROR, "INTERNAL_SERVER_ERROR",
-                "An unexpected error occurred", request);
-    }
-
-    private ResponseEntity<ApiErrorResponse> build(
-            HttpStatus status, String code, String message, HttpServletRequest request) {
-        String traceId = request.getHeader("X-Trace-Id");
-        if (traceId == null || traceId.isBlank()) {
-            traceId = UUID.randomUUID().toString();
+    @ExceptionHandler(RuntimeException.class)
+    public ResponseEntity<ApiErrorResponse> handleRuntimeException(
+            RuntimeException ex, HttpServletRequest request) {
+        String msg = ex.getMessage() != null ? ex.getMessage() : "Bad request";
+        if (msg.toLowerCase().contains("not found")) {
+            return buildResponse(HttpStatus.NOT_FOUND, "RESOURCE_NOT_FOUND", msg, request, ex);
         }
-        ApiErrorResponse error = new ApiErrorResponse(
-                Instant.now(), status.value(), code, message, request.getRequestURI(), traceId);
-        return ResponseEntity.status(status).body(error);
+        return buildResponse(HttpStatus.BAD_REQUEST, "BAD_REQUEST", msg, request, ex);
     }
 }

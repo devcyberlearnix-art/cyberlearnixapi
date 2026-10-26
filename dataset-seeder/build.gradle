@@ -1,0 +1,43 @@
+plugins {
+    id 'java'
+    id 'org.springframework.boot' version '3.4.3'
+    id 'io.spring.dependency-management' version '1.1.7'
+}
+
+group = 'com.lms'
+version = '1.0.0'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'org.springframework.boot:spring-boot-starter'
+    
+    // PostgreSQL
+    runtimeOnly "org.postgresql:postgresql:${postgresqlVersion}"
+    
+    // Cloudinary
+    implementation "com.cloudinary:cloudinary-http5:${cloudinaryVersion}"
+    
+    // Lombok
+    compileOnly "org.projectlombok:lombok:${lombokVersion}"
+    annotationProcessor "org.projectlombok:lombok:${lombokVersion}"
+    
+    // For JSON processing
+    implementation "com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}"
+    
+    // For HTTP requests (if needed for Cloudinary)
+    implementation 'org.apache.httpcomponents:httpclient:4.5.14'
+}
+
+tasks.named('test') {
+    useJUnitPlatform()
+}

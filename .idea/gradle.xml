@@ -15,6 +15,7 @@
             <option value="$PROJECT_DIR$/commonlibs" />
             <option value="$PROJECT_DIR$/coupon-service" />
             <option value="$PROJECT_DIR$/course-service" />
+            <option value="$PROJECT_DIR$/dataset-seeder" />
             <option value="$PROJECT_DIR$/instructor-service" />
             <option value="$PROJECT_DIR$/notification-service" />
             <option value="$PROJECT_DIR$/order-service" />

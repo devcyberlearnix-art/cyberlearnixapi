@@ -6,7 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import java.security.Key;
+import javax.crypto.SecretKey;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
@@ -29,7 +29,7 @@ public class UnifiedJwtService {
     @Value("${jwt.refresh-token.expiration-days:30}")
     private long refreshTokenExpirationDays;
 
-    private Key getSigningKey() {
+    private SecretKey getSigningKey() {
         byte[] keyBytes = jwtSecret.getBytes(java.nio.charset.StandardCharsets.UTF_8);
         log.debug("JWT Secret length: {}", keyBytes.length);
         log.debug("JWT Secret: {}", jwtSecret);
@@ -99,19 +99,19 @@ public class UnifiedJwtService {
     }
 
     public Claims extractClaims(String token) {
-        var parserBuilder = Jwts.parserBuilder()
-                .setSigningKey(getSigningKey());
+        var parser = Jwts.parser()
+                .verifyWith(getSigningKey());
 
         if (issuer != null && !issuer.isBlank()) {
-            parserBuilder.requireIssuer(issuer);
+            parser.require("iss", issuer);
         }
         if (audience != null && !audience.isBlank()) {
-            parserBuilder.requireAudience(audience);
+            parser.require("aud", audience);
         }
 
-        return parserBuilder.build()
-                .parseClaimsJws(token)
-                .getBody();
+        return parser.build()
+                .parseSignedClaims(token)
+                .getPayload();
     }
 
     /**
@@ -120,11 +120,11 @@ public class UnifiedJwtService {
      */
     public Claims extractClaimsIgnoreExpiry(String token) {
         try {
-            return Jwts.parserBuilder()
-                    .setSigningKey(getSigningKey())
+            return Jwts.parser()
+                    .verifyWith(getSigningKey())
                     .build()
-                    .parseClaimsJws(token)
-                    .getBody();
+                    .parseSignedClaims(token)
+                    .getPayload();
         } catch (ExpiredJwtException e) {
             // Return the claims from the expired token — signature is still valid
             return e.getClaims();

@@ -5,9 +5,12 @@ import com.example.instructorservice.dto.DashboardResponseDTO;
 import com.example.instructorservice.dto.InstructorEarningsResponse;
 import com.example.instructorservice.dto.MonthlyEarningDTO;
 import com.example.instructorservice.entity.Course;
+import com.example.instructorservice.entity.Instructor;
+import com.example.instructorservice.exeception.NotFoundException;
 import com.example.instructorservice.repository.CourseRepository;
 import com.example.instructorservice.repository.ContentRepository;
 import com.example.instructorservice.repository.EnrollmentRepository;
+import com.example.instructorservice.repository.InstructorRepository;
 import com.example.instructorservice.repository.PaymentRepository;
 import com.example.instructorservice.repository.ReviewRepository;
 import lombok.RequiredArgsConstructor;
@@ -24,6 +27,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class DashboardService {
 
+    private final InstructorRepository instructorRepository;
     private final CourseRepository courseRepository;
     private final EnrollmentRepository enrollmentRepository;
     private final PaymentRepository paymentRepository;
@@ -31,9 +35,12 @@ public class DashboardService {
     private final ContentRepository contentRepository;
 
     public DashboardResponseDTO getDashboard(UUID instructorId) {
+        Instructor instructor = instructorRepository.findById(instructorId)
+                .or(() -> instructorRepository.findByUserId(instructorId))
+                .orElseThrow(() -> new NotFoundException("Instructor not found with id: " + instructorId));
 
         // Fetch all courses of instructor
-        List<Course> courses = courseRepository.findByInstructorUserId(instructorId);
+        List<Course> courses = courseRepository.findByInstructorUserIdOrId(instructorId);
 
         int totalCourses = courses.size();
         long publishedCount = courses.stream().filter(c -> c.getStatus() == Course.CourseStatus.PUBLISHED).count();
@@ -112,8 +119,11 @@ public class DashboardService {
     }
 
     public InstructorEarningsResponse getInstructorEarnings(UUID instructorId) {
+        Instructor instructor = instructorRepository.findById(instructorId)
+                .or(() -> instructorRepository.findByUserId(instructorId))
+                .orElseThrow(() -> new NotFoundException("Instructor not found with id: " + instructorId));
 
-        List<Course> courses = courseRepository.findByInstructorUserId(instructorId);
+        List<Course> courses = courseRepository.findByInstructorUserIdOrId(instructorId);
 
         double totalRevenue = 0.0;
         long totalEnrollments = 0;

@@ -1,0 +1,1207 @@
+{
+  "_type": "export",
+  "__export_format": 4,
+  "__export_date": "2024-01-15T00:00:00.000Z",
+  "_meta": {
+    "exportedAt": "2024-01-15T00:00:00.000Z",
+    "exportedBy": "Devin",
+    "version": "4.0.0"
+  },
+  "resources": [
+    {
+      "_id": "workspace-course-service",
+      "_type": "workspace",
+      "name": "Course Service APIs",
+      "description": "Complete Course Service API collection for testing"
+    },
+    {
+      "_id": "env-course-service",
+      "_type": "environment",
+      "name": "Course Service Environment",
+      "data": {
+        "base_url": "http://localhost:8081/api/v1",
+        "auth_token": "your-jwt-token-here",
+        "course_id": "1",
+        "section_id": "1",
+        "lecture_id": "1",
+        "quiz_id": "1",
+        "live_class_id": "1"
+      }
+    },
+    {
+      "_id": "folder-course-management",
+      "_type": "request_group",
+      "name": "Course Management",
+      "workspaceId": "workspace-course-service",
+      "description": "Course CRUD operations"
+    },
+    {
+      "_id": "req-create-course",
+      "_type": "request",
+      "name": "Create Course",
+      "method": "POST",
+      "url": "{{base_url}}/courses",
+      "workspaceId": "workspace-course-service",
+      "parentId": "folder-course-management",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{auth_token}}"
+        }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"title\": \"Java Programming Masterclass\",\n  \"subtitle\": \"Learn Java from scratch\",\n  \"description\": \"Comprehensive Java course covering basics to advanced concepts\",\n  \"category\": \"Programming\",\n  \"level\": \"Beginner\",\n  \"language\": \"English\",\n  \"price\": 99.99,\n  \"thumbnail\": \"https://example.com/thumbnail.jpg\",\n  \"instructorId\": \"123e4567-e89b-12d3-a456-426614174000\",\n  \"status\": \"DRAFT\",\n  \"premium\": true\n}"
+      }
+    },
+    {
+      "_id": "req-get-all-courses",
+      "_type": "request",
+      "name": "Get All Courses",
+      "method": "GET",
+      "url": "{{base_url}}/courses",
+      "workspaceId": "workspace-course-service",
+      "parentId": "folder-course-management"
+    },
+    {
+      "_id": "req-get-course-list",
+      "_type": "request",
+      "name": "Get Course List with Filters",
+      "method": "GET",
+      "url": "{{base_url}}/courses/list?search=java&category=Programming&level=Beginner&page=0&size=10",
+      "workspaceId": "workspace-course-service",
+      "parentId": "folder-course-management"
+    },
+    {
+      "_id": "req-get-course-by-id",
+      "_type": "request",
+      "name": "Get Course by ID",
+      "method": "GET",
+      "url": "{{base_url}}/courses/{{course_id}}",
+      "workspaceId": "workspace-course-service",
+      "parentId": "folder-course-management"
+    },
+    {
+      "_id": "req-get-course-details",
+      "_type": "request",
+      "name": "Get Course Details",
+      "method": "GET",
+      "url": "{{base_url}}/courses/{{course_id}}/details",
+      "workspaceId": "workspace-course-service",
+      "parentId": "folder-course-management",
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{auth_token}}"
+        }
+      ]
+    },
+    {
+      "_id": "req-update-course",
+      "_type": "request",
+      "name": "Update Course (Full)",
+      "method": "PUT",
+      "url": "{{base_url}}/courses/{{course_id}}",
+      "workspaceId": "workspace-course-service",
+      "parentId": "folder-course-management",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{auth_token}}"
+        }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"title\": \"Updated Java Programming Masterclass\",\n  \"description\": \"Updated description\",\n  \"category\": \"Programming\",\n  \"level\": \"Intermediate\",\n  \"language\": \"English\",\n  \"price\": 149.99\n}"
+      }
+    },
+    {
+      "_id": "req-patch-course",
+      "_type": "request",
+      "name": "Update Course (Partial)",
+      "method": "PATCH",
+      "url": "{{base_url}}/courses/{{course_id}}",
+      "workspaceId": "workspace-course-service",
+      "parentId": "folder-course-management",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{auth_token}}"
+        }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"price\": 199.99\n}"
+      }
+    },
+    {
+      "_id": "req-update-course-status",
+      "_type": "request",
+      "name": "Update Course Status",
+      "method": "PATCH",
+      "url": "{{base_url}}/courses/{{course_id}}/status",
+      "workspaceId": "workspace-course-service",
+      "parentId": "folder-course-management",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{auth_token}}"
+        }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"status\": \"PUBLISHED\"\n}"
+      }
+    },
+    {
+      "_id": "req-delete-course",
+      "_type": "request",
+      "name": "Delete Course",
+      "method": "DELETE",
+      "url": "{{base_url}}/courses/{{course_id}}",
+      "workspaceId": "workspace-course-service",
+      "parentId": "folder-course-management",
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{auth_token}}"
+        }
+      ]
+    },
+    {
+      "_id": "folder-section-management",
+      "_type": "request_group",
+      "name": "Section Management",
+      "workspaceId": "workspace-course-service",
+      "description": "Section CRUD operations"
+    },
+    {
+      "_id": "req-create-section",
+      "_type": "request",
+      "name": "Create Section",
+      "method": "POST",
+      "url": "{{base_url}}/courses/{{course_id}}/sections",
+      "workspaceId": "workspace-course-service",
+      "parentId": "folder-section-management",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{auth_token}}"
+        }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"title\": \"Introduction to Java\",\n  \"orderIndex\": 1\n}"
+      }
+    },
+    {
+      "_id": "req-get-sections",
+      "_type": "request",
+      "name": "Get Course Sections",
+      "method": "GET",
+      "url": "{{base_url}}/courses/{{course_id}}/sections",
+      "workspaceId": "workspace-course-service",
+      "parentId": "folder-section-management"
+    },
+    {
+      "_id": "req-get-section-by-id",
+      "_type": "request",
+      "name": "Get Section by ID",
+      "method": "GET",
+      "url": "{{base_url}}/courses/sections/{{section_id}}",
+      "workspaceId": "workspace-course-service",
+      "parentId": "folder-section-management"
+    },
+    {
+      "_id": "req-update-section",
+      "_type": "request",
+      "name": "Update Section",
+      "method": "PATCH",
+      "url": "{{base_url}}/courses/sections/{{section_id}}",
+      "workspaceId": "workspace-course-service",
+      "parentId": "folder-section-management",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{auth_token}}"
+        }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"title\": \"Updated Section Title\",\n  \"orderIndex\": 2\n}"
+      }
+    },
+    {
+      "_id": "req-delete-section",
+      "_type": "request",
+      "name": "Delete Section",
+      "method": "DELETE",
+      "url": "{{base_url}}/courses/sections/{{section_id}}",
+      "workspaceId": "workspace-course-service",
+      "parentId": "folder-section-management",
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{auth_token}}"
+        }
+      ]
+    },
+    {
+      "_id": "folder-lecture-management",
+      "_type": "request_group",
+      "name": "Lecture Management",
+      "workspaceId": "workspace-course-service",
+      "description": "Lecture CRUD operations"
+    },
+    {
+      "_id": "req-create-lecture",
+      "_type": "request",
+      "name": "Create Lecture",
+      "method": "POST",
+      "url": "{{base_url}}/sections/{{section_id}}/lectures",
+      "workspaceId": "workspace-course-service",
+      "parentId": "folder-lecture-management",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{auth_token}}"
+        }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"title\": \"Setting up Java Development Environment\",\n  \"description\": \"Learn how to install and configure Java\",\n  \"videoUrl\": \"https://example.com/video.mp4\",\n  \"duration\": 1200,\n  \"orderIndex\": 1,\n  \"previewEnabled\": true,\n  \"resources\": \"https://example.com/resources.pdf\",\n  \"type\": \"VIDEO\"\n}"
+      }
+    },
+    {
+      "_id": "req-get-lectures",
+      "_type": "request",
+      "name": "Get Section Lectures",
+      "method": "GET",
+      "url": "{{base_url}}/sections/{{section_id}}/lectures",
+      "workspaceId": "workspace-course-service",
+      "parentId": "folder-lecture-management"
+    },
+    {
+      "_id": "req-get-lecture-by-id",
+      "_type": "request",
+      "name": "Get Lecture by ID",
+      "method": "GET",
+      "url": "{{base_url}}/sections/lectures/{{lecture_id}}",
+      "workspaceId": "workspace-course-service",
+      "parentId": "folder-lecture-management"
+    },
+    {
+      "_id": "req-update-lecture",
+      "_type": "request",
+      "name": "Update Lecture",
+      "method": "PATCH",
+      "url": "{{base_url}}/sections/{{section_id}}/lectures/{{lecture_id}}",
+      "workspaceId": "workspace-course-service",
+      "parentId": "folder-lecture-management",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{auth_token}}"
+        }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"title\": \"Updated Lecture Title\",\n  \"duration\": 1500\n}"
+      }
+    },
+    {
+      "_id": "req-delete-lecture",
+      "_type": "request",
+      "name": "Delete Lecture",
+      "method": "DELETE",
+      "url": "{{base_url}}/sections/{{section_id}}/lectures/{{lecture_id}}",
+      "workspaceId": "workspace-course-service",
+      "parentId": "folder-lecture-management",
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{auth_token}}"
+        }
+      ]
+    },
+    {
+      "_id": "folder-requirements",
+      "_type": "request_group",
+      "name": "Course Requirements",
+      "workspaceId": "workspace-course-service",
+      "description": "Course requirements management"
+    },
+    {
+      "_id": "req-create-requirement",
+      "_type": "request",
+      "name": "Create Course Requirement",
+      "method": "POST",
+      "url": "{{base_url}}/courses/{{course_id}}/requirements",
+      "workspaceId": "workspace-course-service",
+      "parentId": "folder-requirements",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{auth_token}}"
+        }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"courseId\": {{course_id}},\n  \"requirementType\": \"Prerequisite\",\n  \"requirementText\": \"Basic programming knowledge\"\n}"
+      }
+    },
+    {
+      "_id": "req-get-requirements",
+      "_type": "request",
+      "name": "Get Course Requirements",
+      "method": "GET",
+      "url": "{{base_url}}/courses/{{course_id}}/requirements",
+      "workspaceId": "workspace-course-service",
+      "parentId": "folder-requirements"
+    },
+    {
+      "_id": "req-update-requirement",
+      "_type": "request",
+      "name": "Update Course Requirement",
+      "method": "PUT",
+      "url": "{{base_url}}/courses/requirements/1",
+      "workspaceId": "workspace-course-service",
+      "parentId": "folder-requirements",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{auth_token}}"
+        }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"courseId\": {{course_id}},\n  \"requirementType\": \"Prerequisite\",\n  \"requirementText\": \"Updated requirement text\"\n}"
+      }
+    },
+    {
+      "_id": "req-delete-requirement",
+      "_type": "request",
+      "name": "Delete Course Requirement",
+      "method": "DELETE",
+      "url": "{{base_url}}/courses/requirements/1",
+      "workspaceId": "workspace-course-service",
+      "parentId": "folder-requirements",
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{auth_token}}"
+        }
+      ]
+    },
+    {
+      "_id": "folder-outcomes",
+      "_type": "request_group",
+      "name": "Learning Outcomes",
+      "workspaceId": "workspace-course-service",
+      "description": "Learning outcomes management"
+    },
+    {
+      "_id": "req-create-outcome",
+      "_type": "request",
+      "name": "Create Learning Outcome",
+      "method": "POST",
+      "url": "{{base_url}}/courses/{{course_id}}/outcomes",
+      "workspaceId": "workspace-course-service",
+      "parentId": "folder-outcomes",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{auth_token}}"
+        }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"courseId\": {{course_id}},\n  \"outcomeText\": \"Master Java programming fundamentals\",\n  \"skillCategory\": \"Programming\"\n}"
+      }
+    },
+    {
+      "_id": "req-get-outcomes",
+      "_type": "request",
+      "name": "Get Learning Outcomes",
+      "method": "GET",
+      "url": "{{base_url}}/courses/{{course_id}}/outcomes",
+      "workspaceId": "workspace-course-service",
+      "parentId": "folder-outcomes"
+    },
+    {
+      "_id": "req-update-outcome",
+      "_type": "request",
+      "name": "Update Learning Outcome",
+      "method": "PUT",
+      "url": "{{base_url}}/courses/outcomes/1",
+      "workspaceId": "workspace-course-service",
+      "parentId": "folder-outcomes",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{auth_token}}"
+        }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"courseId\": {{course_id}},\n  \"outcomeText\": \"Updated outcome text\",\n  \"skillCategory\": \"Programming\"\n}"
+      }
+    },
+    {
+      "_id": "req-delete-outcome",
+      "_type": "request",
+      "name": "Delete Learning Outcome",
+      "method": "DELETE",
+      "url": "{{base_url}}/courses/outcomes/1",
+      "workspaceId": "workspace-course-service",
+      "parentId": "folder-outcomes",
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{auth_token}}"
+        }
+      ]
+    },
+    {
+      "_id": "folder-materials",
+      "_type": "request_group",
+      "name": "Course Materials",
+      "workspaceId": "workspace-course-service",
+      "description": "Course materials management"
+    },
+    {
+      "_id": "req-create-material",
+      "_type": "request",
+      "name": "Create Course Material",
+      "method": "POST",
+      "url": "{{base_url}}/courses/{{course_id}}/materials",
+      "workspaceId": "workspace-course-service",
+      "parentId": "folder-materials",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{auth_token}}"
+        }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"courseId\": {{course_id}},\n  \"materialName\": \"Java Cheat Sheet\",\n  \"materialType\": \"PDF\",\n  \"fileUrl\": \"https://example.com/cheatsheet.pdf\",\n  \"fileSize\": 1024000\n}"
+      }
+    },
+    {
+      "_id": "req-get-materials",
+      "_type": "request",
+      "name": "Get Course Materials",
+      "method": "GET",
+      "url": "{{base_url}}/courses/{{course_id}}/materials",
+      "workspaceId": "workspace-course-service",
+      "parentId": "folder-materials"
+    },
+    {
+      "_id": "req-update-material",
+      "_type": "request",
+      "name": "Update Course Material",
+      "method": "PUT",
+      "url": "{{base_url}}/courses/materials/1",
+      "workspaceId": "workspace-course-service",
+      "parentId": "folder-materials",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{auth_token}}"
+        }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"courseId\": {{course_id}},\n  \"materialName\": \"Updated Material Name\",\n  \"materialType\": \"PDF\",\n  \"fileUrl\": \"https://example.com/updated.pdf\",\n  \"fileSize\": 2048000\n}"
+      }
+    },
+    {
+      "_id": "req-delete-material",
+      "_type": "request",
+      "name": "Delete Course Material",
+      "method": "DELETE",
+      "url": "{{base_url}}/courses/materials/1",
+      "workspaceId": "workspace-course-service",
+      "parentId": "folder-materials",
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{auth_token}}"
+        }
+      ]
+    },
+    {
+      "_id": "folder-faq",
+      "_type": "request_group",
+      "name": "Course FAQ",
+      "workspaceId": "workspace-course-service",
+      "description": "Course FAQ management"
+    },
+    {
+      "_id": "req-create-faq",
+      "_type": "request",
+      "name": "Create Course FAQ",
+      "method": "POST",
+      "url": "{{base_url}}/courses/{{course_id}}/faqs",
+      "workspaceId": "workspace-course-service",
+      "parentId": "folder-faq",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{auth_token}}"
+        }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"courseId\": {{course_id}},\n  \"question\": \"Do I need prior programming experience?\",\n  \"answer\": \"No, this course is designed for beginners\",\n  \"displayOrder\": 1\n}"
+      }
+    },
+    {
+      "_id": "req-get-faqs",
+      "_type": "request",
+      "name": "Get Course FAQs",
+      "method": "GET",
+      "url": "{{base_url}}/courses/{{course_id}}/faqs",
+      "workspaceId": "workspace-course-service",
+      "parentId": "folder-faq"
+    },
+    {
+      "_id": "req-update-faq",
+      "_type": "request",
+      "name": "Update Course FAQ",
+      "method": "PUT",
+      "url": "{{base_url}}/courses/faqs/1",
+      "workspaceId": "workspace-course-service",
+      "parentId": "folder-faq",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{auth_token}}"
+        }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"courseId\": {{course_id}},\n  \"question\": \"Updated question?\",\n  \"answer\": \"Updated answer\",\n  \"displayOrder\": 1\n}"
+      }
+    },
+    {
+      "_id": "req-delete-faq",
+      "_type": "request",
+      "name": "Delete Course FAQ",
+      "method": "DELETE",
+      "url": "{{base_url}}/courses/faqs/1",
+      "workspaceId": "workspace-course-service",
+      "parentId": "folder-faq",
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{auth_token}}"
+        }
+      ]
+    },
+    {
+      "_id": "folder-quiz",
+      "_type": "request_group",
+      "name": "Quiz Management",
+      "workspaceId": "workspace-course-service",
+      "description": "Quiz and question management"
+    },
+    {
+      "_id": "req-create-quiz",
+      "_type": "request",
+      "name": "Create Quiz",
+      "method": "POST",
+      "url": "{{base_url}}/quizzes",
+      "workspaceId": "workspace-course-service",
+      "parentId": "folder-quiz",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{auth_token}}"
+        }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"courseId\": {{course_id}},\n  \"sectionId\": {{section_id}},\n  \"title\": \"Java Basics Quiz\",\n  \"description\": \"Test your Java fundamentals\",\n  \"instructions\": \"Answer all questions within the time limit\",\n  \"timeLimitMinutes\": 30,\n  \"maxAttempts\": 3,\n  \"passingScore\": 70\n}"
+      }
+    },
+    {
+      "_id": "req-get-quiz",
+      "_type": "request",
+      "name": "Get Quiz by ID",
+      "method": "GET",
+      "url": "{{base_url}}/quizzes/{{quiz_id}}",
+      "workspaceId": "workspace-course-service",
+      "parentId": "folder-quiz"
+    },
+    {
+      "_id": "req-get-quizzes-by-course",
+      "_type": "request",
+      "name": "Get Quizzes by Course",
+      "method": "GET",
+      "url": "{{base_url}}/quizzes/course/{{course_id}}",
+      "workspaceId": "workspace-course-service",
+      "parentId": "folder-quiz"
+    },
+    {
+      "_id": "req-update-quiz",
+      "_type": "request",
+      "name": "Update Quiz",
+      "method": "PUT",
+      "url": "{{base_url}}/quizzes/{{quiz_id}}",
+      "workspaceId": "workspace-course-service",
+      "parentId": "folder-quiz",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{auth_token}}"
+        }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"courseId\": {{course_id}},\n  \"sectionId\": {{section_id}},\n  \"title\": \"Updated Quiz Title\",\n  \"description\": \"Updated description\",\n  \"timeLimitMinutes\": 45,\n  \"maxAttempts\": 5,\n  \"passingScore\": 80\n}"
+      }
+    },
+    {
+      "_id": "req-publish-quiz",
+      "_type": "request",
+      "name": "Publish Quiz",
+      "method": "PATCH",
+      "url": "{{base_url}}/quizzes/{{quiz_id}}/publish",
+      "workspaceId": "workspace-course-service",
+      "parentId": "folder-quiz",
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{auth_token}}"
+        }
+      ]
+    },
+    {
+      "_id": "req-unpublish-quiz",
+      "_type": "request",
+      "name": "Unpublish Quiz",
+      "method": "PATCH",
+      "url": "{{base_url}}/quizzes/{{quiz_id}}/unpublish",
+      "workspaceId": "workspace-course-service",
+      "parentId": "folder-quiz",
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{auth_token}}"
+        }
+      ]
+    },
+    {
+      "_id": "req-delete-quiz",
+      "_type": "request",
+      "name": "Delete Quiz",
+      "method": "DELETE",
+      "url": "{{base_url}}/quizzes/{{quiz_id}}",
+      "workspaceId": "workspace-course-service",
+      "parentId": "folder-quiz",
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{auth_token}}"
+        }
+      ]
+    },
+    {
+      "_id": "req-add-question",
+      "_type": "request",
+      "name": "Add Question to Quiz",
+      "method": "POST",
+      "url": "{{base_url}}/quizzes/{{quiz_id}}/questions",
+      "workspaceId": "workspace-course-service",
+      "parentId": "folder-quiz",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{auth_token}}"
+        }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"questionText\": \"What is the correct syntax to print 'Hello World' in Java?\",\n  \"questionType\": \"MULTIPLE_CHOICE\",\n  \"marks\": 5,\n  \"orderIndex\": 1,\n  \"explanation\": \"System.out.println() is the correct method\",\n  \"options\": [\n    {\n      \"optionText\": \"print('Hello World')\",\n      \"isCorrect\": false,\n      \"orderIndex\": 1\n    },\n    {\n      \"optionText\": \"System.out.println('Hello World')\",\n      \"isCorrect\": true,\n      \"orderIndex\": 2\n    },\n    {\n      \"optionText\": \"console.log('Hello World')\",\n      \"isCorrect\": false,\n      \"orderIndex\": 3\n    },\n    {\n      \"optionText\": \"echo 'Hello World'\",\n      \"isCorrect\": false,\n      \"orderIndex\": 4\n    }\n  ]\n}"
+      }
+    },
+    {
+      "_id": "req-update-question",
+      "_type": "request",
+      "name": "Update Question",
+      "method": "PUT",
+      "url": "{{base_url}}/quizzes/questions/1",
+      "workspaceId": "workspace-course-service",
+      "parentId": "folder-quiz",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{auth_token}}"
+        }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"questionText\": \"Updated question text\",\n  \"questionType\": \"MULTIPLE_CHOICE\",\n  \"marks\": 10,\n  \"orderIndex\": 1,\n  \"explanation\": \"Updated explanation\",\n  \"options\": []\n}"
+      }
+    },
+    {
+      "_id": "req-delete-question",
+      "_type": "request",
+      "name": "Delete Question",
+      "method": "DELETE",
+      "url": "{{base_url}}/quizzes/questions/1",
+      "workspaceId": "workspace-course-service",
+      "parentId": "folder-quiz",
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{auth_token}}"
+        }
+      ]
+    },
+    {
+      "_id": "folder-live-class",
+      "_type": "request_group",
+      "name": "Live Class Management",
+      "workspaceId": "workspace-course-service",
+      "description": "Live class management"
+    },
+    {
+      "_id": "req-create-live-class",
+      "_type": "request",
+      "name": "Create Live Class",
+      "method": "POST",
+      "url": "{{base_url}}/live-classes",
+      "workspaceId": "workspace-course-service",
+      "parentId": "folder-live-class",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{auth_token}}"
+        }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"courseId\": {{course_id}},\n  \"sectionId\": {{section_id}},\n  \"title\": \"Live Q&A Session\",\n  \"description\": \"Interactive session to answer student questions\",\n  \"meetingUrl\": \"https://zoom.us/j/123456789\",\n  \"meetingProvider\": \"ZOOM\",\n  \"scheduledStartTime\": \"2024-01-15T10:00:00\",\n  \"scheduledEndTime\": \"2024-01-15T11:00:00\",\n  \"maxParticipants\": 100\n}"
+      }
+    },
+    {
+      "_id": "req-get-live-class",
+      "_type": "request",
+      "name": "Get Live Class by ID",
+      "method": "GET",
+      "url": "{{base_url}}/live-classes/{{live_class_id}}",
+      "workspaceId": "workspace-course-service",
+      "parentId": "folder-live-class",
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{auth_token}}"
+        }
+      ]
+    },
+    {
+      "_id": "req-get-live-classes-course",
+      "_type": "request",
+      "name": "Get Live Classes by Course",
+      "method": "GET",
+      "url": "{{base_url}}/live-classes/course/{{course_id}}",
+      "workspaceId": "workspace-course-service",
+      "parentId": "folder-live-class",
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{auth_token}}"
+        }
+      ]
+    },
+    {
+      "_id": "req-update-live-class",
+      "_type": "request",
+      "name": "Update Live Class",
+      "method": "PUT",
+      "url": "{{base_url}}/live-classes/{{live_class_id}}",
+      "workspaceId": "workspace-course-service",
+      "parentId": "folder-live-class",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{auth_token}}"
+        }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"courseId\": {{course_id}},\n  \"sectionId\": {{section_id}},\n  \"title\": \"Updated Live Class Title\",\n  \"description\": \"Updated description\",\n  \"meetingUrl\": \"https://zoom.us/j/987654321\",\n  \"meetingProvider\": \"ZOOM\",\n  \"scheduledStartTime\": \"2024-01-16T10:00:00\",\n  \"scheduledEndTime\": \"2024-01-16T11:00:00\",\n  \"maxParticipants\": 150\n}"
+      }
+    },
+    {
+      "_id": "req-start-live-class",
+      "_type": "request",
+      "name": "Start Live Class",
+      "method": "PATCH",
+      "url": "{{base_url}}/live-classes/{{live_class_id}}/start",
+      "workspaceId": "workspace-course-service",
+      "parentId": "folder-live-class",
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{auth_token}}"
+        }
+      ]
+    },
+    {
+      "_id": "req-complete-live-class",
+      "_type": "request",
+      "name": "Complete Live Class",
+      "method": "PATCH",
+      "url": "{{base_url}}/live-classes/{{live_class_id}}/complete",
+      "workspaceId": "workspace-course-service",
+      "parentId": "folder-live-class",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{auth_token}}"
+        }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"recordingUrl\": \"https://example.com/recording.mp4\"\n}"
+      }
+    },
+    {
+      "_id": "req-cancel-live-class",
+      "_type": "request",
+      "name": "Cancel Live Class",
+      "method": "PATCH",
+      "url": "{{base_url}}/live-classes/{{live_class_id}}/cancel",
+      "workspaceId": "workspace-course-service",
+      "parentId": "folder-live-class",
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{auth_token}}"
+        }
+      ]
+    },
+    {
+      "_id": "req-delete-live-class",
+      "_type": "request",
+      "name": "Delete Live Class",
+      "method": "DELETE",
+      "url": "{{base_url}}/live-classes/{{live_class_id}}",
+      "workspaceId": "workspace-course-service",
+      "parentId": "folder-live-class",
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{auth_token}}"
+        }
+      ]
+    },
+    {
+      "_id": "req-join-live-class",
+      "_type": "request",
+      "name": "Join Live Class",
+      "method": "GET",
+      "url": "{{base_url}}/live-classes/{{live_class_id}}/join",
+      "workspaceId": "workspace-course-service",
+      "parentId": "folder-live-class",
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{auth_token}}"
+        }
+      ]
+    },
+    {
+      "_id": "req-get-upcoming-live-classes",
+      "_type": "request",
+      "name": "Get Upcoming Live Classes",
+      "method": "GET",
+      "url": "{{base_url}}/live-classes/course/{{course_id}}/upcoming",
+      "workspaceId": "workspace-course-service",
+      "parentId": "folder-live-class",
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{auth_token}}"
+        }
+      ]
+    },
+    {
+      "_id": "folder-enrollment",
+      "_type": "request_group",
+      "name": "Enrollment",
+      "workspaceId": "workspace-course-service",
+      "description": "Enrollment management"
+    },
+    {
+      "_id": "req-enroll-free-course",
+      "_type": "request",
+      "name": "Enroll in Free Course",
+      "method": "POST",
+      "url": "{{base_url}}/courses/{{course_id}}/enroll",
+      "workspaceId": "workspace-course-service",
+      "parentId": "folder-enrollment",
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{auth_token}}"
+        }
+      ]
+    },
+    {
+      "_id": "req-internal-enroll",
+      "_type": "request",
+      "name": "Internal Enrollment (Payment Service)",
+      "method": "POST",
+      "url": "{{base_url}}/enrollments/internal/enroll",
+      "workspaceId": "workspace-course-service",
+      "parentId": "folder-enrollment",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{auth_token}}"
+        }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"courseId\": {{course_id}},\n  \"userId\": \"123e4567-e89b-12d3-a456-426614174000\"\n}"
+      }
+    },
+    {
+      "_id": "req-check-enrollment",
+      "_type": "request",
+      "name": "Check Enrollment Status",
+      "method": "GET",
+      "url": "{{base_url}}/enrollments/check/{{course_id}}",
+      "workspaceId": "workspace-course-service",
+      "parentId": "folder-enrollment",
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{auth_token}}"
+        }
+      ]
+    },
+    {
+      "_id": "req-get-user-enrollments",
+      "_type": "request",
+      "name": "Get User Enrollments",
+      "method": "GET",
+      "url": "{{base_url}}/enrollments/users/123e4567-e89b-12d3-a456-426614174000",
+      "workspaceId": "workspace-course-service",
+      "parentId": "folder-enrollment",
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{auth_token}}"
+        }
+      ]
+    },
+    {
+      "_id": "req-get-enrolled-students",
+      "_type": "request",
+      "name": "Get Enrolled Students",
+      "method": "GET",
+      "url": "{{base_url}}/enrollments/course/{{course_id}}/students",
+      "workspaceId": "workspace-course-service",
+      "parentId": "folder-enrollment",
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{auth_token}}"
+        }
+      ]
+    },
+    {
+      "_id": "folder-public",
+      "_type": "request_group",
+      "name": "Public Endpoints",
+      "workspaceId": "workspace-course-service",
+      "description": "Publicly accessible endpoints"
+    },
+    {
+      "_id": "req-get-course-stats",
+      "_type": "request",
+      "name": "Get Course Statistics",
+      "method": "GET",
+      "url": "{{base_url}}/courses/stats",
+      "workspaceId": "workspace-course-service",
+      "parentId": "folder-public"
+    },
+    {
+      "_id": "req-get-featured-courses",
+      "_type": "request",
+      "name": "Get Featured Courses",
+      "method": "GET",
+      "url": "{{base_url}}/courses/featured?limit=6",
+      "workspaceId": "workspace-course-service",
+      "parentId": "folder-public"
+    },
+    {
+      "_id": "req-get-trending-courses",
+      "_type": "request",
+      "name": "Get Trending Courses",
+      "method": "GET",
+      "url": "{{base_url}}/courses/trending?page=0&size=10",
+      "workspaceId": "workspace-course-service",
+      "parentId": "folder-public"
+    },
+    {
+      "_id": "req-track-impression",
+      "_type": "request",
+      "name": "Track Course Impression",
+      "method": "POST",
+      "url": "{{base_url}}/courses/{{course_id}}/impressions?source=HOME",
+      "workspaceId": "workspace-course-service",
+      "parentId": "folder-public"
+    },
+    {
+      "_id": "req-get-curriculum",
+      "_type": "request",
+      "name": "Get Course Curriculum",
+      "method": "GET",
+      "url": "{{base_url}}/courses/{{course_id}}/curriculum",
+      "workspaceId": "workspace-course-service",
+      "parentId": "folder-public"
+    },
+    {
+      "_id": "req-get-course-content",
+      "_type": "request",
+      "name": "Get Course Content",
+      "method": "GET",
+      "url": "{{base_url}}/courses/{{course_id}}/content",
+      "workspaceId": "workspace-course-service",
+      "parentId": "folder-public",
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{auth_token}}"
+        }
+      ]
+    },
+    {
+      "_id": "req-get-lecture-detail",
+      "_type": "request",
+      "name": "Get Lecture Detail",
+      "method": "GET",
+      "url": "{{base_url}}/courses/lectures/{{lecture_id}}/learn",
+      "workspaceId": "workspace-course-service",
+      "parentId": "folder-public",
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{auth_token}}"
+        }
+      ]
+    },
+    {
+      "_id": "req-get-published-quizzes",
+      "_type": "request",
+      "name": "Get Published Quizzes",
+      "method": "GET",
+      "url": "{{base_url}}/quizzes/course/{{course_id}}/published",
+      "workspaceId": "workspace-course-service",
+      "parentId": "folder-public"
+    }
+  ]
+}

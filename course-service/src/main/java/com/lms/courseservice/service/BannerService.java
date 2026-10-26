@@ -311,26 +311,29 @@ public class BannerService {
 
     @Transactional
     public void trackImpression(Long bannerId) {
-        if (bannerRepository.existsById(bannerId)) {
-            bannerRepository.incrementImpressions(bannerId, Instant.now());
-            log.debug("Recorded impression for banner ID: {}", bannerId);
+        if (!bannerRepository.existsById(bannerId)) {
+            throw new BannerException("Banner not found with id: " + bannerId);
         }
+        bannerRepository.incrementImpressions(bannerId, Instant.now());
+        log.debug("Recorded impression for banner ID: {}", bannerId);
     }
 
     @Transactional
     public void trackClick(Long bannerId) {
-        if (bannerRepository.existsById(bannerId)) {
-            bannerRepository.incrementClicks(bannerId, Instant.now());
-            log.debug("Recorded click for banner ID: {}", bannerId);
+        if (!bannerRepository.existsById(bannerId)) {
+            throw new BannerException("Banner not found with id: " + bannerId);
         }
+        bannerRepository.incrementClicks(bannerId, Instant.now());
+        log.debug("Recorded click for banner ID: {}", bannerId);
     }
 
     @Transactional
     public void trackConversion(Long bannerId) {
-        if (bannerRepository.existsById(bannerId)) {
-            bannerRepository.incrementConversions(bannerId);
-            log.debug("Recorded conversion for banner ID: {}", bannerId);
+        if (!bannerRepository.existsById(bannerId)) {
+            throw new BannerException("Banner not found with id: " + bannerId);
         }
+        bannerRepository.incrementConversions(bannerId);
+        log.debug("Recorded conversion for banner ID: {}", bannerId);
     }
 
     @Transactional(readOnly = true)

@@ -36,6 +36,7 @@ public class User {
 
     private String dob;
     private String profilePhoto;
+    private String coverPhoto;
     private String city;
     private String state;
     private String country;
@@ -44,6 +45,7 @@ public class User {
     private String skills;
     private String fieldOfStudy;
     private String highestQualification;
+    private String gender;
 
     @Enumerated(EnumType.STRING)
     @Builder.Default
@@ -67,7 +69,6 @@ public class User {
 
     private LocalDateTime lastLogin;
     private LocalDateTime updatedAt;
-    private LocalDateTime lastLoginAt;
 
     private String ipAddress;
     private String device;

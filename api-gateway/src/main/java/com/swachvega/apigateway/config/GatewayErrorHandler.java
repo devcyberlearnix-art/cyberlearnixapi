@@ -20,7 +20,6 @@ import reactor.core.publisher.Mono;
 import java.net.ConnectException;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
 import java.util.Map;
 
 @Component
@@ -44,34 +43,47 @@ public class GatewayErrorHandler implements ErrorWebExceptionHandler {
 
         HttpStatus status = mapStatus(ex);
 
-        // Keep response body consistent with your existing pattern
-        Map<String, Object> meta = new HashMap<>();
-        meta.put("error", status == HttpStatus.BAD_GATEWAY ? "BAD_GATEWAY"
-                : status == HttpStatus.GATEWAY_TIMEOUT ? "GATEWAY_TIMEOUT"
-                : status == HttpStatus.NOT_FOUND ? "NOT_FOUND"
-                : "INTERNAL_ERROR");
-        Throwable root = rootCause(ex);
-        meta.put("rootCause", root.getClass().getSimpleName());
-        if (root.getMessage() != null) {
-            meta.put("details", root.getMessage());
+        String traceId = exchange.getRequest().getHeaders().getFirst("X-Trace-Id");
+        if (traceId == null || traceId.isBlank()) {
+            traceId = java.util.UUID.randomUUID().toString();
         }
 
-        Map<String, Object> body = new HashMap<>();
-        body.put("success", false);
-        body.put("message", userMessage(status, ex));
-        body.put("data", null);
-        body.put("meta", meta);
+        String code = status == HttpStatus.BAD_GATEWAY ? "BAD_GATEWAY"
+                : status == HttpStatus.GATEWAY_TIMEOUT ? "GATEWAY_TIMEOUT"
+                : status == HttpStatus.NOT_FOUND ? "RESOURCE_NOT_FOUND"
+                : status == HttpStatus.METHOD_NOT_ALLOWED ? "METHOD_NOT_ALLOWED"
+                : status == HttpStatus.BAD_REQUEST ? "BAD_REQUEST"
+                : status == HttpStatus.UNAUTHORIZED ? "UNAUTHORIZED"
+                : status == HttpStatus.FORBIDDEN ? "FORBIDDEN"
+                : "INTERNAL_SERVER_ERROR";
+
+        String message = userMessage(status, ex);
+        String path = exchange.getRequest().getURI().getPath();
+
+        Map<String, Object> body = new java.util.LinkedHashMap<>();
+        body.put("timestamp", java.time.Instant.now().toString());
+        body.put("status", status.value());
+        body.put("code", code);
+        body.put("message", message);
+        body.put("path", path);
+        body.put("traceId", traceId);
 
         byte[] bytes = serialize(body);
 
         if (status.is5xxServerError()) {
-            log.error("Gateway request failed: status={} path={} cause={}", status.value(), exchange.getRequest().getURI(), ex.toString(), ex);
+            log.error("[traceId={}] Gateway request failed: status={} code={} path={} cause={}",
+                    traceId, status.value(), code, path, ex.toString(), ex);
         } else {
-            log.warn("Gateway request failed: status={} path={} cause={}", status.value(), exchange.getRequest().getURI(), ex.toString());
+            log.warn("[traceId={}] Gateway request failed: status={} code={} path={} cause={}",
+                    traceId, status.value(), code, path, ex.toString());
         }
 
-        response.setStatusCode(status);
-        response.getHeaders().setContentType(MediaType.APPLICATION_JSON);
+        try {
+            response.setStatusCode(status);
+            response.getHeaders().setContentType(MediaType.APPLICATION_JSON);
+            response.getHeaders().set("X-Trace-Id", traceId);
+        } catch (UnsupportedOperationException ignored) {
+        }
 
         return response.writeWith(Mono.just(response.bufferFactory().wrap(bytes)));
     }
@@ -92,7 +104,6 @@ public class GatewayErrorHandler implements ErrorWebExceptionHandler {
             return HttpStatus.BAD_GATEWAY;
         }
 
-        // Netty/Reactive timeouts sometimes come as RuntimeException subclasses with these names
         String name = root.getClass().getName();
         if (name.contains("ReadTimeout") || name.contains("Timeout")) {
             return HttpStatus.GATEWAY_TIMEOUT;
@@ -102,13 +113,9 @@ public class GatewayErrorHandler implements ErrorWebExceptionHandler {
     }
 
     private String userMessage(HttpStatus status, Throwable ex) {
+        Throwable root = rootCause(ex);
         if (status == HttpStatus.BAD_GATEWAY) {
-            // Extract service name from exception or URL
-            String serviceName = extractServiceName(ex);
-            if (serviceName != null) {
-                return String.format("Service '%s' is not running. Please start the service and try again.", serviceName);
-            }
-            return "Required service is not running. Please check if all services are started.";
+            return "Downstream service is temporarily unavailable. Please try again later.";
         }
         if (status == HttpStatus.GATEWAY_TIMEOUT) {
             return "Service is taking too long to respond. Please try again later.";
@@ -116,31 +123,29 @@ public class GatewayErrorHandler implements ErrorWebExceptionHandler {
         if (status == HttpStatus.NOT_FOUND) {
             return "Requested API path was not found on gateway or downstream service.";
         }
-        return "Internal server error occurred. Please contact support if the issue persists.";
-    }
-
-    private String extractServiceName(Throwable ex) {
-        // Try to extract service name from connection exception
-        Throwable root = rootCause(ex);
-        String message = root.getMessage();
-        if (message != null) {
-            // Common patterns: "Connection refused: merchantservice:8080"
-            if (message.contains("userservice")) return "userservice (port 8086)";
-            if (message.contains("course-service")) return "course-service (port 8083)";
-            if (message.contains("cart-service")) return "cart-service (port 8081)";
-            if (message.contains("coupon-service")) return "coupon-service (port 8082)";
-            if (message.contains("wishlist-service")) return "wishlist-service (port 8085)";
-            if (message.contains("order-service")) return "order-service (port 8084)";
+        if (status == HttpStatus.METHOD_NOT_ALLOWED) {
+            return "HTTP method not supported for this endpoint.";
         }
-        return null;
+        if (status == HttpStatus.BAD_REQUEST) {
+            if (root instanceof ResponseStatusException rse && rse.getReason() != null) {
+                return rse.getReason();
+            }
+            return "Invalid request parameters or headers.";
+        }
+        if (status == HttpStatus.UNAUTHORIZED) {
+            return "Authentication required or invalid credentials.";
+        }
+        if (status == HttpStatus.FORBIDDEN) {
+            return "Access denied: insufficient permissions.";
+        }
+        return "Internal server error occurred. Please contact support if the issue persists.";
     }
 
     private byte[] serialize(Object body) {
         try {
             return objectMapper.writeValueAsBytes(body);
         } catch (JsonProcessingException e) {
-            // Extremely defensive fallback
-            String s = "{\"success\":false,\"message\":\"Internal server error\",\"data\":null,\"meta\":{\"error\":\"INTERNAL_ERROR\"}}";
+            String s = "{\"status\":500,\"code\":\"INTERNAL_SERVER_ERROR\",\"message\":\"Internal server error occurred.\"}";
             return s.getBytes(StandardCharsets.UTF_8);
         }
     }

@@ -31,7 +31,6 @@ public class RegisterRequest {
     private String lastName;
 
     @JsonAlias({"mobileNumber", "mobile"})
-    @NotBlank(message = "Mobile number is required")
     @Pattern(regexp = "^\\d{6,12}$", message = "Mobile number must be 6-12 digits")
     private String mobileNumber;
 
@@ -39,7 +38,6 @@ public class RegisterRequest {
         this.mobileNumber = mobile;
     }
 
-    @NotBlank(message = "Country code is required")
     private String countryCode;
 
     private String dob;

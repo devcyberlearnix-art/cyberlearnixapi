@@ -1,6 +1,8 @@
 package com.example.admin.security;
 
 
+import com.cyberlearnix.error.ApiSecurityErrorWriter;
+import com.cyberlearnix.logging.TraceIdFilter;
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.context.annotation.Bean;
@@ -44,7 +46,14 @@ public class SecurityConfig {
                 .cors(cors -> cors.disable()) // Disable CORS - handled by API Gateway
 
                 .csrf(csrf -> csrf.disable())
-
+                .exceptionHandling(errors -> errors
+                    .authenticationEntryPoint((request, response, exception) ->
+                        ApiSecurityErrorWriter.write(request, response, 401,
+                            "UNAUTHORIZED", "Authentication is required"))
+                    .accessDeniedHandler((request, response, exception) ->
+                        ApiSecurityErrorWriter.write(request, response, 403,
+                            "FORBIDDEN", "Insufficient permissions")))
+                .addFilterBefore(new TraceIdFilter(), org.springframework.security.web.context.SecurityContextHolderFilter.class)
                 .authorizeHttpRequests(auth -> auth
 
                         // Public endpoints (sub-admin registration, login flows, and password recovery
@@ -64,9 +73,9 @@ public class SecurityConfig {
                                 "/api/v1/admin/password/reset"
                         ).permitAll()
 
-                        // All other admin endpoints require authentication
+                        // All other admin endpoints require authentication and admin role
                         // Includes: /api/v1/admin/email/change-request, /verify-old, /verify-new
-                        .requestMatchers("/api/v1/admin/**").authenticated()
+                        .requestMatchers("/api/v1/admin/**").hasAnyRole("MAIN_ADMIN", "SUB_ADMIN")
 
                         .anyRequest().denyAll())
 

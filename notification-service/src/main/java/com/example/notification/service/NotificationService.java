@@ -181,10 +181,15 @@ public class NotificationService {
 
     public NotificationResponse getNotificationById(String id) {
 
-        UUID uuid = UUID.fromString(id);
+        UUID uuid;
+        try {
+            uuid = UUID.fromString(id);
+        } catch (IllegalArgumentException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid notification ID format");
+        }
 
         Notification notification = notificationRepository.findById(uuid)
-                .orElseThrow(() -> new RuntimeException("Notification not found with id: " + id));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Notification not found with id: " + id));
 
         // 🔥 BUILD DELIVERY STATUS (THIS FIXES YOUR ISSUE)
         List<NotificationResponse.DeliveryInfo> deliveries =
@@ -344,10 +349,15 @@ public class NotificationService {
 
     public NotificationResponse markNotificationAsRead(String id) {
 
-        UUID uuid = UUID.fromString(id);
+        UUID uuid;
+        try {
+            uuid = UUID.fromString(id);
+        } catch (IllegalArgumentException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid notification ID format");
+        }
 
         Notification notification = notificationRepository.findById(uuid)
-                .orElseThrow(() -> new RuntimeException("Notification not found"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Notification not found with id: " + id));
 
         notification.setStatus(NotificationStatus.READ);
 
@@ -385,13 +395,18 @@ public class NotificationService {
     }
     public DeleteNotificationResponse deleteNotification(String id) {
 
-        UUID uuid = UUID.fromString(id);
+        UUID uuid;
+        try {
+            uuid = UUID.fromString(id);
+        } catch (IllegalArgumentException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid notification ID format");
+        }
 
         Notification notification = notificationRepository.findById(uuid)
-                .orElseThrow(() -> new RuntimeException("Notification not found"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Notification not found with id: " + id));
 
         if (notification.isDeleted()) {
-            throw new RuntimeException("Notification already deleted");
+            throw new ResponseStatusException(HttpStatus.GONE, "Notification already deleted");
         }
 
         String originalMessage = notification.getMessage();

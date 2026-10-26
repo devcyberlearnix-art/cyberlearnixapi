@@ -36,15 +36,26 @@ public class AdminPrincipal implements org.springframework.security.core.userdet
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         List<GrantedAuthority> authorities = new java.util.ArrayList<>();
-        String r = role != null ? role : "MAIN_ADMIN";
+        String r = role != null && !role.isBlank() ? role : "STUDENT";
         authorities.add(new SimpleGrantedAuthority("ROLE_" + r));
-        authorities.add(new SimpleGrantedAuthority("ROLE_ADMIN"));
-        authorities.add(new SimpleGrantedAuthority("ROLE_MAIN_ADMIN"));
-        authorities.add(new SimpleGrantedAuthority("ROLE_SUB_ADMIN"));
+
+        boolean isMain = "MAIN_ADMIN".equalsIgnoreCase(r) || "MAIN_ADMIN".equalsIgnoreCase(adminType);
+        boolean isSub = "SUB_ADMIN".equalsIgnoreCase(r) || "SUB_ADMIN".equalsIgnoreCase(adminType);
+        boolean isAdmin = isMain || isSub || "ADMIN".equalsIgnoreCase(r) || "ADMIN".equalsIgnoreCase(adminType);
+
+        if (isAdmin) {
+            authorities.add(new SimpleGrantedAuthority("ROLE_ADMIN"));
+            if (isMain) {
+                authorities.add(new SimpleGrantedAuthority("ROLE_MAIN_ADMIN"));
+            }
+            if (isSub) {
+                authorities.add(new SimpleGrantedAuthority("ROLE_SUB_ADMIN"));
+            }
+        }
 
         if (assignedService != null && assignedService != AssignedService.ALL) {
             authorities.add(new SimpleGrantedAuthority("SERVICE_" + assignedService.name()));
-        } else {
+        } else if (isAdmin) {
             authorities.add(new SimpleGrantedAuthority("SERVICE_ALL"));
         }
         return authorities;

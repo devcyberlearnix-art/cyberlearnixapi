@@ -44,3 +44,11 @@ run-with-credentials.bat
 
 # Local test configuration files with credentials
 **/application-localtest.properties
+
+# Docker local data
+docker/postgres-data/
+docker/docker/
+**/postgres-data/
+
+# Local test media
+test_profile*.png

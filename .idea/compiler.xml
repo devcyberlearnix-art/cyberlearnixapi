@@ -18,6 +18,7 @@
         <module name="cyberlearnix.cart-service.main" />
         <module name="cyberlearnix.admin-service.main" />
         <module name="cyberlearnix.commonlibs.main" />
+        <module name="cyberlearnix.dataset-seeder.main" />
         <module name="cyberlearnix.notification-service.main" />
         <module name="cyberlearnix.instructor-service.main" />
         <module name="cyberlearnix.review-service.main" />
@@ -53,6 +54,9 @@
       <module name="cyberlearnix.course-service" options="-parameters" />
       <module name="cyberlearnix.course-service.main" options="-parameters" />
       <module name="cyberlearnix.course-service.test" options="-parameters" />
+      <module name="cyberlearnix.dataset-seeder" options="-parameters" />
+      <module name="cyberlearnix.dataset-seeder.main" options="-parameters" />
+      <module name="cyberlearnix.dataset-seeder.test" options="-parameters" />
       <module name="cyberlearnix.file-service" options="-parameters" />
       <module name="cyberlearnix.file-service.main" options="-parameters" />
       <module name="cyberlearnix.file-service.test" options="-parameters" />

@@ -1,12 +1,17 @@
 package com.swachvega.apigateway.controller;
 
 import com.swachvega.apigateway.model.SessionManagementResponseDTO;
+import com.swachvega.apigateway.security.SimpleJwtTokenProvider;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
 @RestController
@@ -16,32 +21,58 @@ import reactor.core.publisher.Mono;
 public class SessionManagementController {
 
     private final WebClient.Builder webClientBuilder;
+    private final SimpleJwtTokenProvider jwtTokenProvider;
 
     @Value("${userservice.url:http://swachvega-userservice:8080}")
     private String userServiceUrl;
+
+    private Mono<String> resolveUserId(ServerWebExchange exchange, String headerUserId) {
+        if (headerUserId != null && !headerUserId.isBlank()) {
+            return Mono.just(headerUserId);
+        }
+        String authHeader = exchange.getRequest().getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
+        String token = jwtTokenProvider.extractTokenFromHeader(authHeader);
+        if (token == null || token.isBlank()) {
+            return Mono.error(new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Missing or invalid authorization token"));
+        }
+        return jwtTokenProvider.validateAccessToken(token)
+                .map(claims -> {
+                    Object sub = claims.get("sub");
+                    if (sub == null) {
+                        sub = claims.get("userId");
+                    }
+                    if (sub != null) {
+                        return sub.toString();
+                    }
+                    throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid token subject");
+                })
+                .switchIfEmpty(Mono.error(new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Missing or invalid authorization token")));
+    }
 
     /**
      * Get all active sessions for the current user
      */
     @GetMapping
     public Mono<ResponseEntity<SessionManagementResponseDTO>> getUserSessions(
-            @RequestHeader("X-User-Id") String userId,
-            @RequestHeader("X-Session-Id") String sessionId) {
+            ServerWebExchange exchange,
+            @RequestHeader(value = "X-User-Id", required = false) String userId,
+            @RequestHeader(value = "X-Session-Id", required = false) String sessionId) {
 
-        log.info("Fetching sessions for user: {}", userId);
-
-        return webClientBuilder.build()
-                .get()
-                .uri(userServiceUrl + "/api/consumer/sessions")
-                .header("X-User-Id", userId)
-                .header("X-Session-Id", sessionId)
-                .retrieve()
-                .bodyToMono(SessionManagementResponseDTO.class)
-                .map(ResponseEntity::ok)
-                .onErrorResume(ex -> {
-                    log.error("Failed to fetch sessions for user {}: {}", userId, ex.getMessage());
-                    return Mono.just(ResponseEntity.internalServerError().build());
-                });
+        return resolveUserId(exchange, userId).flatMap(resolvedUserId -> {
+            log.info("Fetching sessions for user: {}", resolvedUserId);
+            String authHeader = exchange.getRequest().getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
+            return webClientBuilder.build()
+                    .get()
+                    .uri(userServiceUrl + "/api/v1/users/me/sessions")
+                    .header("X-User-Id", resolvedUserId)
+                    .header("X-Session-Id", sessionId != null ? sessionId : "")
+                    .headers(h -> {
+                        if (authHeader != null) h.set(HttpHeaders.AUTHORIZATION, authHeader);
+                    })
+                    .retrieve()
+                    .bodyToMono(SessionManagementResponseDTO.class)
+                    .map(ResponseEntity::ok);
+        });
     }
 
     /**
@@ -49,24 +80,26 @@ public class SessionManagementController {
      */
     @DeleteMapping("/{sessionId}")
     public Mono<ResponseEntity<SessionManagementResponseDTO>> deactivateSession(
-            @RequestHeader("X-User-Id") String userId,
-            @RequestHeader("X-Session-Id") String currentSessionId,
+            ServerWebExchange exchange,
+            @RequestHeader(value = "X-User-Id", required = false) String userId,
+            @RequestHeader(value = "X-Session-Id", required = false) String currentSessionId,
             @PathVariable String sessionId) {
 
-        log.info("Deactivating session {} for user: {}", sessionId, userId);
-
-        return webClientBuilder.build()
-                .delete()
-                .uri(userServiceUrl + "/api/consumer/sessions/{sessionId}", sessionId)
-                .header("X-User-Id", userId)
-                .header("X-Session-Id", currentSessionId)
-                .retrieve()
-                .bodyToMono(SessionManagementResponseDTO.class)
-                .map(ResponseEntity::ok)
-                .onErrorResume(ex -> {
-                    log.error("Failed to deactivate session {} for user {}: {}", sessionId, userId, ex.getMessage());
-                    return Mono.just(ResponseEntity.internalServerError().build());
-                });
+        return resolveUserId(exchange, userId).flatMap(resolvedUserId -> {
+            log.info("Deactivating session {} for user: {}", sessionId, resolvedUserId);
+            String authHeader = exchange.getRequest().getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
+            return webClientBuilder.build()
+                    .delete()
+                    .uri(userServiceUrl + "/api/v1/users/me/sessions/{sessionId}", sessionId)
+                    .header("X-User-Id", resolvedUserId)
+                    .header("X-Session-Id", currentSessionId != null ? currentSessionId : "")
+                    .headers(h -> {
+                        if (authHeader != null) h.set(HttpHeaders.AUTHORIZATION, authHeader);
+                    })
+                    .retrieve()
+                    .bodyToMono(SessionManagementResponseDTO.class)
+                    .map(ResponseEntity::ok);
+        });
     }
 
     /**
@@ -74,23 +107,25 @@ public class SessionManagementController {
      */
     @PostMapping("/deactivate-others")
     public Mono<ResponseEntity<SessionManagementResponseDTO>> deactivateOtherSessions(
-            @RequestHeader("X-User-Id") String userId,
-            @RequestHeader("X-Session-Id") String currentSessionId) {
+            ServerWebExchange exchange,
+            @RequestHeader(value = "X-User-Id", required = false) String userId,
+            @RequestHeader(value = "X-Session-Id", required = false) String currentSessionId) {
 
-        log.info("Deactivating other sessions for user: {}", userId);
-
-        return webClientBuilder.build()
-                .post()
-                .uri(userServiceUrl + "/api/consumer/sessions/deactivate-others")
-                .header("X-User-Id", userId)
-                .header("X-Session-Id", currentSessionId)
-                .retrieve()
-                .bodyToMono(SessionManagementResponseDTO.class)
-                .map(ResponseEntity::ok)
-                .onErrorResume(ex -> {
-                    log.error("Failed to deactivate other sessions for user {}: {}", userId, ex.getMessage());
-                    return Mono.just(ResponseEntity.internalServerError().build());
-                });
+        return resolveUserId(exchange, userId).flatMap(resolvedUserId -> {
+            log.info("Deactivating other sessions for user: {}", resolvedUserId);
+            String authHeader = exchange.getRequest().getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
+            return webClientBuilder.build()
+                    .post()
+                    .uri(userServiceUrl + "/api/v1/users/me/sessions/deactivate-others")
+                    .header("X-User-Id", resolvedUserId)
+                    .header("X-Session-Id", currentSessionId != null ? currentSessionId : "")
+                    .headers(h -> {
+                        if (authHeader != null) h.set(HttpHeaders.AUTHORIZATION, authHeader);
+                    })
+                    .retrieve()
+                    .bodyToMono(SessionManagementResponseDTO.class)
+                    .map(ResponseEntity::ok);
+        });
     }
 
     /**
@@ -98,20 +133,23 @@ public class SessionManagementController {
      */
     @PostMapping("/deactivate-all")
     public Mono<ResponseEntity<SessionManagementResponseDTO>> deactivateAllSessions(
-            @RequestHeader("X-User-Id") String userId) {
+            ServerWebExchange exchange,
+            @RequestHeader(value = "X-User-Id", required = false) String userId) {
 
-        log.info("Deactivating all sessions for user: {}", userId);
-
-        return webClientBuilder.build()
-                .post()
-                .uri(userServiceUrl + "/api/consumer/sessions/deactivate-all")
-                .header("X-User-Id", userId)
-                .retrieve()
-                .bodyToMono(SessionManagementResponseDTO.class)
-                .map(ResponseEntity::ok)
-                .onErrorResume(ex -> {
-                    log.error("Failed to deactivate all sessions for user {}: {}", userId, ex.getMessage());
-                    return Mono.just(ResponseEntity.internalServerError().build());
-                });
+        return resolveUserId(exchange, userId).flatMap(resolvedUserId -> {
+            log.info("Deactivating all sessions for user: {}", resolvedUserId);
+            String authHeader = exchange.getRequest().getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
+            return webClientBuilder.build()
+                    .delete()
+                    .uri(userServiceUrl + "/api/v1/users/me/sessions")
+                    .header("X-User-Id", resolvedUserId)
+                    .headers(h -> {
+                        if (authHeader != null) h.set(HttpHeaders.AUTHORIZATION, authHeader);
+                    })
+                    .retrieve()
+                    .bodyToMono(SessionManagementResponseDTO.class)
+                    .map(ResponseEntity::ok);
+        });
     }
 }
+

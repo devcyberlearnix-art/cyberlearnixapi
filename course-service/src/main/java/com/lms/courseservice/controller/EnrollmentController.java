@@ -27,6 +27,10 @@ public class EnrollmentController {
 
     @PostMapping("/internal/enroll")
     public EnrollCourseResponse enrollStudentInternal(@RequestBody EnrollmentRequest request) {
+        if (request == null || request.courseId() == null || request.userId() == null) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.BAD_REQUEST, "Course ID and User ID are required");
+        }
         courseService.enrollAfterPayment(request.courseId(), request.userId());
 
         Course course = courseService.getCourseById(request.courseId());
@@ -107,6 +111,7 @@ public class EnrollmentController {
 
     @GetMapping("/course/{courseId}/students")
     public List<UUID> getEnrolledStudentsByCourseId(@PathVariable Long courseId) {
+        courseService.getCourseById(courseId);
         List<Enrollment> enrollments = enrollmentRepository.findByCourseId(courseId);
         return enrollments.stream()
                 .map(Enrollment::getStudentId)

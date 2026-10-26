@@ -61,15 +61,23 @@ public class CouponController {
 
     @GetMapping("/validate/{code}")
     public ResponseEntity<Double> validateByCode(@PathVariable String code) {
+        if (code == null || code.isBlank()) {
+            throw new org.springframework.web.server.ResponseStatusException(HttpStatus.BAD_REQUEST, "Coupon code is required");
+        }
 
         try {
             Coupon coupon = service.findByCode(code);
-            return ResponseEntity.ok(
-                    coupon != null && coupon.isActive()
-                            ? coupon.getDiscountValue()
-                            : 0.0);
+            java.time.LocalDateTime now = java.time.LocalDateTime.now();
+            boolean isValid = coupon != null && coupon.isActive()
+                    && (coupon.getStartTime() == null || !coupon.getStartTime().isAfter(now))
+                    && (coupon.getEndTime() == null || !coupon.getEndTime().isBefore(now))
+                    && (coupon.getUsageLimit() == null || coupon.getUsedCount() < coupon.getUsageLimit());
+
+            return ResponseEntity.ok(isValid ? coupon.getDiscountValue() : 0.0);
+        } catch (org.springframework.web.server.ResponseStatusException ex) {
+            throw ex;
         } catch (RuntimeException ex) {
-            return ResponseEntity.ok(0.0);
+            throw new org.springframework.web.server.ResponseStatusException(HttpStatus.NOT_FOUND, "Coupon not found: " + code);
         }
     }
 
@@ -143,6 +151,10 @@ public class CouponController {
     @PostMapping("/validate")
     public ResponseEntity<ApiResponse<ValidationResponse>> validate(
             @RequestBody ValidateRequest request) {
+        if (request == null || request.getCouponCode() == null || request.getCouponCode().isBlank()) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    HttpStatus.BAD_REQUEST, "Coupon code is required");
+        }
 
         return ResponseEntity.ok(
                 ApiResponse.success(
@@ -153,6 +165,10 @@ public class CouponController {
     @PostMapping("/best-discount")
     public ResponseEntity<ApiResponse<ValidationResponse>> bestDiscount(
             @RequestBody AutoApplyRequest request) {
+        if (request == null || request.getPrice() == null) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    HttpStatus.BAD_REQUEST, "Course price is required");
+        }
 
         return ResponseEntity.ok(
                 ApiResponse.success(
@@ -163,6 +179,10 @@ public class CouponController {
     @PostMapping("/redeem")
     public ResponseEntity<ApiResponse<Map<String, Object>>> redeem(
             @RequestBody RedeemRequest request) {
+        if (request == null || request.getCouponCode() == null || request.getCouponCode().isBlank()) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    HttpStatus.BAD_REQUEST, "Coupon code is required");
+        }
 
         return ResponseEntity.ok(
                 ApiResponse.success(
@@ -174,6 +194,10 @@ public class CouponController {
     @PreAuthorize("hasAuthority('SERVICE_COUPON_SERVICE') or hasAuthority('SERVICE_ALL') or hasAnyRole('MAIN_ADMIN','SUB_ADMIN','INSTRUCTOR')")
     public ResponseEntity<ApiResponse<Map<String, Object>>> assign(
             @RequestBody Map<String, String> request) {
+        if (request == null || request.isEmpty() || (!request.containsKey("couponCode") && !request.containsKey("code"))) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    HttpStatus.BAD_REQUEST, "Coupon code and user ID are required");
+        }
 
         String couponCode = request.getOrDefault("couponCode", request.get("code"));
         String userId = request.get("userId");

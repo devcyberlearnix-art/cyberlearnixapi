@@ -1,5 +1,7 @@
 package com.lms.coupon_service.config;
 
+import com.cyberlearnix.error.ApiSecurityErrorWriter;
+import com.cyberlearnix.logging.TraceIdFilter;
 import com.lms.coupon_service.security.JwtAuthenticationFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
@@ -28,8 +30,16 @@ public class SecurityConfig {
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
+                .exceptionHandling(errors -> errors
+                    .authenticationEntryPoint((request, response, exception) ->
+                        ApiSecurityErrorWriter.write(request, response, 401,
+                            "UNAUTHORIZED", "Authentication is required"))
+                    .accessDeniedHandler((request, response, exception) ->
+                        ApiSecurityErrorWriter.write(request, response, 403,
+                            "FORBIDDEN", "Insufficient permissions")))
+                .addFilterBefore(new TraceIdFilter(), org.springframework.security.web.context.SecurityContextHolderFilter.class)
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
+                        .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html", "/actuator/health").permitAll()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);

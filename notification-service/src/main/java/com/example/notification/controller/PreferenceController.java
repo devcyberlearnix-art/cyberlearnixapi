@@ -32,6 +32,10 @@ public class PreferenceController {
     @PutMapping
     public ResponseEntity<ApiResponse<Map<String, Object>>> updatePreferences(
             @RequestBody UpdatePreferenceRequest request) {
+        if (request == null || (request.getEmailEnabled() == null && request.getPushEnabled() == null && request.getInAppEnabled() == null)) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.BAD_REQUEST, "Preference update payload cannot be empty");
+        }
 
         Map<String, Object> response =
                 preferenceService.updatePreferences(request);

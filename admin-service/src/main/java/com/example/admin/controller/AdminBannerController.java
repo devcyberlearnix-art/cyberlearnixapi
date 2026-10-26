@@ -31,13 +31,20 @@ public class AdminBannerController {
      */
     @PostMapping("/banners")
     public CourseListResponse createBanner(@RequestBody Map<String, Object> bannerPayload) {
+        if (bannerPayload == null || bannerPayload.isEmpty()) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.BAD_REQUEST, "Banner payload is required");
+        }
         Map result = courseServiceClient.createBanner(bannerPayload);
-        List<Object> dataList = result != null ? List.of(result) : List.of();
+        if (result == null) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.BAD_REQUEST, "Failed to create banner");
+        }
         return CourseListResponse.builder()
-                .success(result != null)
-                .message(result != null ? "Banner created successfully" : "Failed to create banner")
-                .data(dataList)
-                .count(dataList.size())
+                .success(true)
+                .message("Banner created successfully")
+                .data(List.of(result))
+                .count(1)
                 .timestamp(LocalDateTime.now().toString())
                 .build();
     }
@@ -64,12 +71,15 @@ public class AdminBannerController {
     @GetMapping("/banners/{bannerId}")
     public CourseListResponse getBannerById(@PathVariable Long bannerId) {
         Map banner = courseServiceClient.getBannerById(bannerId);
-        List<Object> dataList = banner != null ? List.of(banner) : List.of();
+        if (banner == null) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.NOT_FOUND, "Banner not found");
+        }
         return CourseListResponse.builder()
-                .success(banner != null)
-                .message(banner != null ? "Banner retrieved successfully" : "Banner not found")
-                .data(dataList)
-                .count(dataList.size())
+                .success(true)
+                .message("Banner retrieved successfully")
+                .data(List.of(banner))
+                .count(1)
                 .timestamp(LocalDateTime.now().toString())
                 .build();
     }
@@ -79,13 +89,20 @@ public class AdminBannerController {
      */
     @PutMapping("/banners/{bannerId}")
     public CourseListResponse updateBanner(@PathVariable Long bannerId, @RequestBody Map<String, Object> bannerPayload) {
+        if (bannerPayload == null || bannerPayload.isEmpty()) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.BAD_REQUEST, "Banner payload is required");
+        }
         Map result = courseServiceClient.updateBanner(bannerId, bannerPayload);
-        List<Object> dataList = result != null ? List.of(result) : List.of();
+        if (result == null) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.NOT_FOUND, "Banner not found or update failed");
+        }
         return CourseListResponse.builder()
-                .success(result != null)
-                .message(result != null ? "Banner updated successfully" : "Failed to update banner")
-                .data(dataList)
-                .count(dataList.size())
+                .success(true)
+                .message("Banner updated successfully")
+                .data(List.of(result))
+                .count(1)
                 .timestamp(LocalDateTime.now().toString())
                 .build();
     }
@@ -95,13 +112,20 @@ public class AdminBannerController {
      */
     @PatchMapping("/banners/{bannerId}")
     public CourseListResponse partialUpdateBanner(@PathVariable Long bannerId, @RequestBody Map<String, Object> bannerPayload) {
+        if (bannerPayload == null || bannerPayload.isEmpty()) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.BAD_REQUEST, "Banner payload is required");
+        }
         Map result = courseServiceClient.partialUpdateBanner(bannerId, bannerPayload);
-        List<Object> dataList = result != null ? List.of(result) : List.of();
+        if (result == null) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.NOT_FOUND, "Banner not found or update failed");
+        }
         return CourseListResponse.builder()
-                .success(result != null)
-                .message(result != null ? "Banner updated successfully" : "Failed to update banner")
-                .data(dataList)
-                .count(dataList.size())
+                .success(true)
+                .message("Banner updated successfully")
+                .data(List.of(result))
+                .count(1)
                 .timestamp(LocalDateTime.now().toString())
                 .build();
     }
@@ -111,13 +135,20 @@ public class AdminBannerController {
      */
     @PatchMapping("/banners/{bannerId}/status")
     public CourseListResponse updateBannerStatus(@PathVariable Long bannerId, @RequestBody Map<String, Object> statusPayload) {
+        if (statusPayload == null || statusPayload.isEmpty()) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.BAD_REQUEST, "Status payload is required");
+        }
         Map result = courseServiceClient.updateBannerStatus(bannerId, statusPayload);
-        List<Object> dataList = result != null ? List.of(result) : List.of();
+        if (result == null) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.NOT_FOUND, "Banner not found or update failed");
+        }
         return CourseListResponse.builder()
-                .success(result != null)
-                .message(result != null ? "Banner status updated successfully" : "Failed to update banner status")
-                .data(dataList)
-                .count(dataList.size())
+                .success(true)
+                .message("Banner status updated successfully")
+                .data(List.of(result))
+                .count(1)
                 .timestamp(LocalDateTime.now().toString())
                 .build();
     }
@@ -144,13 +175,15 @@ public class AdminBannerController {
     @DeleteMapping("/banners/{bannerId}")
     public CourseListResponse deleteBanner(@PathVariable Long bannerId) {
         Map result = courseServiceClient.deleteBanner(bannerId);
-        boolean deleted = result != null;
-        List<Object> dataList = deleted ? List.of(result) : List.of();
+        if (result == null) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.NOT_FOUND, "Banner not found");
+        }
         return CourseListResponse.builder()
-                .success(deleted)
-                .message(deleted ? "Banner deleted successfully" : "Failed to delete banner")
-                .data(dataList)
-                .count(dataList.size())
+                .success(true)
+                .message("Banner deleted successfully")
+                .data(List.of(result))
+                .count(1)
                 .timestamp(LocalDateTime.now().toString())
                 .build();
     }
@@ -161,12 +194,15 @@ public class AdminBannerController {
     @GetMapping("/banners/{bannerId}/analytics")
     public CourseListResponse getBannerAnalytics(@PathVariable Long bannerId) {
         Map analytics = courseServiceClient.getBannerAnalytics(bannerId);
-        List<Object> dataList = analytics != null ? List.of(analytics) : List.of();
+        if (analytics == null) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.NOT_FOUND, "Banner not found");
+        }
         return CourseListResponse.builder()
-                .success(analytics != null)
-                .message(analytics != null ? "Banner analytics retrieved successfully" : "Failed to get banner analytics")
-                .data(dataList)
-                .count(dataList.size())
+                .success(true)
+                .message("Banner analytics retrieved successfully")
+                .data(List.of(analytics))
+                .count(1)
                 .timestamp(LocalDateTime.now().toString())
                 .build();
     }
@@ -253,12 +289,15 @@ public class AdminBannerController {
     @PostMapping("/banners/{bannerId}/restore")
     public CourseListResponse restoreBanner(@PathVariable Long bannerId) {
         Map result = courseServiceClient.restoreBanner(bannerId);
-        List<Object> dataList = result != null ? List.of(result) : List.of();
+        if (result == null) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.NOT_FOUND, "Banner not found");
+        }
         return CourseListResponse.builder()
-                .success(result != null)
-                .message(result != null ? "Banner restored successfully" : "Failed to restore banner")
-                .data(dataList)
-                .count(dataList.size())
+                .success(true)
+                .message("Banner restored successfully")
+                .data(List.of(result))
+                .count(1)
                 .timestamp(LocalDateTime.now().toString())
                 .build();
     }
@@ -285,12 +324,15 @@ public class AdminBannerController {
     @PostMapping("/banners/{bannerId}/conversion")
     public CourseListResponse trackBannerConversion(@PathVariable Long bannerId) {
         Map result = courseServiceClient.trackBannerConversion(bannerId);
-        List<Object> dataList = result != null ? List.of(result) : List.of();
+        if (result == null) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.NOT_FOUND, "Banner not found");
+        }
         return CourseListResponse.builder()
-                .success(result != null)
-                .message(result != null ? "Banner conversion tracked successfully" : "Failed to track banner conversion")
-                .data(dataList)
-                .count(dataList.size())
+                .success(true)
+                .message("Banner conversion tracked successfully")
+                .data(List.of(result))
+                .count(1)
                 .timestamp(LocalDateTime.now().toString())
                 .build();
     }

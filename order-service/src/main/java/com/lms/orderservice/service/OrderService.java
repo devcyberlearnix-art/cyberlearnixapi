@@ -3,6 +3,7 @@ package com.lms.orderservice.service;
 import com.lms.orderservice.client.CartClient;
 import com.lms.orderservice.client.CouponClient;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.client.HttpClientErrorException;
 import com.lms.orderservice.client.dto.cart.ApiResponse;
 import com.lms.orderservice.client.dto.cart.CartItem;
 import com.lms.orderservice.client.dto.cart.CartResponse;
@@ -20,7 +21,6 @@ import org.springframework.stereotype.Service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.server.ResponseStatusException;
-
 
 import com.lms.orderservice.dto.CreateOrderRequest;
 
@@ -53,12 +53,12 @@ public class OrderService {
         this.couponClient = couponClient;
     }
 
-    // ✅ Create Order
+    // Create Order
     public Order createOrder(String userId,
                              CreateOrderRequest request) {
 
         if (request == null || userId == null || userId.isBlank()) {
-            throw new RuntimeException("userId is required");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "userId is required");
         }
 
         // 1) Pull cart items for the user
@@ -89,7 +89,7 @@ public class OrderService {
         // 2) Determine which courseIds to persist as order items
         List<Long> courseIds = request.getCourseIds();
         if ((courseIds == null || courseIds.isEmpty()) && (cartItems == null || cartItems.isEmpty())) {
-            throw new RuntimeException("No items to order. Provide courseIds or add items to cart.");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "No items to order. Provide courseIds or add items to cart.");
         }
 
         if (courseIds == null || courseIds.isEmpty()) {
@@ -104,33 +104,50 @@ public class OrderService {
         // 3) Apply coupon (optional) per course item using coupon-service validate API
         String couponCode = request.getCouponCode();
         Double requestedTotal = request.getTotalAmount();
-        double baseTotal;
-        if (requestedTotal != null && requestedTotal > 0.0) {
-            baseTotal = requestedTotal;
-        } else {
-            baseTotal = (cartTotal != null && cartTotal > 0.0) ? cartTotal : coursePricesTotal;
+        double baseTotal = coursePricesTotal;
+        if (baseTotal <= 0.0 && cartTotal != null && cartTotal > 0.0) {
+            baseTotal = cartTotal;
         }
+
         double finalTotal = baseTotal;
-        if (couponCode != null && !couponCode.isBlank() && cartItems != null && !cartItems.isEmpty()) {
+        if (couponCode != null && !couponCode.isBlank()) {
             finalTotal = 0.0;
-            for (CartItem item : cartItems) {
-                if (item == null || item.getCourseId() == null)
-                    continue;
-                double itemPrice = Objects.requireNonNullElse(item.getSubTotal(),
-                        Objects.requireNonNullElse(item.getUnitPrice(), 0.0)
-                                * Objects.requireNonNullElse(item.getQuantity(), 1));
+            for (Long courseId : courseIds) {
+                if (courseId == null) continue;
+                double coursePrice = getCoursePrice(courseId);
 
-                ValidateRequest validateRequest = new ValidateRequest();
-                validateRequest.setCouponCode(couponCode);
-                validateRequest.setCourseId(String.valueOf(item.getCourseId()));
-                validateRequest.setPrice(itemPrice);
+                ValidateRequest validateReq = new ValidateRequest();
+                validateReq.setCouponCode(couponCode.trim());
+                validateReq.setCourseId(courseId);
+                validateReq.setPrice(coursePrice);
 
-                ValidationResponse validation = couponClient.validate(validateRequest);
-                if (validation != null && validation.isValid() && validation.getFinalPrice() != null) {
-                    finalTotal += validation.getFinalPrice();
-                } else {
-                    finalTotal += itemPrice;
+                try {
+                    ApiResponse<ValidationResponse> valResp = couponClient.validate(validateReq);
+                    ValidationResponse valData = valResp != null ? valResp.getData() : null;
+                    if (valData == null || !valData.isValid() || valData.getFinalPrice() == null) {
+                        String errMsg = (valData != null && valData.getMessage() != null && !valData.getMessage().isBlank())
+                                ? valData.getMessage()
+                                : "Invalid or expired coupon: " + couponCode;
+                        logger.warn("Coupon validation rejected for code {}: {}", couponCode, errMsg);
+                        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, errMsg);
+                    }
+                    finalTotal += valData.getFinalPrice();
+                } catch (ResponseStatusException rse) {
+                    throw rse;
+                } catch (Exception ex) {
+                    logger.warn("Coupon validation service call failed for code {}: {}", couponCode, ex.getMessage());
+                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid or expired coupon code: " + couponCode);
                 }
+            }
+        }
+
+        // Backend validation: Do not trust unverified client-supplied total without validation
+        if (requestedTotal != null && requestedTotal > 0.0) {
+            if (Math.abs(requestedTotal - finalTotal) > 0.05) {
+                logger.warn("Order total tampering detected! Client requested {}, but verified order total is {}",
+                        requestedTotal, finalTotal);
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        "Order total mismatch: client total (" + requestedTotal + ") does not match verified order price (" + finalTotal + ")");
             }
         }
 
@@ -142,14 +159,13 @@ public class OrderService {
                     continue;
                 try {
                     RedeemRequest redeemRequest = new RedeemRequest();
-                    redeemRequest.setCouponCode(couponCode);
+                    redeemRequest.setCouponCode(couponCode.trim());
                     redeemRequest.setCourseId(courseId.toString());
                     couponClient.redeem(redeemRequest);
                 } catch (Exception e) {
-                    // Coupon redemption is required for consistency
-                    // If it fails, we must not create the order with a discount that wasn't applied
-                    throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
-                            "Failed to redeem coupon. Order cannot be created to ensure consistency.", e);
+                    logger.error("Failed to redeem coupon {} for course {}: {}", couponCode, courseId, e.getMessage());
+                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                            "Failed to redeem coupon: " + couponCode + ". Order cannot be created.", e);
                 }
             }
         }
@@ -179,11 +195,8 @@ public class OrderService {
         try {
             cartClient.clearCart(userId);
         } catch (Exception e) {
-            // Log the failure with context for manual intervention or retry
             logger.error("Failed to clear cart for userId: {} after order creation. Order ID: {}. Error: {}",
                     userId, savedOrder.getOrderId(), e.getMessage(), e);
-            // Cart clear is idempotent (deleteByUserId), so retry is safe
-            // Order is valid and persisted, so we return success to the client
         }
 
         return savedOrder;
@@ -196,30 +209,50 @@ public class OrderService {
 
         double total = 0.0;
         for (Long courseId : courseIds) {
-            if (courseId == null) {
-                continue;
+            if (courseId == null || courseId <= 0) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid course id: " + courseId);
             }
-            try {
-                String url = courseServiceUrl + "/api/v1/courses/" + courseId;
-                var response = restTemplate.getForEntity(url, java.util.Map.class);
-                if (!response.getStatusCode().is2xxSuccessful()) {
-                    throw new RuntimeException("Course not found with id: " + courseId);
-                }
-                if (response.getBody() != null) {
-                    Object dataObj = response.getBody().get("data");
-                    if (dataObj instanceof java.util.Map<?, ?> dataMap) {
-                        Object priceObj = dataMap.get("price");
-                        if (priceObj instanceof Number num) {
-                            total += num.doubleValue();
-                        }
-                    }
-                }
-            } catch (Exception ex) {
-                logger.warn("Could not validate or fetch course price for id: {}. Error: {}", courseId, ex.getMessage());
-                throw new RuntimeException("Course not found with id: " + courseId, ex);
-            }
+            total += getCoursePrice(courseId);
         }
         return total;
+    }
+
+    private double getCoursePrice(Long courseId) {
+        if (courseId == null || courseId <= 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid course id: " + courseId);
+        }
+        try {
+            String url = courseServiceUrl + "/api/v1/courses/" + courseId;
+            var response = restTemplate.getForEntity(url, java.util.Map.class);
+            if (!response.getStatusCode().is2xxSuccessful() || response.getBody() == null) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Course not found with id: " + courseId);
+            }
+            Object priceObj = response.getBody().get("price");
+            if (priceObj == null) {
+                Object dataObj = response.getBody().get("data");
+                if (dataObj instanceof java.util.Map<?, ?> dataMap) {
+                    priceObj = dataMap.get("price");
+                }
+            }
+            if (priceObj instanceof Number num) {
+                return num.doubleValue();
+            } else {
+                logger.warn("Course {} has no valid price defined", courseId);
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Course price could not be determined for id: " + courseId);
+            }
+        } catch (HttpClientErrorException ex) {
+            if (ex.getStatusCode().value() == 404 || (ex.getResponseBodyAsString() != null && ex.getResponseBodyAsString().contains("Course not found"))) {
+                logger.warn("Course not found in course-service for id: {}", courseId);
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Course not found with id: " + courseId);
+            }
+            logger.warn("Client error fetching course id {}: status {}", courseId, ex.getStatusCode());
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid course id: " + courseId);
+        } catch (ResponseStatusException rse) {
+            throw rse;
+        } catch (Exception ex) {
+            logger.error("Unexpected error validating course id {}: {}", courseId, ex.getMessage(), ex);
+            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "Course service is currently unavailable", ex);
+        }
     }
 
     private Order enrichOrder(Order order) {
@@ -230,7 +263,7 @@ public class OrderService {
         return order;
     }
 
-    // ✅ Get Order
+    // Get Order
     public Order getOrder(String orderId) {
         return orderRepository.findById(orderId)
                 .map(this::enrichOrder)
@@ -245,7 +278,7 @@ public class OrderService {
         return order;
     }
 
-    // ✅ Get Orders by User
+    // Get Orders by User
     public List<Order> getOrdersByUser(String userId) {
         List<Order> orders = orderRepository.findByUserId(userId);
         orders.forEach(this::enrichOrder);
@@ -273,7 +306,7 @@ public class OrderService {
         );
     }
 
-    // ✅ Cancel Order
+    // Cancel Order
     public String cancelOrder(String orderId, String userId) {
         Order order = getOrderForUser(orderId, userId);
 
@@ -312,7 +345,7 @@ public class OrderService {
             if (OrderStatus.PENDING.name().equalsIgnoreCase(order.getStatus())) {
                 List<OrderItem> items = orderItemRepository.findByOrderId(order.getOrderId());
                 for (OrderItem item : items) {
-                    if (courseId.equals(item.getCourseId())) {
+                    if (courseId != null && courseId.equals(String.valueOf(item.getCourseId()))) {
                         transition(order, OrderStatus.COMPLETED);
                         orderRepository.save(order);
                         break;

@@ -53,7 +53,8 @@ public class CartServiceImpl implements CartService {
 
         if (existing.isPresent()) {
             CartItem item = existing.get();
-            item.setQuantity(item.getQuantity() + 1);
+            // In an LMS, a user can only enroll in a course once; keep quantity at 1
+            item.setQuantity(1);
             item.setPrice(courseData.getPrice());
             cartRepository.save(item);
         } else {
@@ -76,7 +77,11 @@ public class CartServiceImpl implements CartService {
         String cartId = UUID.nameUUIDFromBytes(userId.getBytes()).toString();
 
         List<CourseInCartResponse> courses = cart.getItems().stream()
-                .map(item -> new CourseInCartResponse(String.valueOf(item.getCourseId()), item.getCourseName(), item.getUnitPrice()))
+                .map(item -> new CourseInCartResponse(
+                        String.valueOf(item.getCourseId()),
+                        item.getCourseName(),
+                        item.getUnitPrice(),
+                        item.getQuantity()))
                 .toList();
 
         return new MyCartResponse(cartId, courses.size(), courses);
@@ -92,8 +97,9 @@ public class CartServiceImpl implements CartService {
             dto.setCourseId(entity.getCourseId());
             dto.setCourseName(entity.getCourseName());
             dto.setUnitPrice(entity.getPrice());
-            dto.setQuantity(entity.getQuantity());
-            dto.setSubTotal(entity.getPrice() * entity.getQuantity());
+            int quantity = (entity.getQuantity() != null && entity.getQuantity() > 0) ? entity.getQuantity() : 1;
+            dto.setQuantity(quantity);
+            dto.setSubTotal(entity.getPrice() * quantity);
             return dto;
         }).toList();
 
@@ -106,7 +112,25 @@ public class CartServiceImpl implements CartService {
         CartResponse cart = buildCartResponse(userId);
         double subtotal = cart.getTotalCartPrice();
         double discount = 0.0;
-        double totalAmount = subtotal - discount;
+
+        List<CartItem> items = cartRepository.findAllByUserId(userId);
+        if (!items.isEmpty() && items.get(0).getCouponCode() != null) {
+            String couponCode = items.get(0).getCouponCode();
+            try {
+                Double discountPercentage = couponClient.getDiscount(couponCode);
+                if (discountPercentage != null && discountPercentage > 0) {
+                    if (discountPercentage > 100) {
+                        discount = Math.min(discountPercentage, subtotal);
+                    } else {
+                        discount = (subtotal * discountPercentage) / 100.0;
+                    }
+                }
+            } catch (Exception e) {
+                // If coupon check fails, discount is 0
+            }
+        }
+
+        double totalAmount = Math.max(0.0, subtotal - discount);
 
         return CartSummaryResponse.builder()
                 .totalCourses(cart.getItems().size())
@@ -120,20 +144,41 @@ public class CartServiceImpl implements CartService {
     @Transactional
     public CouponApplyResponse applyCouponToCart(String userId, String couponCode) {
         CartResponse response = buildCartResponse(userId);
-        double discountAmount = 0.0;
-
-        Double discountPercentage = couponClient.getDiscount(couponCode);
-        if (discountPercentage != null && discountPercentage > 0) {
-            discountAmount = (response.getTotalCartPrice() * discountPercentage) / 100;
-            response.setTotalCartPrice(response.getTotalCartPrice() - discountAmount);
-
-            // Store coupon code in all cart items for this user
-            List<CartItem> items = cartRepository.findAllByUserId(userId);
-            items.forEach(item -> item.setCouponCode(couponCode));
-            cartRepository.saveAll(items);
+        if (response.getItems() == null || response.getItems().isEmpty()) {
+            throw new IllegalArgumentException("Cannot apply coupon to an empty cart");
         }
 
-        return new CouponApplyResponse(couponCode, discountAmount, response.getTotalCartPrice());
+        if (couponCode == null || couponCode.trim().isEmpty()) {
+            throw new IllegalArgumentException("Coupon code is required");
+        }
+
+        String cleanCouponCode = couponCode.trim();
+        Double discountPercentage;
+        try {
+            discountPercentage = couponClient.getDiscount(cleanCouponCode);
+        } catch (FeignException e) {
+            throw new IllegalArgumentException("Invalid or expired coupon code: " + cleanCouponCode);
+        }
+
+        if (discountPercentage == null || discountPercentage <= 0.0) {
+            throw new IllegalArgumentException("Invalid or expired coupon code: " + cleanCouponCode);
+        }
+
+        double discountAmount;
+        if (discountPercentage > 100) {
+            discountAmount = Math.min(discountPercentage, response.getTotalCartPrice());
+        } else {
+            discountAmount = (response.getTotalCartPrice() * discountPercentage) / 100.0;
+        }
+
+        double totalAmount = Math.max(0.0, response.getTotalCartPrice() - discountAmount);
+
+        // Store coupon code in all cart items for this user
+        List<CartItem> items = cartRepository.findAllByUserId(userId);
+        items.forEach(item -> item.setCouponCode(cleanCouponCode));
+        cartRepository.saveAll(items);
+
+        return new CouponApplyResponse(cleanCouponCode, discountAmount, totalAmount);
     }
 
     @Override
@@ -152,7 +197,8 @@ public class CartServiceImpl implements CartService {
     @Override
     public RemoveCourseResponse removeCourseFromCart(String userId, Long courseId) {
         CartItem item = cartRepository.findByUserIdAndCourseId(userId, courseId)
-                .orElseThrow(() -> new RuntimeException("Course not found in cart"));
+                .orElseThrow(() -> new org.springframework.web.server.ResponseStatusException(
+                        org.springframework.http.HttpStatus.NOT_FOUND, "Course not found in cart"));
 
         cartRepository.delete(item);
         return new RemoveCourseResponse(courseId);
@@ -193,7 +239,8 @@ public class CartServiceImpl implements CartService {
     @Transactional
     public CartResponse removeFromCart(String userId, Long cartId, String instructorId, String courseId) {
         CartItem item = cartRepository.findById(cartId)
-                .orElseThrow(() -> new RuntimeException("Item not found"));
+                .orElseThrow(() -> new org.springframework.web.server.ResponseStatusException(
+                        org.springframework.http.HttpStatus.NOT_FOUND, "Item not found"));
 
         if (item.getQuantity() > 1) {
             item.setQuantity(item.getQuantity() - 1);
@@ -217,6 +264,10 @@ public class CartServiceImpl implements CartService {
     @Override
     @Transactional
     public AddCourseResponse addToCartInternal(String userId, Long courseId) {
+        if (courseId == null) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.BAD_REQUEST, "Course ID is required");
+        }
         // Create a CartRequest for the internal add operation
         CartRequest request = new CartRequest();
         request.setCourseId(courseId);

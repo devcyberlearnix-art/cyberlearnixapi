@@ -3,8 +3,6 @@ package com.lms.courseservice.service;
 import com.lms.courseservice.dto.BannerImageUploadRequest;
 import com.lms.courseservice.dto.ImageValidationResult;
 import com.lms.courseservice.exception.BannerException;
-import com.cloudinary.Cloudinary;
-import com.cloudinary.Uploader;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -14,13 +12,9 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.web.MockMultipartFile;
 
-import java.util.HashMap;
-import java.util.Map;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
@@ -28,10 +22,7 @@ import static org.mockito.Mockito.*;
 class BannerImageServiceTest {
 
     @Mock
-    private Cloudinary cloudinary;
-
-    @Mock
-    private Uploader uploader;
+    private GoogleDriveService googleDriveService;
 
     @InjectMocks
     private BannerImageService bannerImageService;
@@ -147,23 +138,13 @@ class BannerImageServiceTest {
     @Disabled("Banner feature not fully implemented")
     @Test
     void uploadImage_shouldUploadSuccessfully() throws Exception {
-        when(cloudinary.uploader()).thenReturn(uploader);
-        
-        Map<String, Object> uploadResult = new HashMap<>();
-        uploadResult.put("secure_url", "https://cloudinary.com/image.jpg");
-        uploadResult.put("format", "jpg");
-        uploadResult.put("width", 1920);
-        uploadResult.put("height", 1080);
-        uploadResult.put("bytes", 500000L);
-
-        when(uploader.upload(any(byte[].class), anyMap())).thenReturn(uploadResult);
+        when(googleDriveService.uploadBytes(any(byte[].class), anyString(), anyString()))
+                .thenReturn("https://drive.google.com/file/d/example/view");
 
         BannerImageUploadRequest result = bannerImageService.uploadImage(validJpgImage, "desktop");
 
         assertThat(result).isNotNull();
-        assertThat(result.getDesktopImageUrl()).isEqualTo("https://cloudinary.com/image.jpg");
-        assertThat(result.getImageWidth()).isEqualTo(1920);
-        assertThat(result.getImageHeight()).isEqualTo(1080);
+        assertThat(result.getDesktopImageUrl()).isEqualTo("https://drive.google.com/file/d/example/view");
         assertThat(result.getImageFormat()).isEqualTo("jpg");
     }
 
@@ -175,15 +156,16 @@ class BannerImageServiceTest {
     }
 
     @Test
-    void generateMobileImageUrl_shouldGenerateCloudinaryUrl() {
-        String desktopUrl = "https://res.cloudinary.com/demo/image/upload/v123/banner.jpg";
+    void generateMobileImageUrl_shouldReturnOriginal_forGoogleDriveUrl() {
+        String desktopUrl = "https://drive.google.com/file/d/example/view";
         String mobileUrl = bannerImageService.generateMobileImageUrl(desktopUrl);
 
-        assertThat(mobileUrl).contains("c_scale,w_768,q_auto,f_auto");
+        // Google Drive doesn't support dynamic transformation like Cloudinary
+        assertThat(mobileUrl).isEqualTo(desktopUrl);
     }
 
     @Test
-    void generateMobileImageUrl_shouldReturnOriginal_forNonCloudinaryUrl() {
+    void generateMobileImageUrl_shouldReturnOriginal_forNonGoogleDriveUrl() {
         String desktopUrl = "https://example.com/banner.jpg";
         String mobileUrl = bannerImageService.generateMobileImageUrl(desktopUrl);
 
@@ -192,22 +174,20 @@ class BannerImageServiceTest {
 
     @Disabled("Banner feature not fully implemented")
     @Test
-    void deleteImage_shouldCallCloudinaryDestroy() throws Exception {
-        String imageUrl = "https://res.cloudinary.com/demo/image/upload/v123/banner.jpg";
+    void deleteImage_shouldCallGoogleDriveDelete() throws Exception {
+        String imageUrl = "https://drive.google.com/file/d/example/view";
 
-        doNothing().when(uploader).destroy(anyString(), anyMap());
+        doNothing().when(googleDriveService).deleteFile(anyString());
 
         bannerImageService.deleteImage(imageUrl);
 
-        verify(uploader).destroy(anyString(), anyMap());
+        verify(googleDriveService).deleteFile(anyString());
     }
 
     @Test
-    void deleteImage_shouldDoNothing_forNonCloudinaryUrl() throws Exception {
-        String imageUrl = "https://example.com/banner.jpg";
+    void deleteImage_shouldDoNothing_forNullUrl() throws Exception {
+        bannerImageService.deleteImage(null);
 
-        bannerImageService.deleteImage(imageUrl);
-
-        verify(uploader, never()).destroy(anyString(), anyMap());
+        verify(googleDriveService, never()).deleteFile(anyString());
     }
 }

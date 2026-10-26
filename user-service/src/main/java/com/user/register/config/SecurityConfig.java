@@ -58,7 +58,8 @@ public class SecurityConfig {
                                                 .permitAll()
 
                                                 .requestMatchers("/api/v1/users/me").authenticated()
-                                                .requestMatchers("/api/v1/users/me/photo").permitAll()
+                                                .requestMatchers("/api/v1/users/me/photo").authenticated()
+                                                .requestMatchers("/api/v1/users/photo/**").authenticated()
                                                 .requestMatchers("/api/v1/users/public/upload-photo").permitAll()
                                                 .requestMatchers("/api/v1/users/me/sessions/**").authenticated()
                                                 .requestMatchers("/api/v1/instructors/applications").authenticated()

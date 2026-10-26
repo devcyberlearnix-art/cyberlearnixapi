@@ -709,7 +709,7 @@ public class CourseService {
         public CourseFullResponseDTO getCourseAnalytics(UUID instructorId, Long courseId) {
                 // 1️⃣ Validate course belongs to instructor
                 Course course = courseRepository.findByIdAndInstructorId(courseId, instructorId)
-                                .orElseThrow(() -> new RuntimeException(
+                                .orElseThrow(() -> new NotFoundException(
                                                 "Course not found with id: " + courseId + " for instructor: "
                                                                 + instructorId));
 

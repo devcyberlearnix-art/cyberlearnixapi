@@ -1,5 +1,6 @@
 package com.example.notification.dto;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
@@ -7,10 +8,10 @@ import lombok.Data;
 public class DeviceTokenRequest {
 
     @NotBlank(message = "Device token is required")
+    @JsonAlias({"deviceToken", "fcmToken", "pushToken"})
     private String token;
 
-    @NotBlank(message = "Device type is required") // ANDROID / IOS / WEB
-    private String deviceType;
+    private String deviceType = "WEB"; // ANDROID / IOS / WEB
 
     private String deviceId; // optional (for multiple devices)
 }

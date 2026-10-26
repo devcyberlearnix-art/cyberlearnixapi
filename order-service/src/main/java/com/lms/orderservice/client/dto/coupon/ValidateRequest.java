@@ -3,7 +3,7 @@ package com.lms.orderservice.client.dto.coupon;
 public class ValidateRequest {
 
     private String couponCode;
-    private String courseId;
+    private Long courseId;
     private Double price;
 
     public String getCouponCode() {
@@ -14,11 +14,11 @@ public class ValidateRequest {
         this.couponCode = couponCode;
     }
 
-    public String getCourseId() {
+    public Long getCourseId() {
         return courseId;
     }
 
-    public void setCourseId(String courseId) {
+    public void setCourseId(Long courseId) {
         this.courseId = courseId;
     }
 

@@ -102,7 +102,6 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
             if (profilePhoto != null && (user.getProfilePhoto() == null || user.getProfilePhoto().isBlank())) {
                 user.setProfilePhoto(profilePhoto);
             }
-            user.setLastLoginAt(LocalDateTime.now());
             user.setLastLogin(LocalDateTime.now());
             user = userRepository.save(user);
         } else {
@@ -116,7 +115,6 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
                     .firstName(firstName != null ? encryptField(firstName) : "")
                     .lastName(lastName != null ? encryptField(lastName) : "")
                     .createdAt(LocalDateTime.now())
-                    .lastLoginAt(LocalDateTime.now())
                     .lastLogin(LocalDateTime.now())
                     .build();
             user = userRepository.save(user);

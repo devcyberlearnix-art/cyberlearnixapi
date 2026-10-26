@@ -21,6 +21,7 @@ dependencies {
 
     // ✅ Spring Boot Starter Web (REST APIs)
     implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
 
     // ✅ Spring Data JPA (Hibernate)
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'

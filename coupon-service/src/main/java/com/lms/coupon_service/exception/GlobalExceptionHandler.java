@@ -1,58 +1,47 @@
 package com.lms.coupon_service.exception;
 
-import com.lms.coupon_service.dto.ApiResponse;
-import com.lms.coupon_service.exception.CouponAlreadyExistsException;
-import com.lms.coupon_service.exception.CouponValidationException;
-import org.springframework.dao.DataIntegrityViolationException;
+import com.cyberlearnix.error.ApiErrorResponse;
+import com.cyberlearnix.error.BaseGlobalExceptionHandler;
+import com.lms.coupon_service.dto.ErrorDetail;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-import java.time.LocalDateTime;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
-/**
- * Centralized exception handling for the Coupon Service.
- * Ensures all errors follow a consistent JSON format.
- */
 @RestControllerAdvice
-public class GlobalExceptionHandler {
+public class GlobalExceptionHandler extends BaseGlobalExceptionHandler {
 
-    /**
-     * Handles specific business logic errors thrown from the Service layer.
-     * Triggered by: Validation failures, limit reached, or invalid assignments.
-     */
     @ExceptionHandler(CouponValidationException.class)
-    public ResponseEntity<ApiResponse<Object>> handleValidation(CouponValidationException ex) {
-        return new ResponseEntity<>(ApiResponse.error(ex.getMessage(), ex.getErrors()), HttpStatus.BAD_REQUEST);
+    public ResponseEntity<ApiErrorResponse> handleValidation(
+            CouponValidationException ex, HttpServletRequest request) {
+        Map<String, String> fieldErrors = new LinkedHashMap<>();
+        if (ex.getErrors() != null) {
+            for (ErrorDetail err : ex.getErrors()) {
+                if (err.getField() != null && err.getMessage() != null) {
+                    fieldErrors.put(err.getField(), err.getMessage());
+                }
+            }
+        }
+        return buildResponse(HttpStatus.BAD_REQUEST, "VALIDATION_ERROR", ex.getMessage(), request, fieldErrors, ex);
     }
 
     @ExceptionHandler(CouponAlreadyExistsException.class)
-    public ResponseEntity<ApiResponse<Object>> handleAlreadyExists(CouponAlreadyExistsException ex) {
-        return new ResponseEntity<>(ApiResponse.error(ex.getMessage()), HttpStatus.CONFLICT);
+    public ResponseEntity<ApiErrorResponse> handleAlreadyExists(
+            CouponAlreadyExistsException ex, HttpServletRequest request) {
+        return buildResponse(HttpStatus.CONFLICT, "CONFLICT", ex.getMessage(), request, ex);
     }
 
     @ExceptionHandler(RuntimeException.class)
-    public ResponseEntity<ApiResponse<Object>> handleBusinessLogic(RuntimeException ex) {
-        return new ResponseEntity<>(ApiResponse.error(ex.getMessage()), HttpStatus.BAD_REQUEST);
-    }
-
-    /**
-     * Handles Database Integrity issues.
-     * Triggered by: Duplicate Coupon Codes (Unique constraint violation).
-     */
-    @ExceptionHandler(DataIntegrityViolationException.class)
-    public ResponseEntity<ApiResponse<Object>> handleDuplicateKeyException(DataIntegrityViolationException ex) {
-        return new ResponseEntity<>(ApiResponse.error("A coupon with this code already exists."), HttpStatus.CONFLICT);
-    }
-
-    /**
-     * Catch-all for all other unexpected exceptions.
-     * Ensures the API always returns a JSON body rather than an empty response.
-     */
-    @ExceptionHandler(Exception.class)
-    public ResponseEntity<ApiResponse<Object>> handleAll(Exception ex) {
-        return new ResponseEntity<>(ApiResponse.error("An unexpected error occurred: " + ex.getMessage()),
-                HttpStatus.INTERNAL_SERVER_ERROR);
+    public ResponseEntity<ApiErrorResponse> handleBusinessLogic(
+            RuntimeException ex, HttpServletRequest request) {
+        String msg = ex.getMessage() != null ? ex.getMessage() : "Bad request";
+        if (msg.toLowerCase().contains("not found")) {
+            return buildResponse(HttpStatus.NOT_FOUND, "RESOURCE_NOT_FOUND", msg, request, ex);
+        }
+        return buildResponse(HttpStatus.BAD_REQUEST, "BAD_REQUEST", msg, request, ex);
     }
 }

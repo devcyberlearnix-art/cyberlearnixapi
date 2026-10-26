@@ -14,6 +14,8 @@ import com.user.register.entity.InstructorApplication;
 
 import com.user.register.entity.User;
 
+import com.user.register.exception.ProfilePhotoException;
+
 import com.user.register.repository.AuditLogRepository;
 
 import com.user.register.repository.InstructorApplicationRepository;
@@ -45,7 +47,7 @@ import org.springframework.beans.factory.annotation.Value;
 
 import java.io.ByteArrayOutputStream;
 
-
+import lombok.extern.slf4j.Slf4j;
 
 import javax.imageio.ImageIO;
 
@@ -76,7 +78,7 @@ import java.util.stream.Collectors;
 
 
 @Service
-
+@Slf4j
 public class UserService {
 
 
@@ -296,52 +298,73 @@ public class UserService {
                 .collect(Collectors.toList());
 
         // 5️⃣ Build profile response
+        String name = (firstName != null && lastName != null) ? firstName + " " + lastName : null;
+        String role = user.getEffectiveRole();
+        String profilePhoto = user.getProfilePhoto();
 
-        return new UserProfileResponse(
+        return UserProfileResponse.builder()
 
-                firstName,
+                .firstName(firstName)
 
-                lastName,
+                .lastName(lastName)
 
-                user.getEmail(),
+                .name(name)
 
-                mobile,
+                .email(user.getEmail())
 
-                dob,
+                .mobile(mobile)
 
-                user.getProfilePhoto(),
+                .mobileNumber(mobile) // Alias for mobile
 
-                city,
+                .phone(mobile) // Alias for mobile (can be separated if needed)
 
-                state,
+                .dob(dob)
 
-                country,
+                .profilePhoto(profilePhoto)
 
-                user.getPreferredLanguage(),
+                .photoURL(profilePhoto) // Deprecated field for backward compatibility
 
-                organization,
+                .avatar(profilePhoto) // Deprecated field for backward compatibility
 
-                user.getSkills(),
+                .city(city)
 
-                user.getFieldOfStudy(),
+                .state(state)
 
-                user.getHighestQualification(),
+                .country(country)
 
-                user.getId(),              // ✅ UUID HERE
+                .countryCode(user.getCountryCode())
 
-                user.getEffectiveRole(),       // ✅ dynamic role
+                .preferredLanguage(user.getPreferredLanguage())
 
-                user.getStatus().name(),
+                .organization(organization)
 
-                user.getCreatedAt(),
+                .skills(user.getSkills())
 
-                user.getUpdatedAt(),
+                .fieldOfStudy(user.getFieldOfStudy())
 
-                user.getLastLoginAt(),
+                .highestQualification(user.getHighestQualification())
 
-                activeSessions
+                .gender(user.getGender())
 
-        );
+                .userId(user.getId())
+
+                .id(user.getId().toString()) // String alias for userId
+
+                .role(role)
+
+                .userRole(role) // Alias for role
+
+                .status(user.getStatus().name())
+
+                .createdAt(user.getCreatedAt())
+
+                .updatedAt(user.getUpdatedAt())
+
+                .lastLogin(user.getLastLogin())
+
+                .activeSessions(activeSessions)
+
+                .build();
 
     }
 
@@ -378,52 +401,72 @@ public class UserService {
             
 
             // Build profile response from JWT claims (admin data is in admin database)
+            String name = "Admin User";
+            String profilePhoto = "";
 
-            return new UserProfileResponse(
+            return UserProfileResponse.builder()
 
-                    "Admin",  // firstName
+                    .firstName("Admin")
 
-                    "User",   // lastName
+                    .lastName("User")
 
-                    email,
+                    .name(name)
 
-                    "",       // mobile
+                    .email(email)
 
-                    "",       // dob
+                    .mobile("")
 
-                    "",       // profilePhoto
+                    .mobileNumber("")
 
-                    "",       // city
+                    .phone("")
 
-                    "",       // state
+                    .dob("")
 
-                    "",       // country
+                    .profilePhoto(profilePhoto)
 
-                    "en",     // preferredLanguage
+                    .photoURL(profilePhoto)
 
-                    "",       // organization
+                    .avatar(profilePhoto)
 
-                    "",       // skills
+                    .city("")
 
-                    "",       // fieldOfStudy
+                    .state("")
 
-                    "",       // highestQualification
+                    .country("")
 
-                    userId,
+                    .countryCode("")
 
-                    role,
+                    .preferredLanguage("en")
 
-                    "ACTIVE",
+                    .organization("")
 
-                    null,     // createdAt
+                    .skills("")
 
-                    null,     // updatedAt
+                    .fieldOfStudy("")
 
-                    null,     // lastLoginAt
+                    .highestQualification("")
 
-                    new ArrayList<>()  // activeSessions
+                    .gender("")
 
-            );
+                    .userId(userId)
+
+                    .id(userId.toString())
+
+                    .role(role)
+
+                    .userRole(role)
+
+                    .status("ACTIVE")
+
+                    .createdAt(null)
+
+                    .updatedAt(null)
+
+                    .lastLogin(null)
+
+                    .activeSessions(new ArrayList<>())
+
+                    .build();
 
         } catch (Exception e) {
 
@@ -489,6 +532,17 @@ public class UserService {
 
                 user.setLastName(SecurityUtils.encrypt(updateRequest.getLastName(), encryptionKey));
 
+            if (updateRequest.getEmail() != null) {
+                // Check if email is already taken by another user
+                if (!user.getEmail().equals(updateRequest.getEmail())) {
+                    userRepository.findByEmail(updateRequest.getEmail())
+                            .ifPresent(existingUser -> {
+                                throw new RuntimeException("Email is already in use by another user");
+                            });
+                    user.setEmail(updateRequest.getEmail());
+                }
+            }
+
             if (updateRequest.getMobile() != null)
 
                 user.setMobile(SecurityUtils.encrypt(updateRequest.getMobile(), encryptionKey));
@@ -508,6 +562,13 @@ public class UserService {
             if (updateRequest.getCountry() != null)
 
                 user.setCountry(SecurityUtils.encrypt(updateRequest.getCountry(), encryptionKey));
+
+            if (updateRequest.getCountryCode() != null)
+                user.setCountryCode(updateRequest.getCountryCode());
+
+            // Note: mobile is already encrypted above (line 494)
+            // If countryCode is provided separately, it's stored as-is for reference
+            // The mobile field in the database contains the full number with country code
 
             if (updateRequest.getOrganization() != null)
 
@@ -537,6 +598,9 @@ public class UserService {
 
             user.setHighestQualification(updateRequest.getHighestQualification());
 
+        if (updateRequest.getGender() != null)
+            user.setGender(updateRequest.getGender());
+
 
 
         // 5️⃣ Save user
@@ -548,28 +612,50 @@ public class UserService {
         // 6️⃣ Build simplified response (decrypted fields only)
 
         try {
+            String firstName = decrypt(user.getFirstName());
+            String lastName = decrypt(user.getLastName());
+            String mobile = decrypt(user.getMobile());
+            String profilePhoto = user.getProfilePhoto();
+            String name = (firstName != null && lastName != null) ? firstName + " " + lastName : null;
+            String role = user.getRole().name();
 
             return UserProfileResponse.builder()
 
                     .userId(user.getId())
 
-                    .firstName(decrypt(user.getFirstName()))
+                    .id(user.getId().toString())
 
-                    .lastName(decrypt(user.getLastName()))
+                    .firstName(firstName)
+
+                    .lastName(lastName)
+
+                    .name(name)
 
                     .email(user.getEmail())
 
-                    .mobile(decrypt(user.getMobile()))
+                    .mobile(mobile)
+
+                    .mobileNumber(mobile)
+
+                    .phone(mobile)
 
                     .dob(decrypt(user.getDob()))
 
-                    .profilePhoto(user.getProfilePhoto())
+                    .profilePhoto(profilePhoto)
+
+                    .coverPhoto(user.getCoverPhoto())
+
+                    .photoURL(profilePhoto)
+
+                    .avatar(profilePhoto)
 
                     .city(decrypt(user.getCity()))
 
                     .state(decrypt(user.getState()))
 
                     .country(decrypt(user.getCountry()))
+
+                    .countryCode(user.getCountryCode())
 
                     .preferredLanguage(user.getPreferredLanguage())
 
@@ -581,7 +667,11 @@ public class UserService {
 
                     .highestQualification(user.getHighestQualification())
 
-                    .role(user.getRole().name())
+                    .gender(user.getGender())
+
+                    .role(role)
+
+                    .userRole(role)
 
                     .status(user.getStatus().name())
 
@@ -589,7 +679,7 @@ public class UserService {
 
                     .updatedAt(user.getUpdatedAt())
 
-                    .lastLogin(user.getLastLoginAt())
+                    .lastLogin(user.getLastLogin())
 
                     .activeSessions(null)
 
@@ -615,7 +705,7 @@ public class UserService {
 
         User user = userRepository.findById(userId)
 
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ProfilePhotoException(ProfilePhotoException.ErrorCode.USER_NOT_FOUND));
 
 
 
@@ -623,13 +713,13 @@ public class UserService {
 
         if (file.isEmpty()) {
 
-            throw new RuntimeException("No file uploaded");
+            throw new ProfilePhotoException(ProfilePhotoException.ErrorCode.FILE_EMPTY);
 
         }
 
         if (file.getSize() > 5 * 1024 * 1024) { // 5MB
 
-            throw new RuntimeException("File size exceeds 5MB limit");
+            throw new ProfilePhotoException(ProfilePhotoException.ErrorCode.FILE_TOO_LARGE);
 
         }
 
@@ -641,7 +731,7 @@ public class UserService {
 
                 !(contentType.equals("image/jpeg") || contentType.equals("image/png") || contentType.equals("image/webp"))) {
 
-            throw new RuntimeException("Only JPG, PNG, or WEBP files are allowed");
+            throw new ProfilePhotoException(ProfilePhotoException.ErrorCode.INVALID_FILE_TYPE);
 
         }
 
@@ -667,7 +757,7 @@ public class UserService {
 
             String filename = UUID.randomUUID().toString();
 
-            
+
 
             ByteArrayOutputStream os = new ByteArrayOutputStream();
 
@@ -679,7 +769,9 @@ public class UserService {
 
             String fileUrl = googleDriveService.uploadBytes(fileBytes, filename + "." + extension, contentType);
 
-
+            if (fileUrl == null || fileUrl.isEmpty()) {
+                throw new ProfilePhotoException(ProfilePhotoException.ErrorCode.UPLOAD_FAILED);
+            }
 
             // 6️⃣ Update user
 
@@ -689,7 +781,13 @@ public class UserService {
 
             userRepository.save(user);
 
-            // 7️⃣ Fetch active sessions
+        } catch (ProfilePhotoException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new ProfilePhotoException(ProfilePhotoException.ErrorCode.UPLOAD_FAILED, e);
+        }
+
+        // 7️⃣ Fetch active sessions
 
             List<SessionDto> activeSessions = sessionRepository.findByUser(user)
 
@@ -718,28 +816,50 @@ public class UserService {
                     .collect(Collectors.toList());
 
             // 8️⃣ Return simplified response
+            String firstName = decrypt(user.getFirstName());
+            String lastName = decrypt(user.getLastName());
+            String mobile = decrypt(user.getMobile());
+            String profilePhoto = user.getProfilePhoto();
+            String name = (firstName != null && lastName != null) ? firstName + " " + lastName : null;
+            String role = user.getRole().name();
 
             return UserProfileResponse.builder()
 
                     .userId(user.getId())
 
-                    .firstName(decrypt(user.getFirstName()))
+                    .id(user.getId().toString())
 
-                    .lastName(decrypt(user.getLastName()))
+                    .firstName(firstName)
+
+                    .lastName(lastName)
+
+                    .name(name)
 
                     .email(user.getEmail())
 
-                    .mobile(decrypt(user.getMobile()))
+                    .mobile(mobile)
+
+                    .mobileNumber(mobile)
+
+                    .phone(mobile)
 
                     .dob(decrypt(user.getDob()))
 
-                    .profilePhoto(user.getProfilePhoto())
+                    .profilePhoto(profilePhoto)
+
+                    .coverPhoto(user.getCoverPhoto())
+
+                    .photoURL(profilePhoto)
+
+                    .avatar(profilePhoto)
 
                     .city(decrypt(user.getCity()))
 
                     .state(decrypt(user.getState()))
 
                     .country(decrypt(user.getCountry()))
+
+                    .countryCode(user.getCountryCode())
 
                     .preferredLanguage(user.getPreferredLanguage())
 
@@ -751,7 +871,11 @@ public class UserService {
 
                     .highestQualification(user.getHighestQualification())
 
-                    .role(user.getRole().name())
+                    .gender(user.getGender())
+
+                    .role(role)
+
+                    .userRole(role)
 
                     .status(user.getStatus().name())
 
@@ -759,20 +883,235 @@ public class UserService {
 
                     .updatedAt(user.getUpdatedAt())
 
-                    .lastLogin(user.getLastLoginAt())
+                    .lastLogin(user.getLastLogin())
 
                     .activeSessions(null)
 
                     .build();
 
-        } catch (IOException e) {
-
-            throw new RuntimeException("Failed to process uploaded image: " + e.getMessage(), e);
-
-        }
-
     }
 
+    public UserProfileResponse removeProfilePhoto(HttpServletRequest request) {
+        // 1️⃣ Get authenticated user ID
+        UUID userId = resolveAuthenticatedUserId(request);
+
+        // 2️⃣ Fetch user
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ProfilePhotoException(ProfilePhotoException.ErrorCode.USER_NOT_FOUND));
+
+        // 3️⃣ Check if user has a profile photo
+        if (user.getProfilePhoto() == null || user.getProfilePhoto().isEmpty()) {
+            throw new ProfilePhotoException(ProfilePhotoException.ErrorCode.NO_PHOTO_TO_REMOVE);
+        }
+
+        // 4️⃣ Delete the file from Google Drive
+        try {
+            String photoUrl = user.getProfilePhoto();
+            String fileId = googleDriveService.extractFileId(photoUrl);
+            if (fileId != null) {
+                googleDriveService.deleteFile(fileId);
+            }
+        } catch (Exception e) {
+            log.error("Failed to delete photo from Google Drive: {}", e.getMessage(), e);
+            // Continue with database cleanup even if file deletion fails
+        }
+
+        // 5️⃣ Clear the profile photo from user record
+        user.setProfilePhoto(null);
+        user.setUpdatedAt(LocalDateTime.now());
+        userRepository.save(user);
+
+        // 6️⃣ Return updated profile
+        String firstName = decrypt(user.getFirstName());
+        String lastName = decrypt(user.getLastName());
+        String mobile = decrypt(user.getMobile());
+        String name = (firstName != null && lastName != null) ? firstName + " " + lastName : null;
+        String role = user.getRole().name();
+
+        return UserProfileResponse.builder()
+                .userId(user.getId())
+                .id(user.getId().toString())
+                .firstName(firstName)
+                .lastName(lastName)
+                .name(name)
+                .email(user.getEmail())
+                .mobile(mobile)
+                .mobileNumber(mobile)
+                .phone(mobile)
+                .dob(decrypt(user.getDob()))
+                .profilePhoto(null)
+                .photoURL(null)
+                .avatar(null)
+                .city(decrypt(user.getCity()))
+                .state(decrypt(user.getState()))
+                .country(decrypt(user.getCountry()))
+                .countryCode(user.getCountryCode())
+                .preferredLanguage(user.getPreferredLanguage())
+                .organization(decrypt(user.getOrganization()))
+                .skills(user.getSkills())
+                .fieldOfStudy(user.getFieldOfStudy())
+                .highestQualification(user.getHighestQualification())
+                .gender(user.getGender())
+                .role(role)
+                .userRole(role)
+                .status(user.getStatus().name())
+                .createdAt(user.getCreatedAt())
+                .updatedAt(user.getUpdatedAt())
+                .lastLogin(user.getLastLogin())
+                .activeSessions(null)
+                .build();
+    }
+
+    public UserProfileResponse uploadCoverPhoto(HttpServletRequest request, MultipartFile file) {
+        // 1️⃣ Get authenticated user ID
+        UUID userId = resolveAuthenticatedUserId(request);
+
+        // 2️⃣ Fetch user
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ProfilePhotoException(ProfilePhotoException.ErrorCode.USER_NOT_FOUND));
+
+        // 3️⃣ Validate file
+        if (file.isEmpty()) {
+            throw new ProfilePhotoException(ProfilePhotoException.ErrorCode.FILE_EMPTY);
+        }
+
+        if (file.getSize() > 5 * 1024 * 1024) { // 5MB
+            throw new ProfilePhotoException(ProfilePhotoException.ErrorCode.FILE_TOO_LARGE);
+        }
+
+        String contentType = file.getContentType();
+        if (contentType == null ||
+                !(contentType.equals("image/jpeg") || contentType.equals("image/png") || contentType.equals("image/webp"))) {
+            throw new ProfilePhotoException(ProfilePhotoException.ErrorCode.INVALID_FILE_TYPE);
+        }
+
+        // 4️⃣ Upload to Google Drive
+        String coverPhotoUrl;
+        try {
+            coverPhotoUrl = googleDriveService.uploadFile(file);
+        } catch (Exception e) {
+            log.error("Failed to upload cover photo to Google Drive: {}", e.getMessage(), e);
+            throw new ProfilePhotoException(ProfilePhotoException.ErrorCode.UPLOAD_FAILED);
+        }
+
+        // 5️⃣ Update user with new cover photo
+        user.setCoverPhoto(coverPhotoUrl);
+        user.setUpdatedAt(LocalDateTime.now());
+        userRepository.save(user);
+
+        // 6️⃣ Return updated profile
+        String firstName = decrypt(user.getFirstName());
+        String lastName = decrypt(user.getLastName());
+        String mobile = decrypt(user.getMobile());
+        String name = (firstName != null && lastName != null) ? firstName + " " + lastName : null;
+        String role = user.getRole().name();
+
+        return UserProfileResponse.builder()
+                .userId(user.getId())
+                .id(user.getId().toString())
+                .firstName(firstName)
+                .lastName(lastName)
+                .name(name)
+                .email(user.getEmail())
+                .mobile(mobile)
+                .mobileNumber(mobile)
+                .phone(mobile)
+                .dob(decrypt(user.getDob()))
+                .profilePhoto(user.getProfilePhoto())
+                .coverPhoto(coverPhotoUrl)
+                .photoURL(user.getProfilePhoto())
+                .avatar(user.getProfilePhoto())
+                .city(decrypt(user.getCity()))
+                .state(decrypt(user.getState()))
+                .country(decrypt(user.getCountry()))
+                .countryCode(user.getCountryCode())
+                .preferredLanguage(user.getPreferredLanguage())
+                .organization(decrypt(user.getOrganization()))
+                .skills(user.getSkills())
+                .fieldOfStudy(user.getFieldOfStudy())
+                .highestQualification(user.getHighestQualification())
+                .gender(user.getGender())
+                .role(role)
+                .userRole(role)
+                .status(user.getStatus().name())
+                .createdAt(user.getCreatedAt())
+                .updatedAt(user.getUpdatedAt())
+                .lastLogin(user.getLastLogin())
+                .activeSessions(null)
+                .build();
+    }
+
+    public UserProfileResponse removeCoverPhoto(HttpServletRequest request) {
+        // 1️⃣ Get authenticated user ID
+        UUID userId = resolveAuthenticatedUserId(request);
+
+        // 2️⃣ Fetch user
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ProfilePhotoException(ProfilePhotoException.ErrorCode.USER_NOT_FOUND));
+
+        // 3️⃣ Check if user has a cover photo
+        if (user.getCoverPhoto() == null || user.getCoverPhoto().isEmpty()) {
+            throw new ProfilePhotoException(ProfilePhotoException.ErrorCode.NO_PHOTO_TO_REMOVE);
+        }
+
+        // 4️⃣ Delete the file from Google Drive
+        try {
+            String coverPhotoUrl = user.getCoverPhoto();
+            String fileId = googleDriveService.extractFileId(coverPhotoUrl);
+            if (fileId != null) {
+                googleDriveService.deleteFile(fileId);
+            }
+        } catch (Exception e) {
+            log.error("Failed to delete cover photo from Google Drive: {}", e.getMessage(), e);
+            // Continue with database cleanup even if file deletion fails
+        }
+
+        // 5️⃣ Clear the cover photo from user record
+        user.setCoverPhoto(null);
+        user.setUpdatedAt(LocalDateTime.now());
+        userRepository.save(user);
+
+        // 6️⃣ Return updated profile
+        String firstName = decrypt(user.getFirstName());
+        String lastName = decrypt(user.getLastName());
+        String mobile = decrypt(user.getMobile());
+        String name = (firstName != null && lastName != null) ? firstName + " " + lastName : null;
+        String role = user.getRole().name();
+
+        return UserProfileResponse.builder()
+                .userId(user.getId())
+                .id(user.getId().toString())
+                .firstName(firstName)
+                .lastName(lastName)
+                .name(name)
+                .email(user.getEmail())
+                .mobile(mobile)
+                .mobileNumber(mobile)
+                .phone(mobile)
+                .dob(decrypt(user.getDob()))
+                .profilePhoto(user.getProfilePhoto())
+                .coverPhoto(null)
+                .photoURL(user.getProfilePhoto())
+                .avatar(user.getProfilePhoto())
+                .city(decrypt(user.getCity()))
+                .state(decrypt(user.getState()))
+                .country(decrypt(user.getCountry()))
+                .countryCode(user.getCountryCode())
+                .preferredLanguage(user.getPreferredLanguage())
+                .organization(decrypt(user.getOrganization()))
+                .skills(user.getSkills())
+                .fieldOfStudy(user.getFieldOfStudy())
+                .highestQualification(user.getHighestQualification())
+                .gender(user.getGender())
+                .role(role)
+                .userRole(role)
+                .status(user.getStatus().name())
+                .createdAt(user.getCreatedAt())
+                .updatedAt(user.getUpdatedAt())
+                .lastLogin(user.getLastLogin())
+                .activeSessions(null)
+                .build();
+    }
 
 
     public ApiResponse<UserProfileResponse> softDeleteUser(HttpServletRequest request) {
@@ -809,51 +1148,76 @@ public class UserService {
 
 
 
-        UserProfileResponse profile = new UserProfileResponse(
+        String firstName = decrypt(user.getFirstName());
+        String lastName = decrypt(user.getLastName());
+        String mobile = decrypt(user.getMobile());
+        String profilePhoto = user.getProfilePhoto();
+        String name = (firstName != null && lastName != null) ? firstName + " " + lastName : null;
+        String role = user.getRole().name();
 
-                decrypt(user.getFirstName()),
+        UserProfileResponse profile = UserProfileResponse.builder()
 
-                decrypt(user.getLastName()),
+                .firstName(firstName)
 
-                user.getEmail(),
+                .lastName(lastName)
 
-                decrypt(user.getMobile()),
+                .name(name)
 
-                decrypt(user.getDob()),
+                .email(user.getEmail())
 
-                user.getProfilePhoto(),
+                .mobile(mobile)
 
-                decrypt(user.getCity()),
+                .mobileNumber(mobile)
 
-                decrypt(user.getState()),
+                .phone(mobile)
 
-                decrypt(user.getCountry()),
+                .dob(decrypt(user.getDob()))
 
-                user.getPreferredLanguage(),
+                .profilePhoto(profilePhoto)
 
-                decrypt(user.getOrganization()),
+                .photoURL(profilePhoto)
 
-                user.getSkills(),
+                .avatar(profilePhoto)
 
-                user.getFieldOfStudy(),
+                .city(decrypt(user.getCity()))
 
-                user.getHighestQualification(),
+                .state(decrypt(user.getState()))
 
-                user.getId(),   // ✅ UUID (FIXED HERE)
+                .country(decrypt(user.getCountry()))
 
-                user.getRole().name(),
+                .countryCode(user.getCountryCode())
 
-                user.getStatus().name(),
+                .preferredLanguage(user.getPreferredLanguage())
 
-                user.getCreatedAt(),
+                .organization(decrypt(user.getOrganization()))
 
-                user.getUpdatedAt(),
+                .skills(user.getSkills())
 
-                null,
+                .fieldOfStudy(user.getFieldOfStudy())
 
-                null
+                .highestQualification(user.getHighestQualification())
 
-        );
+                .gender(user.getGender())
+
+                .userId(user.getId())
+
+                .id(user.getId().toString())
+
+                .role(role)
+
+                .userRole(role)
+
+                .status(user.getStatus().name())
+
+                .createdAt(user.getCreatedAt())
+
+                .updatedAt(user.getUpdatedAt())
+
+                .lastLogin(user.getLastLogin())
+
+                .activeSessions(null)
+
+                .build();
 
 
 
@@ -981,7 +1345,7 @@ public class UserService {
 
                         .updatedAt(user.getUpdatedAt())
 
-                        .lastLogin(user.getLastLoginAt())
+                        .lastLogin(user.getLastLogin())
 
                         .build())
 
@@ -1014,7 +1378,7 @@ public class UserService {
                         .status(user.getStatus().name())
                         .createdAt(user.getCreatedAt())
                         .updatedAt(user.getUpdatedAt())
-                        .lastLogin(user.getLastLoginAt())
+                        .lastLogin(user.getLastLogin())
                         .build())
                 .collect(Collectors.toList());
         
@@ -1086,7 +1450,7 @@ public class UserService {
 
                 .updatedAt(user.getUpdatedAt())
 
-                .lastLogin(user.getLastLoginAt())
+                .lastLogin(user.getLastLogin())
 
                 .build();
 

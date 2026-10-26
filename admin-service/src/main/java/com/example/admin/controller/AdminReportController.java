@@ -89,14 +89,22 @@ public class AdminReportController {
     // ===== SETTINGS =====
     @PutMapping("/settings/platform")
     public ResponseEntity<ApiResponse<?>> updatePlatform(@RequestBody Map<String, Object> data) {
+        if (data == null || data.isEmpty()) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.BAD_REQUEST, "Platform settings payload cannot be empty");
+        }
 
         boolean result = adminReportService.updatePlatformSettings(data);
+        if (!result) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.BAD_REQUEST, "Failed to update platform settings");
+        }
 
         return ResponseEntity.ok(
                 new ApiResponse<>(
-                        result,
-                        result ? "Platform settings updated successfully" : "Failed to update platform settings",
-                        result,
+                        true,
+                        "Platform settings updated successfully",
+                        true,
                         now()
                 )
         );
@@ -104,14 +112,22 @@ public class AdminReportController {
 
     @PutMapping("/settings/payment")
     public ResponseEntity<ApiResponse<?>> updatePayment(@RequestBody Map<String, Object> data) {
+        if (data == null || data.isEmpty()) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.BAD_REQUEST, "Payment settings payload cannot be empty");
+        }
 
         boolean result = adminReportService.updatePaymentSettings(data);
+        if (!result) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.BAD_REQUEST, "Failed to update payment settings");
+        }
 
         return ResponseEntity.ok(
                 new ApiResponse<>(
-                        result,
-                        result ? "Payment settings updated successfully" : "Failed to update payment settings",
-                        result,
+                        true,
+                        "Payment settings updated successfully",
+                        true,
                         now()
                 )
         );
@@ -119,14 +135,22 @@ public class AdminReportController {
 
     @PutMapping("/settings/notifications")
     public ResponseEntity<ApiResponse<?>> updateNotifications(@RequestBody Map<String, Object> data) {
+        if (data == null || data.isEmpty()) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.BAD_REQUEST, "Notification settings payload cannot be empty");
+        }
 
         boolean result = adminReportService.updateNotificationSettings(data);
+        if (!result) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.BAD_REQUEST, "Failed to update notification settings");
+        }
 
         return ResponseEntity.ok(
                 new ApiResponse<>(
-                        result,
-                        result ? "Notification settings updated successfully" : "Failed to update notification settings",
-                        result,
+                        true,
+                        "Notification settings updated successfully",
+                        true,
                         now()
                 )
         );

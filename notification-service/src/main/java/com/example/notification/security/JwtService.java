@@ -18,6 +18,10 @@ public class JwtService {
         return sharedJwtValidator.extractUserId(cleanToken(token));
     }
 
+    public String extractRole(String token) {
+        return sharedJwtValidator.extractRole(cleanToken(token));
+    }
+
     private String cleanToken(String token) {
         if (token != null && token.startsWith("Bearer ")) {
             return token.substring(7);

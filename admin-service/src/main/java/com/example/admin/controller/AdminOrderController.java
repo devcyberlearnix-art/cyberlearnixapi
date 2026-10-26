@@ -34,7 +34,8 @@ public class AdminOrderController {
             @RequestHeader("Authorization") String authorization) {
         OrderDto order = orderService.getOrderById(id, authorization);
         if (order == null) {
-            return new ApiResponse<>(false, "Order not found", null, LocalDateTime.now().toString());
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.NOT_FOUND, "Order not found");
         }
         return new ApiResponse<>(true, "Order fetched successfully", order, LocalDateTime.now().toString());
     }
@@ -46,7 +47,8 @@ public class AdminOrderController {
             @RequestHeader("Authorization") String authorization) {
         OrderDto updatedOrder = orderService.updateOrderStatus(id, status, authorization);
         if (updatedOrder == null) {
-            return new ApiResponse<>(false, "Order not found or update failed", null, LocalDateTime.now().toString());
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.NOT_FOUND, "Order not found or update failed");
         }
         return new ApiResponse<>(true, "Order status updated successfully", updatedOrder, LocalDateTime.now().toString());
     }
@@ -58,11 +60,17 @@ public class AdminOrderController {
         try {
             OrderDto refundedOrder = orderService.processRefund(id, authorization);
             if (refundedOrder == null) {
-                return new ApiResponse<>(false, "Refund failed or order not found", null, LocalDateTime.now().toString());
+                throw new org.springframework.web.server.ResponseStatusException(
+                        org.springframework.http.HttpStatus.NOT_FOUND, "Order not found or refund failed");
             }
             return new ApiResponse<>(true, "Refund processed successfully", refundedOrder, LocalDateTime.now().toString());
+        } catch (org.springframework.web.server.ResponseStatusException e) {
+            throw e;
         } catch (RuntimeException e) {
-            return new ApiResponse<>(false, e.getMessage(), null, LocalDateTime.now().toString());
+            org.springframework.http.HttpStatus status = (e.getMessage() != null && e.getMessage().contains("404"))
+                    ? org.springframework.http.HttpStatus.NOT_FOUND
+                    : org.springframework.http.HttpStatus.BAD_REQUEST;
+            throw new org.springframework.web.server.ResponseStatusException(status, "Refund failed: " + e.getMessage());
         }
     }
 }

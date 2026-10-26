@@ -8,6 +8,7 @@
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/commonlibs/cyberlearnix.commonlibs.main.iml" filepath="$PROJECT_DIR$/.idea/modules/commonlibs/cyberlearnix.commonlibs.main.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/coupon-service/cyberlearnix.coupon-service.main.iml" filepath="$PROJECT_DIR$/.idea/modules/coupon-service/cyberlearnix.coupon-service.main.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/course-service/cyberlearnix.course-service.main.iml" filepath="$PROJECT_DIR$/.idea/modules/course-service/cyberlearnix.course-service.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/dataset-seeder/cyberlearnix.dataset-seeder.main.iml" filepath="$PROJECT_DIR$/.idea/modules/dataset-seeder/cyberlearnix.dataset-seeder.main.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/instructor-service/cyberlearnix.instructor-service.main.iml" filepath="$PROJECT_DIR$/.idea/modules/instructor-service/cyberlearnix.instructor-service.main.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/notification-service/cyberlearnix.notification-service.main.iml" filepath="$PROJECT_DIR$/.idea/modules/notification-service/cyberlearnix.notification-service.main.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/order-service/cyberlearnix.order-service.main.iml" filepath="$PROJECT_DIR$/.idea/modules/order-service/cyberlearnix.order-service.main.iml" />

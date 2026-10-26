@@ -23,28 +23,18 @@ public class AdminController {
      * Body: { "email", "password", "confirmPassword", "assignedService", ... }
      */
     @PostMapping("/register")
-    public ResponseEntity<AdminRegisterResponse> register(@RequestBody AdminRegisterRequest request) {
-        try {
-            AdminRegisterResponse response = adminAuthService.registerAdmin(request);
-            HttpStatus status = response.isSuccess() ? HttpStatus.CREATED : HttpStatus.BAD_REQUEST;
-            return ResponseEntity.status(status).body(response);
-        } catch (org.springframework.web.server.ResponseStatusException e) {
-            return ResponseEntity.status(e.getStatusCode())
-                        .body(AdminRegisterResponse.builder()
-                                .success(false)
-                                .message(e.getReason())
-                                .timestamp(java.time.LocalDateTime.now().toString())
-                                .build());
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                        .body(AdminRegisterResponse.builder()
-                                .success(false)
-                                .message("Registration failed: " + e.getMessage())
-                                .timestamp(java.time.LocalDateTime.now().toString())
-                                .build());
+    public ResponseEntity<?> register(@RequestBody AdminRegisterRequest request) {
+        AdminRegisterResponse response = adminAuthService.registerAdmin(request);
+        if (!response.isSuccess()) {
+            throw new org.springframework.web.server.ResponseStatusException(HttpStatus.BAD_REQUEST, response.getMessage());
         }
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
+    /**
+     * Admin password login. Called by User Service's unified /api/v1/auth/login
+     * fallback when the email isn't found in user-service's own users table.
+     */
     /**
      * Admin password login. Called by User Service's unified /api/v1/auth/login
      * fallback when the email isn't found in user-service's own users table.
@@ -53,6 +43,10 @@ public class AdminController {
     public ResponseEntity<AdminLoginResponse> login(
                 @RequestBody AdminLoginRequest request,
                 HttpServletRequest httpRequest) {
+        if (request == null || request.getEmail() == null || request.getEmail().isBlank() || request.getPassword() == null || request.getPassword().isBlank()) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    HttpStatus.BAD_REQUEST, "Email and password are required");
+        }
         return ResponseEntity.ok(adminAuthService.login(request, httpRequest));
     }
 
@@ -61,7 +55,18 @@ public class AdminController {
      */
     @PostMapping("/login/otp/request")
     public ResponseEntity<LoginOtpResponse> requestLoginOtp(@RequestBody LoginOtpRequest request) {
-        return ResponseEntity.ok(adminAuthService.requestLoginOtp(request.getEmail()));
+        if (request == null || request.getEmail() == null || request.getEmail().isBlank()) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    HttpStatus.BAD_REQUEST, "Email is required");
+        }
+        LoginOtpResponse response = adminAuthService.requestLoginOtp(request.getEmail());
+        if (!response.isSuccess()) {
+            HttpStatus status = response.getMessage() != null && response.getMessage().contains("does not exist")
+                    ? HttpStatus.NOT_FOUND
+                    : HttpStatus.BAD_REQUEST;
+            throw new org.springframework.web.server.ResponseStatusException(status, response.getMessage());
+        }
+        return ResponseEntity.ok(response);
     }
 
     /**
@@ -71,6 +76,10 @@ public class AdminController {
     public ResponseEntity<AdminLoginResponse> verifyLoginOtp(
                 @RequestBody LoginOtpVerifyRequest request,
                 HttpServletRequest httpRequest) {
+        if (request == null || ((request.getEmail() == null || request.getEmail().isBlank()) && (request.getOtpSessionId() == null || request.getOtpSessionId().isBlank()))) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    HttpStatus.BAD_REQUEST, "Email or otpSessionId is required");
+        }
         return ResponseEntity.ok(adminAuthService.verifyLoginOtp(request, httpRequest));
     }
 
@@ -79,7 +88,16 @@ public class AdminController {
      */
     @PostMapping("/login/otp/resend")
     public ResponseEntity<LoginOtpResponse> resendLoginOtp(@RequestBody ResendOtpRequest request) {
-        return ResponseEntity.ok(adminAuthService.resendLoginOtp(request));
+        if (request == null || request.getOtpSessionId() == null || request.getOtpSessionId().isBlank()) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    HttpStatus.BAD_REQUEST, "otpSessionId is required");
+        }
+        LoginOtpResponse response = adminAuthService.resendLoginOtp(request);
+        if (!response.isSuccess()) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    HttpStatus.BAD_REQUEST, response.getMessage());
+        }
+        return ResponseEntity.ok(response);
     }
 
     /**
@@ -87,7 +105,18 @@ public class AdminController {
      */
     @PostMapping("/password/forgot")
     public ResponseEntity<ForgotPasswordResponse> forgotPassword(@RequestBody ForgotPasswordRequest request) {
-        return ResponseEntity.ok(adminAuthService.forgotPassword(request.getEmail()));
+        if (request == null || request.getEmail() == null || request.getEmail().isBlank()) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    HttpStatus.BAD_REQUEST, "Email is required");
+        }
+        ForgotPasswordResponse response = adminAuthService.forgotPassword(request.getEmail());
+        if (!response.isSuccess()) {
+            HttpStatus status = response.getMessage() != null && response.getMessage().contains("does not exist")
+                    ? HttpStatus.NOT_FOUND
+                    : HttpStatus.BAD_REQUEST;
+            throw new org.springframework.web.server.ResponseStatusException(status, response.getMessage());
+        }
+        return ResponseEntity.ok(response);
     }
 
     /**
@@ -95,7 +124,18 @@ public class AdminController {
      */
     @PostMapping("/password/verify-otp")
     public ResponseEntity<VerifyOtpResponse> verifyPasswordOtp(@RequestBody VerifyOtpRequest request) {
-        return ResponseEntity.ok(adminAuthService.verifyPasswordOtp(request));
+        if (request == null || ((request.getEmail() == null || request.getEmail().isBlank()) && (request.getOtpSessionId() == null || request.getOtpSessionId().isBlank()))) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    HttpStatus.BAD_REQUEST, "Email or otpSessionId is required");
+        }
+        VerifyOtpResponse response = adminAuthService.verifyPasswordOtp(request);
+        if (!response.isSuccess()) {
+            HttpStatus status = response.getMessage() != null && response.getMessage().contains("does not exist")
+                    ? HttpStatus.NOT_FOUND
+                    : HttpStatus.BAD_REQUEST;
+            throw new org.springframework.web.server.ResponseStatusException(status, response.getMessage());
+        }
+        return ResponseEntity.ok(response);
     }
 
     /**
@@ -103,7 +143,16 @@ public class AdminController {
      */
     @PostMapping("/password/otp/resend")
     public ResponseEntity<ForgotPasswordResponse> resendPasswordOtp(@RequestBody ResendOtpRequest request) {
-        return ResponseEntity.ok(adminAuthService.resendPasswordOtp(request));
+        if (request == null || request.getOtpSessionId() == null || request.getOtpSessionId().isBlank()) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    HttpStatus.BAD_REQUEST, "otpSessionId is required");
+        }
+        ForgotPasswordResponse response = adminAuthService.resendPasswordOtp(request);
+        if (!response.isSuccess()) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    HttpStatus.BAD_REQUEST, response.getMessage());
+        }
+        return ResponseEntity.ok(response);
     }
 
     /**
@@ -111,7 +160,16 @@ public class AdminController {
      */
     @PostMapping("/password/reset")
     public ResponseEntity<PasswordResetResponse> resetPassword(@RequestBody PasswordResetRequest request) {
-        return ResponseEntity.ok(adminAuthService.resetPassword(request));
+        if (request == null || request.getNewPassword() == null || request.getNewPassword().isBlank()) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    HttpStatus.BAD_REQUEST, "New password is required");
+        }
+        PasswordResetResponse response = adminAuthService.resetPassword(request);
+        if (!response.isSuccess()) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    HttpStatus.BAD_REQUEST, response.getMessage());
+        }
+        return ResponseEntity.ok(response);
     }
 
     /**

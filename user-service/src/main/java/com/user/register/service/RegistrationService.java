@@ -184,123 +184,82 @@ public class RegistrationService {
 
         if (user.getPassword() == null || user.getPassword().isEmpty())
 
-            throw new RuntimeException("Password is required");
+            throw new IllegalArgumentException("Password is required");
 
         if (user.getConfirmPassword() == null || user.getConfirmPassword().isEmpty())
 
-            throw new RuntimeException("Confirm Password is required");
+            throw new IllegalArgumentException("Confirm Password is required");
 
         if (!user.getPassword().equals(user.getConfirmPassword()))
 
-            throw new RuntimeException("Password and Confirm Password do not match");
+            throw new IllegalArgumentException("Password and Confirm Password do not match");
 
         if (!isPasswordStrong(user.getPassword()))
 
-            throw new RuntimeException("Password is too weak");
-
-        if (user.getSkills() == null || user.getSkills().isBlank()) {
-
-            throw new RuntimeException("At least one skill is required");
-
-        }
+            throw new IllegalArgumentException("Password is too weak");
 
         String normalizedProfilePhoto = ensureCloudinaryProfilePhotoUrl(user.getProfilePhoto());
 
 
 
-        // ================= COUNTRY CODE VALIDATION =================
+        // ================= OPTIONAL MOBILE VALIDATION =================
 
         String countryCode = user.getCountryCode();
+        String fullMobile = null;
+        String encryptedMobile = null;
 
-        if (countryCode == null || !CountryCodes.VALID_CODES.contains(countryCode)) {
-
-            throw new RuntimeException("Invalid country code");
-
-        }
-
-
-
-        // ================= MOBILE VALIDATION =================
-
-        int requiredLength = getMobileLengthForCountry(countryCode);
-        String mobilePattern = "\\d{" + requiredLength + "}";
-        if (user.getMobile() == null || !user.getMobile().matches(mobilePattern)) {
-            throw new RuntimeException("Mobile number must be exactly " + requiredLength + " digits for country " + countryCode);
-        }
-
-
-
-        // ================= FULL MOBILE =================
-
-        System.out.println("=== FULL MOBILE CONSTRUCTION ===");
-
-        System.out.println("CountryCode: " + countryCode);
-
-        System.out.println("Mobile: " + user.getMobile());
-
-        String fullMobile = countryCode + user.getMobile();
-
-        System.out.println("FullMobile: " + fullMobile);
-
-        System.out.println("FullMobile is null: " + (fullMobile == null));
-
-
-
-        // ================= DUPLICATE MOBILE CHECK =================
-
-        String encryptedMobile = SecurityUtils.encrypt(fullMobile, encryptionKey);
-
-        System.out.println("=== DUPLICATE MOBILE CHECK ===");
-
-        System.out.println("Encrypted mobile: " + encryptedMobile);
-
-        Optional<User> existingMobileUser = userRepository.findByMobile(encryptedMobile);
-
-        System.out.println("Existing mobile user found: " + existingMobileUser.isPresent());
-
-
-
-        if (existingMobileUser.isPresent()) {
-
-            User mobileUser = existingMobileUser.get();
-
-            boolean sameEmailAsRequest = user.getEmail() != null
-                    && mobileUser.getEmail() != null
-                    && user.getEmail().equalsIgnoreCase(mobileUser.getEmail());
-
-            if (mobileUser.getStatus() == User.Status.ACTIVE) {
-
-                throw new RuntimeException("Mobile number already registered");
-
+        if (countryCode != null && !countryCode.isBlank()) {
+            if (!CountryCodes.VALID_CODES.contains(countryCode)) {
+                throw new RuntimeException("Invalid country code");
             }
 
-            if (mobileUser.getStatus() == User.Status.PENDING_VERIFICATION) {
-
-                if (!sameEmailAsRequest) {
-                    throw new RuntimeException("Mobile number already registered");
+            // Mobile validation only if both countryCode and mobile are provided
+            if (user.getMobile() != null && !user.getMobile().isBlank()) {
+                int requiredLength = getMobileLengthForCountry(countryCode);
+                String mobilePattern = "\\d{" + requiredLength + "}";
+                if (!user.getMobile().matches(mobilePattern)) {
+                    throw new RuntimeException("Mobile number must be exactly " + requiredLength + " digits for country " + countryCode);
                 }
 
-                if (normalizedProfilePhoto != null && !normalizedProfilePhoto.isBlank()) {
-                    mobileUser.setProfilePhoto(normalizedProfilePhoto);
-                    userRepository.save(mobileUser);
+                // Construct full mobile and check for duplicates
+                fullMobile = countryCode + user.getMobile();
+                encryptedMobile = SecurityUtils.encrypt(fullMobile, encryptionKey);
+
+                Optional<User> existingMobileUser = userRepository.findByMobile(encryptedMobile);
+                if (existingMobileUser.isPresent()) {
+                    User mobileUser = existingMobileUser.get();
+                    boolean sameEmailAsRequest = user.getEmail() != null
+                            && mobileUser.getEmail() != null
+                            && user.getEmail().equalsIgnoreCase(mobileUser.getEmail());
+
+                    if (mobileUser.getStatus() == User.Status.ACTIVE) {
+                        throw new RuntimeException("Mobile number already registered");
+                    }
+
+                    if (mobileUser.getStatus() == User.Status.PENDING_VERIFICATION) {
+                        if (!sameEmailAsRequest) {
+                            throw new RuntimeException("Mobile number already registered");
+                        }
+                        if (normalizedProfilePhoto != null && !normalizedProfilePhoto.isBlank()) {
+                            mobileUser.setProfilePhoto(normalizedProfilePhoto);
+                            userRepository.save(mobileUser);
+                        }
+
+                        enforceRegistrationOtpSendLimit(mobileUser.getEmail());
+                        String otp = generateOTP();
+
+                        otpService.createSession(mobileUser.getEmail(), "registration", otp, 5, 5);
+
+                        try {
+                            emailService.sendOtpEmail(mobileUser.getEmail(), otp);
+                        } catch (Exception e) {
+                            log.error("Failed to send registration OTP email to: {}", mobileUser.getEmail(), e);
+                        }
+
+                        return mobileUser;
+                    }
                 }
-
-                enforceRegistrationOtpSendLimit(mobileUser.getEmail());
-                String otp = generateOTP();
-
-                otpService.createSession(mobileUser.getEmail(), "registration", otp, 5, 5);
-
-                // Send OTP email - don't fail registration if email fails
-                try {
-                    emailService.sendOtpEmail(mobileUser.getEmail(), otp);
-                } catch (Exception e) {
-                    log.error("Failed to send registration OTP email to: {}", mobileUser.getEmail(), e);
-                }
-
-                return mobileUser;
-
             }
-
         }
 
 
@@ -320,8 +279,7 @@ public class RegistrationService {
             User existingUser = existingUserOpt.get();
 
             if (existingUser.getStatus() == User.Status.ACTIVE)
-
-                throw new RuntimeException("Email already registered");
+                throw new ResponseStatusException(HttpStatus.CONFLICT, "Email already registered");
 
             if (existingUser.getStatus() == User.Status.PENDING_VERIFICATION) {
 
@@ -359,9 +317,8 @@ public class RegistrationService {
 
         user.setLastName(SecurityUtils.encrypt(user.getLastName(), encryptionKey));
 
-        user.setMobile(encryptedMobile); // Save encrypted mobile
-
-        // user.setMobileHash(SecurityUtils.hash(fullMobile)); // Temporarily disabled
+        user.setMobile(encryptedMobile); // Save encrypted mobile (null if not provided)
+        user.setCountryCode(countryCode); // Save country code (null if not provided)
 
         if (user.getDob() != null)
 
@@ -1433,9 +1390,9 @@ public class RegistrationService {
 
     private String generateOTP() {
 
-        Random random = new Random();
+        java.security.SecureRandom random = new java.security.SecureRandom();
 
-        return String.valueOf(100000 + random.nextInt(900000));
+        return String.format("%06d", random.nextInt(1000000));
 
     }
 
@@ -1663,7 +1620,7 @@ public class RegistrationService {
 
         user.setUpdatedAt(now);
 
-        user.setLastLoginAt(now);
+        user.setLastLogin(now);
 
         userRepository.save(user);
 

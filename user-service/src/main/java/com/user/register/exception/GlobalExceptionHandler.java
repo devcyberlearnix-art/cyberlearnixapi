@@ -1,199 +1,65 @@
 package com.user.register.exception;
 
-import com.user.register.dto.ApiResponse;
-import com.user.register.exception.EmailChangeException;
+import com.cyberlearnix.error.ApiErrorResponse;
+import com.cyberlearnix.error.BaseGlobalExceptionHandler;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.validation.FieldError;
-import org.springframework.web.bind.MethodArgumentNotValidException;
-import org.springframework.web.bind.MissingServletRequestParameterException;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
-import org.springframework.web.multipart.MultipartException;
-import org.springframework.web.multipart.support.MissingServletRequestPartException;
-
-import java.time.LocalDateTime;
-import java.util.Map;
 
 @RestControllerAdvice
-public class GlobalExceptionHandler {
+public class GlobalExceptionHandler extends BaseGlobalExceptionHandler {
 
     @ExceptionHandler(OtpRateLimitException.class)
-    public ResponseEntity<ApiResponse<Object>> handleOtpRateLimit(OtpRateLimitException ex) {
-        ApiResponse<Object> response = new ApiResponse<>(
-                false,
-                ex.getMessage(),
-                Map.of("cooldownSeconds", ex.getRetryAfterSeconds()),
-                LocalDateTime.now()
-        );
-        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).body(response);
+    public ResponseEntity<ApiErrorResponse> handleOtpRateLimit(OtpRateLimitException ex, HttpServletRequest request) {
+        return buildResponse(HttpStatus.TOO_MANY_REQUESTS, "RATE_LIMIT_EXCEEDED", ex.getMessage(), request, ex);
     }
 
-    /**
-     * Handles all domain-level email-change errors.
-     * The exception carries its own HTTP status (400 / 401 / 404 / 409 / 410 / 429),
-     * so we return exactly that status rather than a generic 500.
-     */
+    @ExceptionHandler(OtpCooldownException.class)
+    public ResponseEntity<ApiErrorResponse> handleOtpCooldown(OtpCooldownException ex, HttpServletRequest request) {
+        String message = "Please wait " + ex.getRemainingSeconds() + " seconds before requesting another OTP.";
+        return buildResponse(HttpStatus.TOO_MANY_REQUESTS, "RATE_LIMIT_EXCEEDED", message, request, ex);
+    }
+
+    @ExceptionHandler(InvalidOtpException.class)
+    public ResponseEntity<ApiErrorResponse> handleInvalidOtp(InvalidOtpException ex, HttpServletRequest request) {
+        return buildResponse(HttpStatus.BAD_REQUEST, "INVALID_OTP", ex.getMessage(), request, ex);
+    }
+
+    @ExceptionHandler(LoginFailedException.class)
+    public ResponseEntity<ApiErrorResponse> handleLoginFailed(LoginFailedException ex, HttpServletRequest request) {
+        return buildResponse(HttpStatus.UNAUTHORIZED, "INVALID_CREDENTIALS", ex.getMessage(), request, ex);
+    }
+
     @ExceptionHandler(EmailChangeException.class)
-    public ResponseEntity<ApiResponse<Object>> handleEmailChangeException(EmailChangeException ex) {
-        ApiResponse<Object> response = new ApiResponse<>(
-                false,
-                ex.getMessage(),
-                null,
-                LocalDateTime.now()
-        );
-        return ResponseEntity.status(ex.getStatus()).body(response);
+    public ResponseEntity<ApiErrorResponse> handleEmailChangeException(EmailChangeException ex, HttpServletRequest request) {
+        HttpStatus status = ex.getStatus() != null ? ex.getStatus() : HttpStatus.BAD_REQUEST;
+        String code = status == HttpStatus.CONFLICT ? "CONFLICT"
+                : status == HttpStatus.NOT_FOUND ? "RESOURCE_NOT_FOUND"
+                : status == HttpStatus.TOO_MANY_REQUESTS ? "RATE_LIMIT_EXCEEDED"
+                : status == HttpStatus.UNAUTHORIZED ? "UNAUTHORIZED"
+                : "BAD_REQUEST";
+        return buildResponse(status, code, ex.getMessage(), request, ex);
     }
 
     @ExceptionHandler(PasswordChangeException.class)
-    public ResponseEntity<ApiResponse<Object>> handlePasswordChangeException(PasswordChangeException ex) {
-        ApiResponse<Object> response = new ApiResponse<>(
-                false,
-                ex.getMessage(),
-                null,
-                LocalDateTime.now()
-        );
-        return ResponseEntity.status(ex.getStatus()).body(response);
+    public ResponseEntity<ApiErrorResponse> handlePasswordChangeException(PasswordChangeException ex, HttpServletRequest request) {
+        HttpStatus status = ex.getStatus() != null ? ex.getStatus() : HttpStatus.BAD_REQUEST;
+        String code = status == HttpStatus.UNAUTHORIZED ? "UNAUTHORIZED"
+                : status == HttpStatus.BAD_REQUEST ? "BAD_REQUEST"
+                : "PASSWORD_ERROR";
+        return buildResponse(status, code, ex.getMessage(), request, ex);
     }
 
-
-    @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ApiResponse<Object>> handleMethodArgumentNotValid(MethodArgumentNotValidException ex) {
-        String message = "Invalid request payload";
-        FieldError fieldError = ex.getBindingResult().getFieldError();
-        if (fieldError != null && fieldError.getDefaultMessage() != null) {
-            message = fieldError.getDefaultMessage();
-        }
-
-        ApiResponse<Object> response = new ApiResponse<>(
-                false,
-                message,
-                null,
-                LocalDateTime.now()
-        );
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+    @ExceptionHandler(ProfilePhotoException.class)
+    public ResponseEntity<ApiErrorResponse> handleProfilePhotoException(ProfilePhotoException ex, HttpServletRequest request) {
+        return buildResponse(HttpStatus.BAD_REQUEST, "BAD_REQUEST", ex.getMessage(), request, ex);
     }
 
-    @ExceptionHandler(MissingServletRequestParameterException.class)
-    public ResponseEntity<ApiResponse<Object>> handleMissingParam(MissingServletRequestParameterException ex) {
-        ApiResponse<Object> response = new ApiResponse<>(
-                false,
-                "Required request parameter '" + ex.getParameterName() + "' is not present",
-                null,
-                LocalDateTime.now()
-        );
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
-    }
-
-    @ExceptionHandler(MissingServletRequestPartException.class)
-    public ResponseEntity<ApiResponse<Object>> handleMissingPart(MissingServletRequestPartException ex) {
-        ApiResponse<Object> response = new ApiResponse<>(
-                false,
-                "Required request part '" + ex.getRequestPartName() + "' is not present",
-                null,
-                LocalDateTime.now()
-        );
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
-    }
-
-    @ExceptionHandler(MultipartException.class)
-    public ResponseEntity<ApiResponse<Object>> handleMultipartException(MultipartException ex) {
-        ApiResponse<Object> response = new ApiResponse<>(
-                false,
-                "Multipart request validation failed: " + ex.getMessage(),
-                null,
-                LocalDateTime.now()
-        );
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
-    }
-
-    @ExceptionHandler(IllegalArgumentException.class)
-    public ResponseEntity<ApiResponse<Object>> handleIllegalArgument(IllegalArgumentException ex) {
-        ApiResponse<Object> response = new ApiResponse<>(
-                false,
-                ex.getMessage(),
-                null,
-                LocalDateTime.now()
-        );
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
-    }
-
-    @ExceptionHandler(org.springframework.web.server.ResponseStatusException.class)
-    public ResponseEntity<ApiResponse<Object>> handleResponseStatusException(org.springframework.web.server.ResponseStatusException ex) {
-        ApiResponse<Object> response = new ApiResponse<>(
-                false,
-                ex.getReason(),
-                null,
-                LocalDateTime.now()
-        );
-        return ResponseEntity.status(ex.getStatusCode()).body(response);
-    }
-
-    @ExceptionHandler(RuntimeException.class)
-    public ResponseEntity<ApiResponse<Object>> handleRuntimeException(RuntimeException ex) {
-        ApiResponse<Object> response = new ApiResponse<>(
-                false,
-                ex.getMessage(),
-                null,
-                LocalDateTime.now()
-        );
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
-    }
-
-    @ExceptionHandler(org.springframework.dao.DataIntegrityViolationException.class)
-    public ResponseEntity<ApiResponse<Object>> handleDataIntegrityViolationException(org.springframework.dao.DataIntegrityViolationException ex) {
-        ApiResponse<Object> response = new ApiResponse<>(
-                false,
-                "Database constraint violation: " + ex.getMostSpecificCause().getMessage(),
-                null,
-                LocalDateTime.now()
-        );
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
-    }
-
-    @ExceptionHandler(NullPointerException.class)
-    public ResponseEntity<ApiResponse<Object>> handleNullPointerException(NullPointerException ex) {
-        ex.printStackTrace();
-        ApiResponse<Object> response = new ApiResponse<>(
-                false,
-                "Null pointer error: " + ex.getMessage(),
-                null,
-                LocalDateTime.now()
-        );
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
-    }
-
-    @ExceptionHandler(Exception.class)
-    public ResponseEntity<ApiResponse<Object>> handleGenericException(Exception ex) {
-        ex.printStackTrace();
-        ApiResponse<Object> response = new ApiResponse<>(
-                false,
-                "Generic exception: " + ex.getClass().getName() + " - " + ex.getMessage(),
-                null,
-                LocalDateTime.now()
-        );
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
-    }
-
-    @ExceptionHandler(org.springframework.security.access.AccessDeniedException.class)
-    public ResponseEntity<ApiResponse<Object>> handleAccessDeniedException(org.springframework.security.access.AccessDeniedException ex) {
-        ApiResponse<Object> response = new ApiResponse<>(
-                false,
-                "Access denied: " + ex.getMessage(),
-                null,
-                LocalDateTime.now()
-        );
-        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
-    }
-
-    @ExceptionHandler(org.springframework.security.core.AuthenticationException.class)
-    public ResponseEntity<ApiResponse<Object>> handleAuthenticationException(org.springframework.security.core.AuthenticationException ex) {
-        ApiResponse<Object> response = new ApiResponse<>(
-                false,
-                "Authentication failed: " + ex.getMessage(),
-                null,
-                LocalDateTime.now()
-        );
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
+    @ExceptionHandler(UsernameNotFoundException.class)
+    public ResponseEntity<ApiErrorResponse> handleUsernameNotFound(UsernameNotFoundException ex, HttpServletRequest request) {
+        return buildResponse(HttpStatus.NOT_FOUND, "RESOURCE_NOT_FOUND", ex.getMessage(), request, ex);
     }
 }

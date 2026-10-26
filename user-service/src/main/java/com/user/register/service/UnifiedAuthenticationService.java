@@ -606,7 +606,6 @@ public class UnifiedAuthenticationService {
                 user.setLastName(encryptField(request.getLastName()));
             }
 
-            user.setLastLoginAt(LocalDateTime.now());
             user.setLastLogin(LocalDateTime.now());
             user = userRepository.save(user);
         } else {
@@ -621,7 +620,6 @@ public class UnifiedAuthenticationService {
                     .firstName(request.getFirstName() != null ? encryptField(request.getFirstName()) : "")
                     .lastName(request.getLastName() != null ? encryptField(request.getLastName()) : "")
                     .createdAt(LocalDateTime.now())
-                    .lastLoginAt(LocalDateTime.now())
                     .lastLogin(LocalDateTime.now())
                     .build();
             user = userRepository.save(user);
@@ -3239,11 +3237,11 @@ public class UnifiedAuthenticationService {
 
 
 
-        Random random = new Random();
+        java.security.SecureRandom random = new java.security.SecureRandom();
 
 
 
-        return String.valueOf(100000 + random.nextInt(900000));
+        return String.format("%06d", random.nextInt(1000000));
 
 
 

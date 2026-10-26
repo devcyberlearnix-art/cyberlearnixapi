@@ -34,12 +34,8 @@ public class AdminReviewController {
         boolean isDeleted = reviewService.deleteReview(id);
 
         if (!isDeleted) {
-            return new ApiResponse<>(
-                    false,
-                    "Review not found or deletion failed",
-                    null,
-                    LocalDateTime.now().toString()
-            );
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.NOT_FOUND, "Review not found or deletion failed");
         }
 
         return new ApiResponse<>(

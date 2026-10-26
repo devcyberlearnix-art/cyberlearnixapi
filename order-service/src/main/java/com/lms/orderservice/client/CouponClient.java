@@ -1,5 +1,6 @@
 package com.lms.orderservice.client;
 
+import com.lms.orderservice.client.dto.cart.ApiResponse;
 import com.lms.orderservice.client.dto.coupon.RedeemRequest;
 import com.lms.orderservice.client.dto.coupon.ValidateRequest;
 import com.lms.orderservice.client.dto.coupon.ValidationResponse;
@@ -18,7 +19,7 @@ import java.util.Map;
 public interface CouponClient {
 
     @PostMapping("/api/v1/coupons/validate")
-    ValidationResponse validate(@RequestBody ValidateRequest request);
+    ApiResponse<ValidationResponse> validate(@RequestBody ValidateRequest request);
 
     @PostMapping("/api/v1/coupons/redeem")
     Map<String, Object> redeem(@RequestBody RedeemRequest request);

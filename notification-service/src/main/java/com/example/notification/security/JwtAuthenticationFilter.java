@@ -39,16 +39,22 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         try {
             String userId = jwtService.extractUserId(token);
+            String role = jwtService.extractRole(token);
 
             if (userId != null &&
                     SecurityContextHolder.getContext().getAuthentication() == null) {
 
-                // 🔥 No DB call needed
+                java.util.List<org.springframework.security.core.authority.SimpleGrantedAuthority> authorities = new java.util.ArrayList<>();
+                if (role != null && !role.isBlank()) {
+                    String cleanRole = role.startsWith("ROLE_") ? role : "ROLE_" + role;
+                    authorities.add(new org.springframework.security.core.authority.SimpleGrantedAuthority(cleanRole));
+                }
+
                 UsernamePasswordAuthenticationToken auth =
                         new UsernamePasswordAuthenticationToken(
                                 userId,
                                 null,
-                                Collections.emptyList()
+                                authorities
                         );
 
                 SecurityContextHolder.getContext().setAuthentication(auth);

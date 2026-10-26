@@ -232,11 +232,7 @@ public class RegistrationController {
             }
 
             if (registerRequest == null || registerRequest.getEmail() == null || registerRequest.getEmail().isBlank()) {
-                return ResponseEntity.badRequest().body(Map.of(
-                        "success", false,
-                        "message", "User details (email, password, etc.) are required for registration.",
-                        "timestamp", LocalDateTime.now().toString()
-                ));
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "User details (email, password, etc.) are required for registration.");
             }
 
             User user = new User();
@@ -254,9 +250,6 @@ public class RegistrationController {
             user.setCountry(registerRequest.getCountry());
             user.setPreferredLanguage(registerRequest.getPreferredLanguage());
             user.setOrganization(registerRequest.getOrganization());
-            if (registerRequest.getSkillsAsList().isEmpty()) {
-                throw new IllegalArgumentException("At least one skill is required");
-            }
             user.setSkills(registerRequest.getSkillsAsString());
             user.setFieldOfStudy(registerRequest.getFieldOfStudy());
             user.setHighestQualification(registerRequest.getHighestQualification());
@@ -311,37 +304,17 @@ public class RegistrationController {
 
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
 
+        } catch (ResponseStatusException e) {
+            throw e;
         } catch (IllegalArgumentException e) {
-            ApiResponse<Object> response = new ApiResponse<>(
-                    false,
-                    e.getMessage(),
-                    null,
-                    LocalDateTime.now()
-            );
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
-
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage(), e);
         } catch (RuntimeException e) {
-            e.printStackTrace();
-            System.out.println("=== REGISTRATION RUNTIME EXCEPTION ===");
-            System.out.println("Message: " + e.getMessage());
-            System.out.println("Cause: " + e.getCause());
-            ApiResponse<Object> response = new ApiResponse<>(
-                    false,
-                    e.getMessage(),
-                    null,
-                    LocalDateTime.now()
-            );
-            return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
-
+            if (e.getMessage() != null && e.getMessage().toLowerCase().contains("already registered")) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT, e.getMessage(), e);
+            }
+            throw e;
         } catch (Exception e) {
-            e.printStackTrace();
-            ApiResponse<Object> response = new ApiResponse<>(
-                    false,
-                    "Internal server error",
-                    null,
-                    LocalDateTime.now()
-            );
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Registration failed: " + e.getMessage(), e);
         }
     }
 
@@ -405,79 +378,21 @@ public class RegistrationController {
             return serviceResponse;
 
         } catch (InvalidOtpException ex) {
-
-            Map<String, Object> errorResponse = new HashMap<>();
-
-            errorResponse.put("success", false);
-
-            errorResponse.put("message", ex.getMessage());
-
-            errorResponse.put("data", Map.of(
-
-                    "remainingAttempts", ex.getRemainingAttempts(),
-
-                    "expiresInSeconds", ex.getSecondsUntilExpiry()
-
-            ));
-
-            errorResponse.put("timestamp", LocalDateTime.now());
-
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
-
+            throw ex;
         } catch (RuntimeException e) {
-
-
-
-            Map<String, Object> errorResponse = new HashMap<>();
-
-            errorResponse.put("success", false);
-
-            errorResponse.put("message", e.getMessage());
-
-            errorResponse.put("data", Map.of(
-
-                    "remainingAttempts", 0,
-
-                    "expiresInSeconds", 0
-
-            ));
-
-            errorResponse.put("timestamp", LocalDateTime.now());
-
-
-
-            String msg = e.getMessage().toLowerCase();
-
-            HttpStatus status;
-
-
-
+            String msg = e.getMessage() != null ? e.getMessage().toLowerCase() : "";
             if (msg.contains("locked")) {
-
-                status = HttpStatus.LOCKED; // 423
-
+                throw new ResponseStatusException(HttpStatus.LOCKED, e.getMessage(), e);
             } else if (msg.contains("suspended")) {
-
-                status = HttpStatus.FORBIDDEN; // 403
-
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, e.getMessage(), e);
             } else if (msg.contains("not found")) {
-
-                status = HttpStatus.NOT_FOUND; // 404
-
+                throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage(), e);
             } else if (msg.contains("expired")) {
-
-                status = HttpStatus.BAD_REQUEST; // 400
-
+                throw new ResponseStatusException(HttpStatus.GONE, e.getMessage(), e);
             } else {
-
-                status = HttpStatus.INTERNAL_SERVER_ERROR; // 500
-
+                throw e;
             }
-
-            return ResponseEntity.status(status).body(errorResponse);
-
         }
-
     }
 
 

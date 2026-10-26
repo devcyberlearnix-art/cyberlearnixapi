@@ -1,5 +1,7 @@
 package com.lms.courseservice.config;
 
+import com.cyberlearnix.error.ApiSecurityErrorWriter;
+import com.cyberlearnix.logging.TraceIdFilter;
 import com.lms.courseservice.security.JwtFilter;
 import com.lms.courseservice.security.ServiceAuthFilter;
 import lombok.RequiredArgsConstructor;
@@ -28,12 +30,26 @@ public class SecurityConfig {
         http
                 .csrf(csrf -> csrf.disable())
                 .cors(cors -> cors.disable()) // Disable CORS - handled by API Gateway
+                .exceptionHandling(errors -> errors
+                    .authenticationEntryPoint((request, response, exception) ->
+                        ApiSecurityErrorWriter.write(request, response, 401,
+                            "UNAUTHORIZED", "Authentication is required"))
+                    .accessDeniedHandler((request, response, exception) ->
+                        ApiSecurityErrorWriter.write(request, response, 403,
+                            "FORBIDDEN", "Insufficient permissions")))
+                .addFilterBefore(new TraceIdFilter(), org.springframework.security.web.context.SecurityContextHolderFilter.class)
                 .authorizeHttpRequests(auth -> auth
-                    .requestMatchers(HttpMethod.GET, "/api/v1/courses/stats")
-                    .hasAnyRole("MAIN_ADMIN", "SUB_ADMIN")
+                        // ============== ACTUATOR & HEALTH ENDPOINTS ==============
+                        // Docker health check genuinely requires only /actuator/health
+                        .requestMatchers("/actuator/health").permitAll()
+                        // Ensure sensitive actuator & management endpoints are not publicly accessible
+                        .requestMatchers("/actuator", "/actuator/**").hasAnyRole("MAIN_ADMIN", "SUB_ADMIN")
+
+                        .requestMatchers(HttpMethod.GET, "/api/v1/courses/stats")
+                        .hasAnyRole("MAIN_ADMIN", "SUB_ADMIN")
                         // ============== PUBLIC ENDPOINTS (No Auth Required) ==============
                         // GET all courses
-                        .requestMatchers(HttpMethod.GET, "/api/v1/courses").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/courses", "/api/v1/courses/list", "/api/v1/courses/featured").permitAll()
                         // GET trending courses (public landing page) - specific pattern first
                         .requestMatchers(HttpMethod.GET, "/api/v1/courses/trending").permitAll()
                         // GET specific course and course list (wildcard matches /list, /{id})
@@ -43,9 +59,9 @@ public class SecurityConfig {
                         // GET course curriculum (hierarchical structure)
                         .requestMatchers(HttpMethod.GET, "/api/v1/courses/*/curriculum").permitAll()
                         // GET course sections
-                        .requestMatchers(HttpMethod.GET, "/api/v1/courses/*/sections").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/courses/*/sections", "/api/v1/courses/sections/*").permitAll()
                         // GET lectures in section - completely public for testing
-                        .requestMatchers(HttpMethod.GET, "/api/v1/sections/*/lectures").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/sections/*/lectures", "/api/v1/sections/lectures/*").permitAll()
                         // GET course preview
                         .requestMatchers(HttpMethod.GET, "/api/v1/courses/*/preview").permitAll()
                         // GET course requirements
@@ -70,6 +86,9 @@ public class SecurityConfig {
                         // ============== AUTHENTICATED ENDPOINTS ==============
                         // Enrollment check (requires auth)
                         .requestMatchers(HttpMethod.GET, "/api/v1/enrollments/check/*").authenticated()
+                        // Enrolled course learning content (requires student/instructor/admin auth)
+                        .requestMatchers(HttpMethod.GET, "/api/v1/courses/*/content", "/api/v1/courses/lectures/*/learn")
+                        .hasAnyRole("STUDENT", "USER", "INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN")
 
                         // ============== STUDENT-ONLY ENDPOINTS ==============
                         // Enroll in course (Student)
@@ -78,7 +97,7 @@ public class SecurityConfig {
 
                         // ============== INSTRUCTOR/ADMIN ENDPOINTS ==============
                         // GET course students (instructor/admin dashboard)
-                        .requestMatchers(HttpMethod.GET, "/api/v1/courses/*/students")
+                        .requestMatchers(HttpMethod.GET, "/api/v1/courses/*/students", "/api/v1/enrollments/course/*/students")
                         .hasAnyRole("INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN")
                         // Create course
                         .requestMatchers(HttpMethod.POST, "/api/v1/courses", "/api/v1/courses/")
@@ -176,25 +195,25 @@ public class SecurityConfig {
 
                         // ============== MEDIA UPLOAD ==============
                         // Upload video to Cloudinary (Instructor/Admin only)
-                        .requestMatchers(HttpMethod.POST, "/api/v1/upload/video", "/api/v1/upload/video/", "/api/v1/courses/upload/video", "/api/v1/courses/upload/video/")
+                        .requestMatchers(HttpMethod.POST, "/api/v1/upload/video", "/api/v1/upload/video/", "/api/v1/courses/upload/video", "/api/v1/courses/upload/video/", "/video", "/video/")
                         .hasAnyRole("INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN")
                         // Upload banner image (Admin only)
-                        .requestMatchers(HttpMethod.POST, "/api/v1/admin/banners/upload-image")
+                        .requestMatchers(HttpMethod.POST, "/api/v1/admin/banners/upload-image", "/admin/banners/upload-image")
                         .hasAnyRole("MAIN_ADMIN", "SUB_ADMIN")
 
                         // ============== BANNER MANAGEMENT (ADMIN) ==============
                         // Banner CRUD operations (Admin only)
-                        .requestMatchers(HttpMethod.POST, "/api/v1/admin/banners")
+                        .requestMatchers(HttpMethod.POST, "/api/v1/admin/banners", "/api/v1/admin/banners/**")
                         .hasAnyRole("MAIN_ADMIN", "SUB_ADMIN")
-                        .requestMatchers(HttpMethod.GET, "/api/v1/admin/banners")
+                        .requestMatchers(HttpMethod.GET, "/api/v1/admin/banners", "/api/v1/admin/banners/**")
                         .hasAnyRole("MAIN_ADMIN", "SUB_ADMIN")
-                        .requestMatchers(HttpMethod.GET, "/api/v1/admin/banners/*")
+                        .requestMatchers(HttpMethod.GET, "/api/v1/admin/banners/**")
                         .hasAnyRole("MAIN_ADMIN", "SUB_ADMIN")
-                        .requestMatchers(HttpMethod.PUT, "/api/v1/admin/banners/*")
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/admin/banners/**")
                         .hasAnyRole("MAIN_ADMIN", "SUB_ADMIN")
-                        .requestMatchers(HttpMethod.PATCH, "/api/v1/admin/banners/*")
+                        .requestMatchers(HttpMethod.PATCH, "/api/v1/admin/banners/**")
                         .hasAnyRole("MAIN_ADMIN", "SUB_ADMIN")
-                        .requestMatchers(HttpMethod.DELETE, "/api/v1/admin/banners/*")
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/admin/banners/**")
                         .hasAnyRole("MAIN_ADMIN", "SUB_ADMIN")
                         .requestMatchers(HttpMethod.PATCH, "/api/v1/admin/banners/reorder")
                         .hasAnyRole("MAIN_ADMIN", "SUB_ADMIN")
@@ -203,10 +222,9 @@ public class SecurityConfig {
 
                         // ============== PUBLIC BANNER ENDPOINTS ==============
                         // Get active banners (public)
-                        .requestMatchers(HttpMethod.GET, "/api/v1/banners").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/banners", "/api/v1/banners/target/*").permitAll()
                         // Track banner impressions and clicks (public)
-                        .requestMatchers(HttpMethod.POST, "/api/v1/banners/*/impression").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/v1/banners/*/click").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/banners/*/impression", "/api/v1/banners/*/click", "/api/v1/banners/*/conversion").permitAll()
 
                         // ============== PROGRESS TRACKING (Authenticated Students) ==============
                         // Start lecture
@@ -249,6 +267,9 @@ public class SecurityConfig {
                         // Get student quiz
                         .requestMatchers(HttpMethod.GET, "/api/v1/quizzes/*/student", "/api/v1/quizzes/*/student/questions")
                         .authenticated()
+                        // Quiz lookup and listing (Student, Instructor, Admin)
+                        .requestMatchers(HttpMethod.GET, "/api/v1/quizzes/*", "/api/v1/quizzes/course/*", "/api/v1/quizzes/section/*", "/api/v1/quizzes/course/*/published")
+                        .hasAnyRole("STUDENT", "USER", "INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN")
                         // Start quiz attempt
                         .requestMatchers(HttpMethod.POST, "/api/v1/quizzes/*/attempts", "/api/v1/quizzes/*/attempts/")
                         .authenticated()
@@ -358,6 +379,24 @@ public class SecurityConfig {
                         // Get course-specific dashboard
                         .requestMatchers(HttpMethod.GET, "/api/v1/dashboard/student/courses/*")
                         .hasAnyRole("STUDENT", "USER")
+
+                        // ============== ASSIGNMENT STUDENT APIs ==============
+                        .requestMatchers(HttpMethod.GET, "/api/v1/assignments/course/*/published", "/api/v1/assignments/*", "/api/v1/assignments/*/submission", "/api/v1/assignments/*/result", "/api/v1/assignments/student/submissions")
+                        .hasAnyRole("STUDENT", "USER", "INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/v1/assignments/*/submission", "/api/v1/assignments/*/submission/submit")
+                        .hasAnyRole("STUDENT", "USER", "INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN")
+
+                        // ============== ASSIGNMENT INSTRUCTOR/ADMIN APIs ==============
+                        .requestMatchers(HttpMethod.POST, "/api/v1/assignments", "/api/v1/courses/*/assignments")
+                        .hasAnyRole("INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/assignments/*", "/api/v1/assignments/*/submission/*/grade", "/api/v1/assignments/submissions/*/grade")
+                        .hasAnyRole("INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN")
+                        .requestMatchers(HttpMethod.PATCH, "/api/v1/assignments/*/publish", "/api/v1/assignments/*/unpublish", "/api/v1/assignments/submissions/*/grade")
+                        .hasAnyRole("INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/assignments/*")
+                        .hasAnyRole("INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/v1/assignments/course/*", "/api/v1/assignments/section/*", "/api/v1/assignments/*/submissions", "/api/v1/assignments/submissions/*", "/api/v1/courses/*/assignments")
+                        .hasAnyRole("STUDENT", "USER", "INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN")
 
                         // Default: deny all other requests
                         .anyRequest().denyAll())

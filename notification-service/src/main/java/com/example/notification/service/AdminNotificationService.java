@@ -227,13 +227,13 @@ public class AdminNotificationService {
 
         userPreferenceRepository.saveAll(preferences); // ✅ correct
 
-        return Map.of(
-                "totalUsers", totalUsers,
-                "updatedUsers", updatedUsers,
-                "unchangedUsers", totalUsers - updatedUsers,
-                "emailEnabled", request.getEmailEnabled(),
-                "pushEnabled", request.getPushEnabled(),
-                "smsEnabled", request.getSmsEnabled()
-        );
+        Map<String, Object> responseMap = new LinkedHashMap<>();
+        responseMap.put("totalUsers", totalUsers);
+        responseMap.put("updatedUsers", updatedUsers);
+        responseMap.put("unchangedUsers", totalUsers - updatedUsers);
+        responseMap.put("emailEnabled", request.getEmailEnabled());
+        responseMap.put("pushEnabled", request.getPushEnabled());
+        responseMap.put("smsEnabled", request.getSmsEnabled());
+        return responseMap;
     }
 }

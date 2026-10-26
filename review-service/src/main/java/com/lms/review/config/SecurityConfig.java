@@ -1,7 +1,10 @@
 package com.lms.review.config;
 
+import com.cyberlearnix.error.ApiSecurityErrorWriter;
+import com.cyberlearnix.logging.TraceIdFilter;
 import com.lms.review.security.JwtAuthenticationEntryPoint;
 import com.lms.review.security.JwtFilter;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -13,9 +16,7 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-
-import java.util.Arrays;
-import java.util.List;
+import org.springframework.security.web.context.SecurityContextHolderFilter;
 
 @Configuration
 @EnableWebSecurity
@@ -32,7 +33,12 @@ public class SecurityConfig {
                 .cors(cors -> cors.disable()) // Disable CORS - handled by API Gateway
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .exceptionHandling(ex -> ex.authenticationEntryPoint(authenticationEntryPoint))
+                .exceptionHandling(ex -> ex
+                        .authenticationEntryPoint(authenticationEntryPoint)
+                        .accessDeniedHandler((request, response, accessDeniedException) ->
+                                ApiSecurityErrorWriter.write(request, response, HttpServletResponse.SC_FORBIDDEN,
+                                        "FORBIDDEN", "Access denied: insufficient permissions"))
+                )
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
                                 "/swagger-ui/**",
@@ -42,7 +48,6 @@ public class SecurityConfig {
                                 "/actuator/health"
                         ).permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/reviews/course/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/v1/admin/reviews", "/api/v1/admin/reviews/**").permitAll()
                         .requestMatchers("/api/v1/admin/**").hasAnyRole("ADMIN", "MAIN_ADMIN", "SUB_ADMIN")
                         .requestMatchers(HttpMethod.POST, "/api/v1/reviews").authenticated()
                         .requestMatchers(HttpMethod.PUT, "/api/v1/reviews/**").authenticated()
@@ -50,6 +55,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/v1/reviews/my/**").authenticated()
                         .anyRequest().authenticated()
                 )
+                .addFilterBefore(new TraceIdFilter(), SecurityContextHolderFilter.class)
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();

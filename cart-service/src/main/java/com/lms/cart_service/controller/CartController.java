@@ -101,7 +101,10 @@ public class CartController {
     public ResponseEntity<ApiResponse<AddCourseResponse>> addToCartInternal(
             @RequestHeader("X-User-Id") String userId,
             @RequestBody com.lms.cart_service.dto.CartRequest request) {
-        
+        if (request == null || request.getCourseId() == null) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.BAD_REQUEST, "Course ID is required");
+        }
         AddCourseResponse data = cartService.addToCartInternal(userId, request.getCourseId());
         return ResponseEntity.status(201).body(ApiResponse.success("Course added to cart successfully.", data));
     }

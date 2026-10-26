@@ -1,6 +1,7 @@
 package com.lms.cart_service.config;
 
 import com.cyberlearnix.error.ApiSecurityErrorWriter;
+import com.cyberlearnix.logging.TraceIdFilter;
 import com.lms.cart_service.security.JwtAuthenticationFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -31,6 +32,7 @@ public class SecurityConfig {
                     .accessDeniedHandler((request, response, exception) ->
                         ApiSecurityErrorWriter.write(request, response, 403,
                             "FORBIDDEN", "Insufficient permissions")))
+                .addFilterBefore(new TraceIdFilter(), org.springframework.security.web.context.SecurityContextHolderFilter.class)
                 .authorizeHttpRequests(auth -> auth
                     .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html", "/actuator/**").permitAll()
                     .requestMatchers("/api/v1/cart/internal/**").permitAll()

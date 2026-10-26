@@ -1,6 +1,7 @@
 package com.example.instructorservice.config;
 
 import com.cyberlearnix.error.ApiSecurityErrorWriter;
+import com.cyberlearnix.logging.TraceIdFilter;
 import com.example.instructorservice.security.JwtFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
@@ -32,7 +33,9 @@ public class SecurityConfig {
                 .accessDeniedHandler((request, response, exception) ->
                     ApiSecurityErrorWriter.write(request, response, 403,
                         "FORBIDDEN", "Insufficient permissions")))
+                .addFilterBefore(new TraceIdFilter(), org.springframework.security.web.context.SecurityContextHolderFilter.class)
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/actuator/health").permitAll()
 
                         .requestMatchers("/api/v1/auth/**").permitAll()
                         .requestMatchers("/api/v1/courses/**").permitAll()

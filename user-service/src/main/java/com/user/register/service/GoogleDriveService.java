@@ -120,4 +120,50 @@ public class GoogleDriveService {
     public String getFileUrl(String fileId) {
         return "https://drive.google.com/uc?id=" + fileId;
     }
+
+    /**
+     * Downloads file bytes from Google Drive using service account credentials.
+     * Used by proxy endpoint to serve images to frontend.
+     */
+    public byte[] downloadFileBytes(String fileId) throws IOException {
+        log.info("Downloading file from Google Drive: {}", fileId);
+        return driveService.files().get(fileId).executeMediaAsInputStream().readAllBytes();
+    }
+
+    /**
+     * Extracts file ID from Google Drive URL.
+     * Handles URLs like: https://drive.google.com/uc?id=FILE_ID
+     */
+    public String extractFileId(String url) {
+        if (url == null || url.isBlank()) {
+            return null;
+        }
+        if (url.contains("drive.google.com/uc?id=")) {
+            return url.substring(url.indexOf("id=") + 3);
+        }
+        if (url.contains("/file/d/")) {
+            int start = url.indexOf("/file/d/") + 8;
+            int end = url.indexOf("/", start);
+            if (end == -1) end = url.indexOf("?", start);
+            if (end == -1) end = url.length();
+            return url.substring(start, end);
+        }
+        return null;
+    }
+
+    /**
+     * Gets the MIME type of a file from Google Drive metadata.
+     * Returns the actual MIME type stored in Google Drive, or a default if unavailable.
+     */
+    public String getFileMimeType(String fileId) {
+        try {
+            File file = driveService.files().get(fileId).setFields("mimeType").execute();
+            String mimeType = file.getMimeType();
+            log.debug("File {} MIME type from Google Drive: {}", fileId, mimeType);
+            return mimeType != null ? mimeType : "image/jpeg";
+        } catch (IOException e) {
+            log.warn("Failed to get MIME type for file {}: {}", fileId, e.getMessage());
+            return "image/jpeg"; // Default fallback
+        }
+    }
 }

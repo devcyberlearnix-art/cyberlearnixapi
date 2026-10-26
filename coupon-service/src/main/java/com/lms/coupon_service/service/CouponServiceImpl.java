@@ -11,8 +11,10 @@ import com.lms.coupon_service.repository.CouponUsageRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
@@ -27,6 +29,9 @@ public class CouponServiceImpl implements CouponService {
     private final CouponUsageRepository usageRepository;
     private final RestTemplate restTemplate = new RestTemplate();
 
+    @org.springframework.beans.factory.annotation.Value("${course.service.url:${COURSE_SERVICE_URL:http://course-service:8083}}")
+    private String courseServiceUrl;
+
     @Override
     public ValidationResponse validateCoupon(ValidateRequest request, String userId) {
         if (request == null || request.getCouponCode() == null || request.getCouponCode().isBlank()) {
@@ -36,7 +41,12 @@ public class CouponServiceImpl implements CouponService {
             validateCourseExists(request.getCourseId().toString());
         }
 
-        Coupon coupon = findByCode(request.getCouponCode());
+        Coupon coupon;
+        try {
+            coupon = findByCode(request.getCouponCode());
+        } catch (Exception ex) {
+            return buildValidationError("Coupon not found: " + request.getCouponCode());
+        }
         LocalDateTime now = LocalDateTime.now();
 
         if (!coupon.isActive())
@@ -148,7 +158,12 @@ public class CouponServiceImpl implements CouponService {
             validateCourseExists(request.getCourseId().toString());
         }
 
-        Coupon coupon = findByCode(request.getCouponCode());
+        Coupon coupon;
+        try {
+            coupon = findByCode(request.getCouponCode());
+        } catch (Exception ex) {
+            throw new RuntimeException("Coupon not found: " + request.getCouponCode());
+        }
 
         LocalDateTime now = LocalDateTime.now();
         if (coupon.getEndTime() != null && coupon.getEndTime().isBefore(now)) {
@@ -180,7 +195,8 @@ public class CouponServiceImpl implements CouponService {
 
     private void validateCourseExists(String courseId) {
         try {
-            String url = "http://localhost:8083/api/v1/courses/" + courseId;
+            String baseUrl = (courseServiceUrl != null && !courseServiceUrl.isBlank()) ? courseServiceUrl : "http://course-service:8083";
+            String url = baseUrl + "/api/v1/courses/" + courseId;
             var response = restTemplate.getForEntity(url, Map.class);
             if (!response.getStatusCode().is2xxSuccessful() || response.getBody() == null) {
                 throw new CouponValidationException("Course not found with id: " + courseId,
@@ -208,7 +224,7 @@ public class CouponServiceImpl implements CouponService {
     @Override
     @Cacheable(value = "coupons", key = "#code")
     public Coupon findByCode(String code) {
-        return repository.findByCode(code).orElseThrow(() -> new RuntimeException("Coupon not found."));
+        return repository.findByCode(code).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Coupon not found."));
     }
 
     @Override
@@ -423,7 +439,7 @@ public class CouponServiceImpl implements CouponService {
     }
 
     private Coupon findEntityById(String couponId) {
-        return repository.findById(couponId).orElseThrow(() -> new RuntimeException("Coupon not found."));
+        return repository.findById(couponId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Coupon not found."));
     }
 
     private CouponDetailsResponse mapToDetailsResponse(Coupon coupon) {

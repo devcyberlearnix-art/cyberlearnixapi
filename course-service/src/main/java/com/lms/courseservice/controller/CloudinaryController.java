@@ -12,7 +12,7 @@ import java.time.Instant;
 import java.util.Map;
 
 @RestController
-@RequestMapping({"/api/v1/upload", "/api/v1/courses/upload"})
+@RequestMapping({"/api/v1/upload", "/api/v1/courses/upload", ""})
 @RequiredArgsConstructor
 public class CloudinaryController {
 
@@ -106,7 +106,7 @@ public class CloudinaryController {
             ));
         }
 
-        String imageUrl = cloudinaryService.uploadImage(file);
+        String imageUrl = googleDriveService.uploadFile(file);
 
         return ResponseEntity.ok(Map.of(
                 "success",          true,

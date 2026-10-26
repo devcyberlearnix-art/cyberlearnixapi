@@ -1,0 +1,1391 @@
+{
+  "service": "course-service",
+  "version": "v1",
+  "base_path": "/api/v1",
+  "description": "Course Service API Documentation",
+  "apis": [
+    {
+      "category": "Course Management",
+      "endpoints": [
+        {
+          "name": "Create Course",
+          "method": "POST",
+          "path": "/courses",
+          "auth_required": true,
+          "roles": ["INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN"],
+          "request_body": {
+            "title": {
+              "type": "string",
+              "required": true,
+              "validation": "min 3, max 100 characters"
+            },
+            "subtitle": {
+              "type": "string",
+              "required": false,
+              "validation": "max 200 characters"
+            },
+            "description": {
+              "type": "string",
+              "required": true,
+              "validation": "min 10, max 2000 characters"
+            },
+            "category": {
+              "type": "string",
+              "required": true,
+              "validation": "max 50 characters"
+            },
+            "level": {
+              "type": "string",
+              "required": false,
+              "validation": "max 50 characters"
+            },
+            "language": {
+              "type": "string",
+              "required": false,
+              "validation": "max 50 characters"
+            },
+            "price": {
+              "type": "number",
+              "required": true,
+              "validation": "min 0.0"
+            },
+            "thumbnail": {
+              "type": "string",
+              "required": false,
+              "validation": "valid URL"
+            },
+            "instructorId": {
+              "type": "UUID",
+              "required": true
+            },
+            "status": {
+              "type": "string",
+              "required": false,
+              "validation": "must be DRAFT, PUBLISHED, or ARCHIVED"
+            },
+            "premium": {
+              "type": "boolean",
+              "required": false
+            }
+          },
+          "example_request": {
+            "title": "Java Programming Masterclass",
+            "subtitle": "Learn Java from scratch",
+            "description": "Comprehensive Java course covering basics to advanced concepts",
+            "category": "Programming",
+            "level": "Beginner",
+            "language": "English",
+            "price": 99.99,
+            "thumbnail": "https://example.com/thumbnail.jpg",
+            "instructorId": "123e4567-e89b-12d3-a456-426614174000",
+            "status": "DRAFT",
+            "premium": true
+          }
+        },
+        {
+          "name": "Update Course (Full)",
+          "method": "PUT",
+          "path": "/courses/{id}",
+          "auth_required": true,
+          "roles": ["INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN"],
+          "request_body": "Full Course entity object",
+          "path_params": {
+            "id": {
+              "type": "Long",
+              "required": true,
+              "description": "Course ID"
+            }
+          }
+        },
+        {
+          "name": "Update Course (Partial)",
+          "method": "PATCH",
+          "path": "/courses/{id}",
+          "auth_required": true,
+          "roles": ["INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN"],
+          "request_body": "Partial Course entity object",
+          "path_params": {
+            "id": {
+              "type": "Long",
+              "required": true,
+              "description": "Course ID"
+            }
+          }
+        },
+        {
+          "name": "Update Course Status",
+          "method": "PATCH",
+          "path": "/courses/{id}/status",
+          "auth_required": true,
+          "roles": ["INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN"],
+          "request_body": {
+            "status": {
+              "type": "string",
+              "required": true
+            }
+          },
+          "path_params": {
+            "id": {
+              "type": "Long",
+              "required": true,
+              "description": "Course ID"
+            }
+          },
+          "example_request": {
+            "status": "PUBLISHED"
+          }
+        },
+        {
+          "name": "Delete Course",
+          "method": "DELETE",
+          "path": "/courses/{id}",
+          "auth_required": true,
+          "roles": ["INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN"],
+          "request_body": null,
+          "path_params": {
+            "id": {
+              "type": "Long",
+              "required": true,
+              "description": "Course ID"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "category": "Section Management",
+      "endpoints": [
+        {
+          "name": "Create Section",
+          "method": "POST",
+          "path": "/courses/{courseId}/sections",
+          "auth_required": true,
+          "roles": ["INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN"],
+          "request_body": {
+            "title": {
+              "type": "string",
+              "required": true
+            },
+            "orderIndex": {
+              "type": "integer",
+              "required": true
+            }
+          },
+          "path_params": {
+            "courseId": {
+              "type": "Long",
+              "required": true,
+              "description": "Course ID"
+            }
+          },
+          "example_request": {
+            "title": "Introduction to Java",
+            "orderIndex": 1
+          }
+        },
+        {
+          "name": "Update Section",
+          "method": "PATCH",
+          "path": "/courses/sections/{sectionId}",
+          "auth_required": true,
+          "roles": ["INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN"],
+          "request_body": "Partial Section object",
+          "path_params": {
+            "sectionId": {
+              "type": "Long",
+              "required": true,
+              "description": "Section ID"
+            }
+          }
+        },
+        {
+          "name": "Delete Section",
+          "method": "DELETE",
+          "path": "/courses/sections/{sectionId}",
+          "auth_required": true,
+          "roles": ["INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN"],
+          "request_body": null,
+          "path_params": {
+            "sectionId": {
+              "type": "Long",
+              "required": true,
+              "description": "Section ID"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "category": "Lecture Management",
+      "endpoints": [
+        {
+          "name": "Create Lecture",
+          "method": "POST",
+          "path": "/sections/{sectionId}/lectures",
+          "auth_required": true,
+          "roles": ["INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN"],
+          "request_body": {
+            "title": {
+              "type": "string",
+              "required": true
+            },
+            "description": {
+              "type": "string",
+              "required": false
+            },
+            "videoUrl": {
+              "type": "string",
+              "required": false
+            },
+            "duration": {
+              "type": "integer",
+              "required": false
+            },
+            "orderIndex": {
+              "type": "integer",
+              "required": false
+            },
+            "previewEnabled": {
+              "type": "boolean",
+              "required": false
+            },
+            "resources": {
+              "type": "string",
+              "required": false
+            },
+            "type": {
+              "type": "string",
+              "required": false,
+              "default": "VIDEO"
+            }
+          },
+          "path_params": {
+            "sectionId": {
+              "type": "Long",
+              "required": true,
+              "description": "Section ID"
+            }
+          },
+          "example_request": {
+            "title": "Setting up Java Development Environment",
+            "description": "Learn how to install and configure Java",
+            "videoUrl": "https://example.com/video.mp4",
+            "duration": 1200,
+            "orderIndex": 1,
+            "previewEnabled": true,
+            "resources": "https://example.com/resources.pdf",
+            "type": "VIDEO"
+          }
+        },
+        {
+          "name": "Update Lecture",
+          "method": "PATCH",
+          "path": "/sections/{sectionId}/lectures/{lectureId}",
+          "auth_required": true,
+          "roles": ["INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN"],
+          "request_body": "Partial Lecture object",
+          "path_params": {
+            "sectionId": {
+              "type": "Long",
+              "required": true,
+              "description": "Section ID"
+            },
+            "lectureId": {
+              "type": "Long",
+              "required": true,
+              "description": "Lecture ID"
+            }
+          }
+        },
+        {
+          "name": "Delete Lecture",
+          "method": "DELETE",
+          "path": "/sections/{sectionId}/lectures/{lectureId}",
+          "auth_required": true,
+          "roles": ["INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN"],
+          "request_body": null,
+          "path_params": {
+            "sectionId": {
+              "type": "Long",
+              "required": true,
+              "description": "Section ID"
+            },
+            "lectureId": {
+              "type": "Long",
+              "required": true,
+              "description": "Lecture ID"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "category": "Course Requirements",
+      "endpoints": [
+        {
+          "name": "Create Course Requirement",
+          "method": "POST",
+          "path": "/courses/{courseId}/requirements",
+          "auth_required": true,
+          "roles": ["INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN"],
+          "request_body": {
+            "courseId": {
+              "type": "Long",
+              "required": true
+            },
+            "requirementType": {
+              "type": "string",
+              "required": true,
+              "validation": "max 50 characters"
+            },
+            "requirementText": {
+              "type": "string",
+              "required": true
+            }
+          },
+          "path_params": {
+            "courseId": {
+              "type": "Long",
+              "required": true,
+              "description": "Course ID"
+            }
+          },
+          "example_request": {
+            "courseId": 1,
+            "requirementType": "Prerequisite",
+            "requirementText": "Basic programming knowledge"
+          }
+        },
+        {
+          "name": "Update Course Requirement",
+          "method": "PUT",
+          "path": "/courses/requirements/{requirementId}",
+          "auth_required": true,
+          "roles": ["INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN"],
+          "request_body": {
+            "courseId": {
+              "type": "Long",
+              "required": true
+            },
+            "requirementType": {
+              "type": "string",
+              "required": true,
+              "validation": "max 50 characters"
+            },
+            "requirementText": {
+              "type": "string",
+              "required": true
+            }
+          },
+          "path_params": {
+            "requirementId": {
+              "type": "Long",
+              "required": true,
+              "description": "Requirement ID"
+            }
+          }
+        },
+        {
+          "name": "Partial Update Course Requirement",
+          "method": "PATCH",
+          "path": "/courses/requirements/{requirementId}",
+          "auth_required": true,
+          "roles": ["INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN"],
+          "request_body": "Partial CourseRequirementsDTO object",
+          "path_params": {
+            "requirementId": {
+              "type": "Long",
+              "required": true,
+              "description": "Requirement ID"
+            }
+          }
+        },
+        {
+          "name": "Delete Course Requirement",
+          "method": "DELETE",
+          "path": "/courses/requirements/{requirementId}",
+          "auth_required": true,
+          "roles": ["INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN"],
+          "request_body": null,
+          "path_params": {
+            "requirementId": {
+              "type": "Long",
+              "required": true,
+              "description": "Requirement ID"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "category": "Learning Outcomes",
+      "endpoints": [
+        {
+          "name": "Create Learning Outcome",
+          "method": "POST",
+          "path": "/courses/{courseId}/outcomes",
+          "auth_required": true,
+          "roles": ["INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN"],
+          "request_body": {
+            "courseId": {
+              "type": "Long",
+              "required": true
+            },
+            "outcomeText": {
+              "type": "string",
+              "required": true
+            },
+            "skillCategory": {
+              "type": "string",
+              "required": false,
+              "validation": "max 50 characters"
+            }
+          },
+          "path_params": {
+            "courseId": {
+              "type": "Long",
+              "required": true,
+              "description": "Course ID"
+            }
+          },
+          "example_request": {
+            "courseId": 1,
+            "outcomeText": "Master Java programming fundamentals",
+            "skillCategory": "Programming"
+          }
+        },
+        {
+          "name": "Update Learning Outcome",
+          "method": "PUT",
+          "path": "/courses/outcomes/{outcomeId}",
+          "auth_required": true,
+          "roles": ["INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN"],
+          "request_body": {
+            "courseId": {
+              "type": "Long",
+              "required": true
+            },
+            "outcomeText": {
+              "type": "string",
+              "required": true
+            },
+            "skillCategory": {
+              "type": "string",
+              "required": false,
+              "validation": "max 50 characters"
+            }
+          },
+          "path_params": {
+            "outcomeId": {
+              "type": "Long",
+              "required": true,
+              "description": "Outcome ID"
+            }
+          }
+        },
+        {
+          "name": "Partial Update Learning Outcome",
+          "method": "PATCH",
+          "path": "/courses/outcomes/{outcomeId}",
+          "auth_required": true,
+          "roles": ["INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN"],
+          "request_body": "Partial LearningOutcomesDTO object",
+          "path_params": {
+            "outcomeId": {
+              "type": "Long",
+              "required": true,
+              "description": "Outcome ID"
+            }
+          }
+        },
+        {
+          "name": "Delete Learning Outcome",
+          "method": "DELETE",
+          "path": "/courses/outcomes/{outcomeId}",
+          "auth_required": true,
+          "roles": ["INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN"],
+          "request_body": null,
+          "path_params": {
+            "outcomeId": {
+              "type": "Long",
+              "required": true,
+              "description": "Outcome ID"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "category": "Course Materials",
+      "endpoints": [
+        {
+          "name": "Create Course Material",
+          "method": "POST",
+          "path": "/courses/{courseId}/materials",
+          "auth_required": true,
+          "roles": ["INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN"],
+          "request_body": {
+            "courseId": {
+              "type": "Long",
+              "required": true
+            },
+            "materialName": {
+              "type": "string",
+              "required": true,
+              "validation": "max 255 characters"
+            },
+            "materialType": {
+              "type": "string",
+              "required": true,
+              "validation": "max 50 characters"
+            },
+            "fileUrl": {
+              "type": "string",
+              "required": true
+            },
+            "fileSize": {
+              "type": "Long",
+              "required": false
+            }
+          },
+          "path_params": {
+            "courseId": {
+              "type": "Long",
+              "required": true,
+              "description": "Course ID"
+            }
+          },
+          "example_request": {
+            "courseId": 1,
+            "materialName": "Java Cheat Sheet",
+            "materialType": "PDF",
+            "fileUrl": "https://example.com/cheatsheet.pdf",
+            "fileSize": 1024000
+          }
+        },
+        {
+          "name": "Update Course Material",
+          "method": "PUT",
+          "path": "/courses/materials/{materialId}",
+          "auth_required": true,
+          "roles": ["INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN"],
+          "request_body": {
+            "courseId": {
+              "type": "Long",
+              "required": true
+            },
+            "materialName": {
+              "type": "string",
+              "required": true,
+              "validation": "max 255 characters"
+            },
+            "materialType": {
+              "type": "string",
+              "required": true,
+              "validation": "max 50 characters"
+            },
+            "fileUrl": {
+              "type": "string",
+              "required": true
+            },
+            "fileSize": {
+              "type": "Long",
+              "required": false
+            }
+          },
+          "path_params": {
+            "materialId": {
+              "type": "Long",
+              "required": true,
+              "description": "Material ID"
+            }
+          }
+        },
+        {
+          "name": "Partial Update Course Material",
+          "method": "PATCH",
+          "path": "/courses/materials/{materialId}",
+          "auth_required": true,
+          "roles": ["INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN"],
+          "request_body": "Partial CourseMaterialsDTO object",
+          "path_params": {
+            "materialId": {
+              "type": "Long",
+              "required": true,
+              "description": "Material ID"
+            }
+          }
+        },
+        {
+          "name": "Delete Course Material",
+          "method": "DELETE",
+          "path": "/courses/materials/{materialId}",
+          "auth_required": true,
+          "roles": ["INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN"],
+          "request_body": null,
+          "path_params": {
+            "materialId": {
+              "type": "Long",
+              "required": true,
+              "description": "Material ID"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "category": "Course FAQ",
+      "endpoints": [
+        {
+          "name": "Create Course FAQ",
+          "method": "POST",
+          "path": "/courses/{courseId}/faqs",
+          "auth_required": true,
+          "roles": ["INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN"],
+          "request_body": {
+            "courseId": {
+              "type": "Long",
+              "required": true
+            },
+            "question": {
+              "type": "string",
+              "required": true
+            },
+            "answer": {
+              "type": "string",
+              "required": true
+            },
+            "displayOrder": {
+              "type": "integer",
+              "required": false
+            }
+          },
+          "path_params": {
+            "courseId": {
+              "type": "Long",
+              "required": true,
+              "description": "Course ID"
+            }
+          },
+          "example_request": {
+            "courseId": 1,
+            "question": "Do I need prior programming experience?",
+            "answer": "No, this course is designed for beginners",
+            "displayOrder": 1
+          }
+        },
+        {
+          "name": "Update Course FAQ",
+          "method": "PUT",
+          "path": "/courses/faqs/{faqId}",
+          "auth_required": true,
+          "roles": ["INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN"],
+          "request_body": {
+            "courseId": {
+              "type": "Long",
+              "required": true
+            },
+            "question": {
+              "type": "string",
+              "required": true
+            },
+            "answer": {
+              "type": "string",
+              "required": true
+            },
+            "displayOrder": {
+              "type": "integer",
+              "required": false
+            }
+          },
+          "path_params": {
+            "faqId": {
+              "type": "Long",
+              "required": true,
+              "description": "FAQ ID"
+            }
+          }
+        },
+        {
+          "name": "Partial Update Course FAQ",
+          "method": "PATCH",
+          "path": "/courses/faqs/{faqId}",
+          "auth_required": true,
+          "roles": ["INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN"],
+          "request_body": "Partial CourseFAQDTO object",
+          "path_params": {
+            "faqId": {
+              "type": "Long",
+              "required": true,
+              "description": "FAQ ID"
+            }
+          }
+        },
+        {
+          "name": "Delete Course FAQ",
+          "method": "DELETE",
+          "path": "/courses/faqs/{faqId}",
+          "auth_required": true,
+          "roles": ["INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN"],
+          "request_body": null,
+          "path_params": {
+            "faqId": {
+              "type": "Long",
+              "required": true,
+              "description": "FAQ ID"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "category": "Quiz Management",
+      "endpoints": [
+        {
+          "name": "Create Quiz",
+          "method": "POST",
+          "path": "/quizzes",
+          "auth_required": true,
+          "roles": ["INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN"],
+          "request_body": {
+            "courseId": {
+              "type": "Long",
+              "required": false
+            },
+            "sectionId": {
+              "type": "Long",
+              "required": false
+            },
+            "title": {
+              "type": "string",
+              "required": false
+            },
+            "description": {
+              "type": "string",
+              "required": false
+            },
+            "instructions": {
+              "type": "string",
+              "required": false
+            },
+            "timeLimitMinutes": {
+              "type": "integer",
+              "required": false
+            },
+            "maxAttempts": {
+              "type": "integer",
+              "required": false
+            },
+            "passingScore": {
+              "type": "integer",
+              "required": false
+            }
+          },
+          "example_request": {
+            "courseId": 1,
+            "sectionId": 1,
+            "title": "Java Basics Quiz",
+            "description": "Test your Java fundamentals",
+            "instructions": "Answer all questions within the time limit",
+            "timeLimitMinutes": 30,
+            "maxAttempts": 3,
+            "passingScore": 70
+          }
+        },
+        {
+          "name": "Update Quiz",
+          "method": "PUT",
+          "path": "/quizzes/{quizId}",
+          "auth_required": true,
+          "roles": ["INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN"],
+          "request_body": "Same as Create Quiz",
+          "path_params": {
+            "quizId": {
+              "type": "Long",
+              "required": true,
+              "description": "Quiz ID"
+            }
+          }
+        },
+        {
+          "name": "Delete Quiz",
+          "method": "DELETE",
+          "path": "/quizzes/{quizId}",
+          "auth_required": true,
+          "roles": ["INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN"],
+          "request_body": null,
+          "path_params": {
+            "quizId": {
+              "type": "Long",
+              "required": true,
+              "description": "Quiz ID"
+            }
+          }
+        },
+        {
+          "name": "Publish Quiz",
+          "method": "PATCH",
+          "path": "/quizzes/{quizId}/publish",
+          "auth_required": true,
+          "roles": ["INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN"],
+          "request_body": null,
+          "path_params": {
+            "quizId": {
+              "type": "Long",
+              "required": true,
+              "description": "Quiz ID"
+            }
+          }
+        },
+        {
+          "name": "Unpublish Quiz",
+          "method": "PATCH",
+          "path": "/quizzes/{quizId}/unpublish",
+          "auth_required": true,
+          "roles": ["INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN"],
+          "request_body": null,
+          "path_params": {
+            "quizId": {
+              "type": "Long",
+              "required": true,
+              "description": "Quiz ID"
+            }
+          }
+        },
+        {
+          "name": "Add Question to Quiz",
+          "method": "POST",
+          "path": "/quizzes/{quizId}/questions",
+          "auth_required": true,
+          "roles": ["INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN"],
+          "request_body": {
+            "questionText": {
+              "type": "string",
+              "required": false
+            },
+            "questionType": {
+              "type": "string",
+              "required": false
+            },
+            "marks": {
+              "type": "integer",
+              "required": false
+            },
+            "orderIndex": {
+              "type": "integer",
+              "required": false
+            },
+            "explanation": {
+              "type": "string",
+              "required": false
+            },
+            "options": {
+              "type": "array",
+              "required": false,
+              "items": {
+                "optionText": "string",
+                "isCorrect": "boolean",
+                "orderIndex": "integer"
+              }
+            }
+          },
+          "path_params": {
+            "quizId": {
+              "type": "Long",
+              "required": true,
+              "description": "Quiz ID"
+            }
+          },
+          "example_request": {
+            "questionText": "What is the correct syntax to print 'Hello World' in Java?",
+            "questionType": "MULTIPLE_CHOICE",
+            "marks": 5,
+            "orderIndex": 1,
+            "explanation": "System.out.println() is the correct method",
+            "options": [
+              {
+                "optionText": "print('Hello World')",
+                "isCorrect": false,
+                "orderIndex": 1
+              },
+              {
+                "optionText": "System.out.println('Hello World')",
+                "isCorrect": true,
+                "orderIndex": 2
+              },
+              {
+                "optionText": "console.log('Hello World')",
+                "isCorrect": false,
+                "orderIndex": 3
+              },
+              {
+                "optionText": "echo 'Hello World'",
+                "isCorrect": false,
+                "orderIndex": 4
+              }
+            ]
+          }
+        },
+        {
+          "name": "Update Question",
+          "method": "PUT",
+          "path": "/quizzes/questions/{questionId}",
+          "auth_required": true,
+          "roles": ["INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN"],
+          "request_body": "Same as Add Question",
+          "path_params": {
+            "questionId": {
+              "type": "Long",
+              "required": true,
+              "description": "Question ID"
+            }
+          }
+        },
+        {
+          "name": "Delete Question",
+          "method": "DELETE",
+          "path": "/quizzes/questions/{questionId}",
+          "auth_required": true,
+          "roles": ["INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN"],
+          "request_body": null,
+          "path_params": {
+            "questionId": {
+              "type": "Long",
+              "required": true,
+              "description": "Question ID"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "category": "Live Class Management",
+      "endpoints": [
+        {
+          "name": "Create Live Class",
+          "method": "POST",
+          "path": "/live-classes",
+          "auth_required": true,
+          "roles": ["INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN"],
+          "request_body": {
+            "courseId": {
+              "type": "Long",
+              "required": true
+            },
+            "sectionId": {
+              "type": "Long",
+              "required": false
+            },
+            "title": {
+              "type": "string",
+              "required": true,
+              "validation": "max 255 characters"
+            },
+            "description": {
+              "type": "string",
+              "required": false,
+              "validation": "max 2000 characters"
+            },
+            "meetingUrl": {
+              "type": "string",
+              "required": true,
+              "validation": "valid URL, max 1000 characters"
+            },
+            "meetingProvider": {
+              "type": "string",
+              "required": true
+            },
+            "scheduledStartTime": {
+              "type": "LocalDateTime",
+              "required": true
+            },
+            "scheduledEndTime": {
+              "type": "LocalDateTime",
+              "required": true
+            },
+            "maxParticipants": {
+              "type": "integer",
+              "required": false,
+              "validation": "must be positive"
+            }
+          },
+          "example_request": {
+            "courseId": 1,
+            "sectionId": 1,
+            "title": "Live Q&A Session",
+            "description": "Interactive session to answer student questions",
+            "meetingUrl": "https://zoom.us/j/123456789",
+            "meetingProvider": "ZOOM",
+            "scheduledStartTime": "2024-01-15T10:00:00",
+            "scheduledEndTime": "2024-01-15T11:00:00",
+            "maxParticipants": 100
+          }
+        },
+        {
+          "name": "Update Live Class",
+          "method": "PUT",
+          "path": "/live-classes/{liveClassId}",
+          "auth_required": true,
+          "roles": ["INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN"],
+          "request_body": "Same as Create Live Class",
+          "path_params": {
+            "liveClassId": {
+              "type": "Long",
+              "required": true,
+              "description": "Live Class ID"
+            }
+          }
+        },
+        {
+          "name": "Delete Live Class",
+          "method": "DELETE",
+          "path": "/live-classes/{liveClassId}",
+          "auth_required": true,
+          "roles": ["INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN"],
+          "request_body": null,
+          "path_params": {
+            "liveClassId": {
+              "type": "Long",
+              "required": true,
+              "description": "Live Class ID"
+            }
+          }
+        },
+        {
+          "name": "Start Live Class",
+          "method": "PATCH",
+          "path": "/live-classes/{liveClassId}/start",
+          "auth_required": true,
+          "roles": ["INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN"],
+          "request_body": null,
+          "path_params": {
+            "liveClassId": {
+              "type": "Long",
+              "required": true,
+              "description": "Live Class ID"
+            }
+          }
+        },
+        {
+          "name": "Complete Live Class",
+          "method": "PATCH",
+          "path": "/live-classes/{liveClassId}/complete",
+          "auth_required": true,
+          "roles": ["INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN"],
+          "request_body": {
+            "recordingUrl": {
+              "type": "string",
+              "required": false
+            }
+          },
+          "path_params": {
+            "liveClassId": {
+              "type": "Long",
+              "required": true,
+              "description": "Live Class ID"
+            }
+          },
+          "example_request": {
+            "recordingUrl": "https://example.com/recording.mp4"
+          }
+        },
+        {
+          "name": "Cancel Live Class",
+          "method": "PATCH",
+          "path": "/live-classes/{liveClassId}/cancel",
+          "auth_required": true,
+          "roles": ["INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN"],
+          "request_body": null,
+          "path_params": {
+            "liveClassId": {
+              "type": "Long",
+              "required": true,
+              "description": "Live Class ID"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "category": "Enrollment",
+      "endpoints": [
+        {
+          "name": "Internal Enrollment (for payment service)",
+          "method": "POST",
+          "path": "/enrollments/internal/enroll",
+          "auth_required": true,
+          "roles": ["INTERNAL"],
+          "request_body": {
+            "courseId": {
+              "type": "Long",
+              "required": true
+            },
+            "userId": {
+              "type": "UUID",
+              "required": true
+            }
+          },
+          "example_request": {
+            "courseId": 1,
+            "userId": "123e4567-e89b-12d3-a456-426614174000"
+          }
+        }
+      ]
+    }
+  ],
+  "public_get_endpoints": [
+    {
+      "name": "Get All Courses",
+      "method": "GET",
+      "path": "/courses",
+      "auth_required": false
+    },
+    {
+      "name": "Get Course List with Filters",
+      "method": "GET",
+      "path": "/courses/list",
+      "auth_required": false,
+      "query_params": {
+        "search": "string (optional)",
+        "category": "string (optional)",
+        "level": "string (optional)",
+        "language": "string (optional)",
+        "minPrice": "BigDecimal (optional)",
+        "maxPrice": "BigDecimal (optional)",
+        "premium": "Boolean (optional)",
+        "free": "Boolean (optional)",
+        "paid": "Boolean (optional)",
+        "sort": "string (optional)",
+        "page": "Integer (optional)",
+        "size": "Integer (optional)"
+      }
+    },
+    {
+      "name": "Get Course Statistics",
+      "method": "GET",
+      "path": "/courses/stats",
+      "auth_required": false
+    },
+    {
+      "name": "Get Featured Courses",
+      "method": "GET",
+      "path": "/courses/featured",
+      "auth_required": false,
+      "query_params": {
+        "limit": "integer (default: 6)"
+      }
+    },
+    {
+      "name": "Get Trending Courses",
+      "method": "GET",
+      "path": "/courses/trending",
+      "auth_required": false,
+      "query_params": {
+        "page": "integer (default: 0)",
+        "size": "integer (default: 10)",
+        "category": "string (optional)",
+        "level": "string (optional)"
+      }
+    },
+    {
+      "name": "Track Course Impression",
+      "method": "POST",
+      "path": "/courses/{courseId}/impressions",
+      "auth_required": false,
+      "query_params": {
+        "source": "string (default: HOME)"
+      }
+    },
+    {
+      "name": "Get Course by ID",
+      "method": "GET",
+      "path": "/courses/{id}",
+      "auth_required": false
+    },
+    {
+      "name": "Get Course Details",
+      "method": "GET",
+      "path": "/courses/{courseId}/details",
+      "auth_required": false,
+      "headers": {
+        "Authorization": "Bearer <token> (optional)",
+        "X-Forwarded-For": "<ip-address> (optional)"
+      }
+    },
+    {
+      "name": "Get Course Content",
+      "method": "GET",
+      "path": "/courses/{courseId}/content",
+      "auth_required": false,
+      "headers": {
+        "Authorization": "Bearer <token> (optional)"
+      }
+    },
+    {
+      "name": "Get Lecture Detail",
+      "method": "GET",
+      "path": "/courses/lectures/{lectureId}/learn",
+      "auth_required": false,
+      "headers": {
+        "Authorization": "Bearer <token> (optional)"
+      }
+    },
+    {
+      "name": "Get Course Curriculum",
+      "method": "GET",
+      "path": "/courses/{courseId}/curriculum",
+      "auth_required": false
+    },
+    {
+      "name": "Get Course Sections",
+      "method": "GET",
+      "path": "/courses/{courseId}/sections",
+      "auth_required": false
+    },
+    {
+      "name": "Get Section by ID",
+      "method": "GET",
+      "path": "/courses/sections/{sectionId}",
+      "auth_required": false
+    },
+    {
+      "name": "Get Section Lectures",
+      "method": "GET",
+      "path": "/sections/{sectionId}/lectures",
+      "auth_required": false
+    },
+    {
+      "name": "Get Lecture by ID",
+      "method": "GET",
+      "path": "/sections/lectures/{lectureId}",
+      "auth_required": false
+    },
+    {
+      "name": "Get Course Requirements",
+      "method": "GET",
+      "path": "/courses/{courseId}/requirements",
+      "auth_required": false
+    },
+    {
+      "name": "Get Learning Outcomes",
+      "method": "GET",
+      "path": "/courses/{courseId}/outcomes",
+      "auth_required": false
+    },
+    {
+      "name": "Get Course Materials",
+      "method": "GET",
+      "path": "/courses/{courseId}/materials",
+      "auth_required": false
+    },
+    {
+      "name": "Get Course FAQs",
+      "method": "GET",
+      "path": "/courses/{courseId}/faqs",
+      "auth_required": false
+    },
+    {
+      "name": "Get Quiz by ID",
+      "method": "GET",
+      "path": "/quizzes/{quizId}",
+      "auth_required": false
+    },
+    {
+      "name": "Get Quizzes by Course",
+      "method": "GET",
+      "path": "/quizzes/course/{courseId}",
+      "auth_required": false
+    },
+    {
+      "name": "Get Quizzes by Section",
+      "method": "GET",
+      "path": "/quizzes/section/{sectionId}",
+      "auth_required": false
+    },
+    {
+      "name": "Get Published Quizzes",
+      "method": "GET",
+      "path": "/quizzes/course/{courseId}/published",
+      "auth_required": false
+    },
+    {
+      "name": "Get Live Class by ID",
+      "method": "GET",
+      "path": "/live-classes/{liveClassId}",
+      "auth_required": true,
+      "roles": ["INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN"]
+    },
+    {
+      "name": "Get Live Classes by Course",
+      "method": "GET",
+      "path": "/live-classes/course/{courseId}",
+      "auth_required": true,
+      "roles": ["INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN"]
+    },
+    {
+      "name": "Get Live Classes by Section",
+      "method": "GET",
+      "path": "/live-classes/section/{sectionId}",
+      "auth_required": true,
+      "roles": ["INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN"]
+    },
+    {
+      "name": "Get Upcoming Live Classes",
+      "method": "GET",
+      "path": "/live-classes/course/{courseId}/upcoming",
+      "auth_required": true,
+      "roles": ["INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN", "STUDENT", "USER"]
+    },
+    {
+      "name": "Join Live Class",
+      "method": "GET",
+      "path": "/live-classes/{liveClassId}/join",
+      "auth_required": true,
+      "roles": ["STUDENT", "USER", "INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN"]
+    },
+    {
+      "name": "Check Enrollment Status",
+      "method": "GET",
+      "path": "/enrollments/check/{courseId}",
+      "auth_required": true
+    },
+    {
+      "name": "Get User Enrollments",
+      "method": "GET",
+      "path": "/enrollments/users/{userId}",
+      "auth_required": true
+    },
+    {
+      "name": "Get Enrolled Students",
+      "method": "GET",
+      "path": "/enrollments/course/{courseId}/students",
+      "auth_required": true
+    },
+    {
+      "name": "Get Enrolled Students in Course",
+      "method": "GET",
+      "path": "/courses/{courseId}/students",
+      "auth_required": false
+    },
+    {
+      "name": "Enroll in Free Course",
+      "method": "POST",
+      "path": "/courses/{courseId}/enroll",
+      "auth_required": true,
+      "roles": ["STUDENT"]
+    }
+  ],
+  "authentication": {
+    "type": "JWT Bearer Token",
+    "header": "Authorization: Bearer <token>",
+    "optional_headers": {
+      "X-Forwarded-For": "<ip-address> (for audit logging)"
+    }
+  },
+  "common_response_structure": {
+    "success": "boolean",
+    "message": "string",
+    "data": "object or array",
+    "timestamp": "string (ISO 8601 format)"
+  }
+}

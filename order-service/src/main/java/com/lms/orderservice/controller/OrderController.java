@@ -3,6 +3,7 @@ package com.lms.orderservice.controller;
 import com.lms.orderservice.dto.CreateOrderRequest;
 import com.lms.orderservice.dto.ApiResponse;
 import com.lms.orderservice.service.OrderService;
+import com.lms.orderservice.entity.Order;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -18,12 +19,22 @@ public class OrderController {
     public ResponseEntity<?> createOrder(Authentication authentication,
                                          @RequestBody CreateOrderRequest request) {
 
-        String userId = (request != null && request.getUserId() != null && !request.getUserId().isBlank())
-                ? request.getUserId()
-                : (authentication != null ? authentication.getName() : null);
+        String authUserId = authentication != null ? authentication.getName() : null;
+        String userId;
+        if (isAdmin(authentication) && request != null && request.getUserId() != null && !request.getUserId().isBlank()) {
+            userId = request.getUserId();
+        } else {
+            userId = authUserId;
+        }
 
-        return ResponseEntity.ok(ApiResponse.success(
-            "Order created successfully", orderService.createOrder(userId, request)));
+        try {
+            Order order = orderService.createOrder(userId, request);
+            return ResponseEntity.ok(ApiResponse.success(
+                "Order created successfully", order));
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw e;
+        }
     }
 
     private boolean isAdmin(Authentication authentication) {

@@ -16,6 +16,12 @@ spring:
   codec:
     max-in-memory-size: 30MB
 
+  servlet:
+    multipart:
+      max-file-size: 500MB
+      max-request-size: 500MB
+      enabled: true
+
   cloud:
     gateway:
       # Completely disable any auto-configuration of CORS
@@ -79,6 +85,22 @@ spring:
           filters:
             - StripPrefix=0
 
+        # ── Review Service - Admin Reviews ───────────────────────
+        - id: reviewservice-admin
+          uri: ${REVIEWSERVICE_URL:http://localhost:8089}
+          predicates:
+            - Path=/api/v1/admin/reviews/**
+          filters:
+            - StripPrefix=0
+
+        # ── Notification Service - Admin Broadcast & DLQ ─────────
+        - id: notificationservice-admin
+          uri: ${NOTIFICATIONSERVICE_URL:http://localhost:8093}
+          predicates:
+            - Path=/api/v1/admin/broadcast,/api/v1/admin/reprocess-dlq
+          filters:
+            - StripPrefix=0
+
         # ── Admin Service ─────────────────────────────────────────
         - id: adminservice
           uri: ${ADMIN_SERVICE_URL:http://localhost:8087}
@@ -119,17 +141,18 @@ spring:
           filters:
             - StripPrefix=0
 
+        # ── Notification Service - User Notifications ────────────
+        - id: notificationservice-user-notifications
+          uri: ${NOTIFICATIONSERVICE_URL:http://localhost:8093}
+          predicates:
+            - Path=/api/v1/users/me/notifications,/api/v1/users/me/unread,/api/v1/users/me/read/**,/api/v1/users/me/read-all,/api/v1/users/me/count
+          filters:
+            - StripPrefix=0
+
         - id: userservice-users
           uri: ${USER_SERVICE_URL:http://localhost:8091}
           predicates:
             - Path=/api/v1/users/**
-          filters:
-            - StripPrefix=0
-
-        - id: userservice-instructors
-          uri: ${USER_SERVICE_URL:http://localhost:8091}
-          predicates:
-            - Path=/api/v1/instructors/**
           filters:
             - StripPrefix=0
 
@@ -155,10 +178,67 @@ spring:
           filters:
             - StripPrefix=0
 
+        - id: courseservice-dashboard
+          uri: ${COURSESERVICE_URL:http://localhost:8083}
+          predicates:
+            - Path=/api/v1/dashboard/**
+          filters:
+            - StripPrefix=0
+
         - id: courseservice-sections
           uri: ${COURSESERVICE_URL:http://localhost:8083}
           predicates:
             - Path=/api/v1/sections/**
+          filters:
+            - StripPrefix=0
+
+        # ── Notification Service - Assignment Reminder & Certificate Notify ─
+        - id: notificationservice-assignments-reminder
+          uri: ${NOTIFICATIONSERVICE_URL:http://localhost:8093}
+          predicates:
+            - Path=/api/v1/assignments/reminder
+          filters:
+            - StripPrefix=0
+
+        - id: notificationservice-certificates-notify
+          uri: ${NOTIFICATIONSERVICE_URL:http://localhost:8093}
+          predicates:
+            - Path=/api/v1/certificates/notify
+          filters:
+            - StripPrefix=0
+
+        - id: courseservice-assignments
+          uri: ${COURSESERVICE_URL:http://localhost:8083}
+          predicates:
+            - Path=/api/v1/assignments/**
+          filters:
+            - StripPrefix=0
+
+        - id: courseservice-quizzes
+          uri: ${COURSESERVICE_URL:http://localhost:8083}
+          predicates:
+            - Path=/api/v1/quizzes/**
+          filters:
+            - StripPrefix=0
+
+        - id: courseservice-live-classes
+          uri: ${COURSESERVICE_URL:http://localhost:8083}
+          predicates:
+            - Path=/api/v1/live-classes/**
+          filters:
+            - StripPrefix=0
+
+        - id: courseservice-progress
+          uri: ${COURSESERVICE_URL:http://localhost:8083}
+          predicates:
+            - Path=/api/v1/progress/**
+          filters:
+            - StripPrefix=0
+
+        - id: courseservice-certificates
+          uri: ${COURSESERVICE_URL:http://localhost:8083}
+          predicates:
+            - Path=/api/v1/certificates/**
           filters:
             - StripPrefix=0
 
@@ -209,11 +289,30 @@ spring:
           filters:
             - StripPrefix=0
 
+        # ── User Service - Instructor Applications ─────────────────
+        # Instructor application endpoints (submit application, check status)
+        # Must come before instructor service catch-all route
+        - id: userservice-instructors-applications
+          uri: ${USER_SERVICE_URL:http://localhost:8091}
+          predicates:
+            - Path=/api/v1/instructors/applications/**
+          filters:
+            - StripPrefix=0
+
+        # ── User Service - Instructor Profile ────────────────────
+        - id: userservice-instructors-profile
+          uri: ${USER_SERVICE_URL:http://localhost:8091}
+          predicates:
+            - Path=/api/v1/instructors/*/profile,/api/v1/instructors/{instructorId}/profile
+          filters:
+            - StripPrefix=0
+
         # ── Instructor Service ────────────────────────────────────
-        - id: instructorservice
+        # Specific instructor endpoints must come before the general /api/v1/instructors/** route
+        - id: instructorservice-specific
           uri: ${INSTRUCTOR_SERVICE_URL:http://localhost:8088}
           predicates:
-            - Path=/api/v1/instructors/{id}/courses,/api/v1/instructors/{id}/courses/**,/api/v1/instructors/{id}/dashboard,/api/v1/instructors/{id}/earnings
+            - Path=/api/v1/instructors/{id}/courses,/api/v1/instructors/{id}/courses/**,/api/v1/instructors/{id}/dashboard,/api/v1/instructors/{id}/earnings,/api/v1/instructors/{id}/content/**,/api/v1/instructors/{instructorId}/courses/{courseId}/modules/**,/api/v1/instructors/{id}/courses/{courseId}/messages,/api/v1/instructors/me
           filters:
             - StripPrefix=0
 
@@ -259,6 +358,30 @@ spring:
           uri: ${NOTIFICATIONSERVICE_URL:http://localhost:8093}
           predicates:
             - Path=/api/v1/security/**
+          filters:
+            - StripPrefix=0
+
+        # ── Device Tokens (Push Notifications) ──────────────────────
+        - id: notificationservice-devicetokens
+          uri: ${NOTIFICATIONSERVICE_URL:http://localhost:8093}
+          predicates:
+            - Path=/api/v1/device-tokens,/api/v1/device-tokens/**
+          filters:
+            - StripPrefix=0
+
+        # ── Push Notifications ─────────────────────────────────────
+        - id: notificationservice-push
+          uri: ${NOTIFICATIONSERVICE_URL:http://localhost:8093}
+          predicates:
+            - Path=/api/v1/push,/api/v1/push/**
+          filters:
+            - StripPrefix=0
+
+        # ── Live Class Reminders ───────────────────────────────────
+        - id: notificationservice-liveclass
+          uri: ${NOTIFICATIONSERVICE_URL:http://localhost:8093}
+          predicates:
+            - Path=/api/v1/live-class/**
           filters:
             - StripPrefix=0
 

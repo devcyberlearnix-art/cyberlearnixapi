@@ -16,10 +16,11 @@ import java.util.List;
 public class NotificationController {
 
     private final NotificationService notificationService;
+    private final com.example.notification.service.UserNotificationService userNotificationService;
 
     @PostMapping
     public ResponseEntity<ApiResponse<NotificationResponse>> createNotification(
-            @RequestBody CreateNotificationRequest request) {
+            @Valid @RequestBody CreateNotificationRequest request) {
 
         NotificationResponse response = notificationService.createNotification(request);
 
@@ -123,6 +124,19 @@ public class NotificationController {
         DeleteNotificationResponse response = notificationService.deleteNotification(id);
 
         return ResponseEntity.ok(response);
+    }
+
+    
+    @PostMapping("/mark-all-read")
+    public ResponseEntity<ApiResponse<String>> markAllNotificationsRead() {
+        userNotificationService.markAllAsRead();
+        return ResponseEntity.ok(ApiResponse.success("All notifications marked as read successfully", "OK"));
+    }
+
+    @PutMapping("/mark-all-read")
+    public ResponseEntity<ApiResponse<String>> markAllNotificationsReadPut() {
+        userNotificationService.markAllAsRead();
+        return ResponseEntity.ok(ApiResponse.success("All notifications marked as read successfully", "OK"));
     }
 
     @PostMapping("/{id}/retry")

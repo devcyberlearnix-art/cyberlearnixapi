@@ -13,6 +13,10 @@ repositories {
 dependencies {
     // Keep commonlibs framework-light and domain-free.
     compileOnly 'org.springframework:spring-web:6.2.8'
+    compileOnly 'org.springframework:spring-webmvc:6.2.8'
+    compileOnly 'org.springframework:spring-tx:6.2.8'
+    compileOnly "com.fasterxml.jackson.core:jackson-annotations:${jacksonVersion}"
+    compileOnly "com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}"
     compileOnly 'jakarta.validation:jakarta.validation-api:3.0.2'
     compileOnly "org.projectlombok:lombok:${lombokVersion}"
     annotationProcessor "org.projectlombok:lombok:${lombokVersion}"
@@ -30,11 +34,19 @@ dependencies {
     // SLF4J for logging
     compileOnly 'org.slf4j:slf4j-api:2.0.9'
 
-    // Shared test utilities only
+    // Shared test utilities
     testImplementation "org.junit.jupiter:junit-jupiter:${junitVersion}"
     testImplementation "org.mockito:mockito-core:${mockitoVersion}"
     testImplementation "org.mockito:mockito-junit-jupiter:${mockitoVersion}"
     testImplementation "org.assertj:assertj-core:${assertjVersion}"
+    testImplementation 'org.springframework:spring-web:6.2.8'
+    testImplementation 'org.springframework:spring-webmvc:6.2.8'
+    testImplementation 'org.springframework:spring-tx:6.2.8'
+    testImplementation 'org.springframework.security:spring-security-web:6.2.1'
+    testImplementation 'jakarta.servlet:jakarta.servlet-api:6.0.0'
+    testImplementation "com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}"
+    testImplementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:${jacksonVersion}"
+    testImplementation 'org.slf4j:slf4j-api:2.0.9'
 }
 
 // Create test JAR to share test utilities with other modules
@@ -58,6 +70,10 @@ java {
     toolchain {
         languageVersion = JavaLanguageVersion.of(21)
     }
+}
+
+test {
+    useJUnitPlatform()
 }
 
 publishing {

@@ -10,7 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/v1/device-tokens")
+@RequestMapping({"/api/v1/device-tokens", "/api/v1/notifications/device-token"})
 @RequiredArgsConstructor
 public class DeviceTokenController {
 
@@ -18,11 +18,11 @@ public class DeviceTokenController {
 
     @PostMapping
     public ResponseEntity<?> registerDeviceToken(
-            @RequestHeader("X-User-Id") String userId,
+            @RequestHeader(value = "X-User-Id", required = false) String userId,
             @Valid @RequestBody DeviceTokenRequest request
     ) {
-
-        DeviceTokenResponse response = service.saveToken(userId, request);
+        String effectiveUserId = (userId != null && !userId.isBlank()) ? userId : "anonymous";
+        DeviceTokenResponse response = service.saveToken(effectiveUserId, request);
 
         return ResponseEntity.ok(
                 ApiResponse.success("Device token registered successfully", response)

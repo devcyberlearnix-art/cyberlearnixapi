@@ -7,7 +7,9 @@ import com.example.notification.repository.TemplateRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 @Service
 @RequiredArgsConstructor
@@ -18,7 +20,7 @@ public class TemplateService {
     public TemplateResponse createTemplate(TemplateRequest request) {
 
         if (repository.existsByName(request.getName())) {
-            throw new RuntimeException("Template already exists with name: " + request.getName());
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Template already exists with name: " + request.getName());
         }
 
         Template template = Template.builder()
@@ -77,12 +79,12 @@ public class TemplateService {
 
         // 🔍 Find existing template
         Template template = repository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Template not found with id: " + id));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Template not found with id: " + id));
 
         // 🚫 Prevent duplicate name (only if name changed)
         if (!template.getName().equals(request.getName())
                 && repository.existsByName(request.getName())) {
-            throw new RuntimeException("Template already exists with name: " + request.getName());
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Template already exists with name: " + request.getName());
         }
 
         // ✏️ Update fields
@@ -107,7 +109,7 @@ public class TemplateService {
     public TemplateResponse deleteTemplate(String id) {
 
         Template template = repository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Template not found with id: " + id));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Template not found with id: " + id));
 
         // ✅ Soft delete (mark inactive)
         template.setActive(false);

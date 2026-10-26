@@ -17,13 +17,10 @@ import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.core.Ordered;
 
 import org.springframework.http.HttpHeaders;
-
 import org.springframework.http.HttpStatus;
-
+import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.stereotype.Component;
-
 import org.springframework.web.server.ServerWebExchange;
-
 import reactor.core.publisher.Mono;
 
 
@@ -56,6 +53,9 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
 
             // Admin service - public authentication
             "/api/v1/admin/register",
+            "/api/v1/admin/login",
+            "/api/v1/admin/login/**",
+            "/api/v1/admin/password/**",
 
             // User service - public authentication and social login
 
@@ -90,24 +90,33 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
             "/api/v1/users/login/social",
 
             // Course service – public course browsing
-
             "/api/v1/courses",
-
             "/api/v1/courses/*",
-
+            "/api/v1/courses/*/details",
+            "/api/v1/courses/*/curriculum",
             "/api/v1/courses/*/sections",
-
+            "/api/v1/courses/*/requirements",
+            "/api/v1/courses/*/outcomes",
+            "/api/v1/courses/*/materials",
+            "/api/v1/courses/*/faqs",
             "/api/v1/sections/*/lectures",
-
             "/api/v1/courses/*/preview",
-
             "/api/v1/courses/*/students",
-
             "/api/v1/courses/*/impressions",
+
+            // Public banners
+            "/api/v1/banners",
+            "/api/v1/banners/**",
+            "/api/v1/banners/target/*",
+            "/api/v1/banners/*/impression",
+            "/api/v1/banners/*/click",
+            "/api/v1/banners/*/conversion",
 
             // Course service internal enrollment (payment service)
 
             "/api/v1/enrollments/internal/enroll",
+            "/api/v1/certificates/verify/**",
+            "/api/v1/certificates/verify/*",
 
             // Review service – public course reviews
 
@@ -222,6 +231,12 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
 
 
         String token = jwtTokenProvider.extractTokenFromHeader(authHeader);
+        if (token == null || token.isEmpty()) {
+            org.springframework.http.HttpCookie cookie = exchange.getRequest().getCookies().getFirst("accessToken");
+            if (cookie != null && !cookie.getValue().isEmpty()) {
+                token = cookie.getValue();
+            }
+        }
 
         // Token fingerprinting for tracing
         String tokenFingerprint = token != null ? token.substring(0, Math.min(8, token.length())) : "null";
@@ -229,53 +244,35 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
         log.info("Token fingerprint: {}, length: {} for path: {}", tokenFingerprint, tokenLength, path);
 
         if (token == null || token.isEmpty()) {
-
             log.warn("No valid token found for protected path: {}", path);
-
             return unauthorizedResponse(exchange, "Missing or invalid authorization token");
-
         }
 
+        final String finalToken = token;
         log.info("Token extracted successfully, validating for path: {}", path);
 
-
-
         // Validate token
-
-        String blacklistKey = "blacklist:token:" + token;
+        String blacklistKey = "blacklist:token:" + finalToken;
 
         return redisTemplate.hasKey(blacklistKey)
-
                 .flatMap(isBlacklisted -> {
-
                     if (Boolean.TRUE.equals(isBlacklisted)) {
-
-                        log.warn("Token is blacklisted (logged out): {}", token.substring(0, Math.min(10, token.length())) + "...");
-
+                        log.warn("Token is blacklisted (logged out): {}", finalToken.substring(0, Math.min(10, finalToken.length())) + "...");
                         return unauthorizedResponse(exchange, "Token has been logged out");
-
                     }
 
-                    return jwtTokenProvider.validateAccessToken(token)
-
+                    return jwtTokenProvider.validateAccessToken(finalToken)
                             .doOnNext(claims -> {
                                 log.info("Token validated successfully for user: {} on path: {}", claims.get("sub"), path);
                                 log.info("Gateway validated token fingerprint: {}, issuer: {}, audience: {}, subject: {}", 
                                     tokenFingerprint, claims.get("iss"), claims.get("aud"), claims.get("sub"));
                             })
-
                             .flatMap(claims -> {
-
                                 // Add user info to request headers and delegate to downstream service
-
-                                ServerWebExchange modifiedExchange = addUserHeaders(exchange, claims);
-
+                                ServerWebExchange modifiedExchange = addUserHeaders(exchange, claims, finalToken);
                                 log.info("Proceeding to downstream service for path: {}", path);
-
                                 return chain.filter(modifiedExchange);
-
                             });
-
                 })
 
                 .switchIfEmpty(Mono.defer(() -> {
@@ -320,7 +317,7 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
 
                         log.warn("Token validation failed for path {}: {} - Token: {}", path, ex.getMessage(),
 
-                                token.length() > 10 ? token.substring(0, 10) + "..." : token);
+                                finalToken.length() > 10 ? finalToken.substring(0, 10) + "..." : finalToken);
 
                         return unauthorizedResponse(exchange, "Invalid or expired token: " + ex.getMessage());
 
@@ -365,8 +362,6 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
     private boolean matchesPublicPattern(String path, String pattern) {
 
         String normalizedPattern = normalizePath(pattern);
-
-
 
         if (normalizedPattern.endsWith("/**")) {
 
@@ -468,232 +463,132 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
 
 
 
-    private ServerWebExchange addUserHeaders(ServerWebExchange exchange, Map<String, Object> claims) {
+    private ServerWebExchange addUserHeaders(ServerWebExchange exchange, Map<String, Object> claims, String token) {
 
         String authHeader = exchange.getRequest().getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
-
-
-
-        return exchange.mutate()
-
-                .request(builder -> {
-
-                    // Resolve subject with fallbacks
-
-                    String sub = claims.get("sub") != null ? String.valueOf(claims.get("sub")) : null;
-
-                    String phoneNumber = claims.get("phoneNumber") != null ? String.valueOf(claims.get("phoneNumber"))
-
-                            : null;
-
-                    String mobileNumber = claims.get("mobileNumber") != null
-
-                            ? String.valueOf(claims.get("mobileNumber"))
-
-                            : null;
-
-                    String userIdClaim = claims.get("userId") != null ? String.valueOf(claims.get("userId")) : null;
-
-                    String merchantIdClaim = claims.get("merchantId") != null ? String.valueOf(claims.get("merchantId"))
-
-                            : null;
-
-                    // Backward compatibility: some tokens may carry registrationId as merchantId
-
-                    if ((merchantIdClaim == null || merchantIdClaim.isBlank())
-
-                            && claims.get("registrationId") != null) {
-
-                        merchantIdClaim = String.valueOf(claims.get("registrationId"));
-
-                    }
-
-                    String resolvedUserId = (sub != null && !sub.isBlank()) ? sub
-
-                            : (phoneNumber != null && !phoneNumber.isBlank()) ? phoneNumber
-
-                                    : (mobileNumber != null && !mobileNumber.isBlank()) ? mobileNumber
-
-                                            : "";
-
-                    if (userIdClaim != null && !userIdClaim.isBlank()) {
-
-                        resolvedUserId = userIdClaim;
-
-                    }
-
-
-
-                    String usernameClaim = claims.get("username") != null ? String.valueOf(claims.get("username"))
-
-                            : null;
-
-                    if ("null".equalsIgnoreCase(usernameClaim))
-
-                        usernameClaim = null;
-
-                    String emailClaim = claims.get("email") != null ? String.valueOf(claims.get("email")) : null;
-
-                    if ("null".equalsIgnoreCase(emailClaim))
-
-                        emailClaim = null;
-
-                    String resolvedUsername = (usernameClaim != null && !usernameClaim.isBlank()) ? usernameClaim
-
-                            : (emailClaim != null && !emailClaim.isBlank()) ? emailClaim
-
-                                    : (phoneNumber != null && !phoneNumber.isBlank()) ? phoneNumber
-
-                                            : (mobileNumber != null && !mobileNumber.isBlank()) ? mobileNumber
-
-                                                    : (resolvedUserId != null && !resolvedUserId.isBlank())
-
-                                                            ? resolvedUserId
-
-                                                            : null;
-
-
-
-                    // Determine best role
-
-                    String bestRole = null;
-
-                    Object rolesClaim = claims.get("roles");
-
-                    if (rolesClaim == null)
-
-                        rolesClaim = claims.get("authorities");
-
-                    if (rolesClaim instanceof String rs) {
-
-                        String up = rs.toUpperCase();
-
-                        if (up.contains("MAIN_ADMIN"))
-
-                            bestRole = "MAIN_ADMIN";
-
-                        else if (up.contains("SUB_ADMIN"))
-
-                            bestRole = "SUB_ADMIN";
-
-                    } else if (rolesClaim instanceof java.util.Collection<?> col) {
-
-                        for (Object r : col) {
-
-                            if (r == null)
-
-                                continue;
-
-                            String up = String.valueOf(r).toUpperCase();
-
-                            if (up.contains("MAIN_ADMIN")) {
-
-                                bestRole = "MAIN_ADMIN";
-
-                                break;
-
-                            }
-
-                            if (up.contains("SUB_ADMIN")) {
-
-                                bestRole = bestRole == null ? "SUB_ADMIN" : bestRole;
-
-                            }
-
-                        }
-
-                    }
-
-                    if (bestRole == null && claims.get("role") != null) {
-
-                        bestRole = String.valueOf(claims.get("role"));
-
-                    }
-
-
-
-                    // Basic user info
-
-                    builder.header("X-User-Id", resolvedUserId)
-
-                            .header("X-Username", resolvedUsername != null ? resolvedUsername : "")
-
-                            .header("X-User-Role", bestRole != null ? bestRole : String.valueOf(claims.get("role")))
-
-                            .header("X-Session-Id", String.valueOf(claims.get("sessionId")));
-
-                    if (authHeader != null && !authHeader.isBlank()) {
-
-                        builder.header(HttpHeaders.AUTHORIZATION, authHeader);
-
-                    }
-
-                    if (merchantIdClaim != null && !merchantIdClaim.isBlank()) {
-
-                        builder.header("X-Merchant-Id", merchantIdClaim);
-
-                    }
-
-
-
-                    // Additional user info (only if present)
-
-                    if (claims.get("email") != null) {
-
-                        builder.header("X-User-Email", String.valueOf(claims.get("email")));
-
-                    }
-
-                    if (claims.get("fullName") != null) {
-
-                        builder.header("X-User-FullName", String.valueOf(claims.get("fullName")));
-
-                    }
-
-                    // Admin specifics
-
-                    if (claims.get("adminId") != null) {
-
-                        builder.header("X-Admin-Id", String.valueOf(claims.get("adminId")));
-
-                    }
-
-                    if (phoneNumber != null && !phoneNumber.isBlank()) {
-
-                        builder.header("X-User-Phone", phoneNumber);
-
-                    } else if (mobileNumber != null && !mobileNumber.isBlank()) {
-
-                        builder.header("X-User-Phone", mobileNumber);
-
-                    }
-
-
-
-                    // Token metadata
-
-                    if (claims.get("iat") != null) {
-
-                        builder.header("X-Token-IssuedAt", String.valueOf(claims.get("iat")));
-
-                    }
-
-                    if (claims.get("exp") != null) {
-
-                        builder.header("X-Token-ExpiresAt", String.valueOf(claims.get("exp")));
-
-                    }
-
-                    if (claims.get("jti") != null) {
-
-                        builder.header("X-Token-Id", String.valueOf(claims.get("jti")));
-
-                    }
-
-                })
-
-                .build();
-
+        if (authHeader == null || authHeader.isBlank()) {
+            if (token != null && !token.isBlank()) {
+                authHeader = "Bearer " + token;
+            }
+        }
+
+        // Resolve subject with fallbacks
+        String sub = claims.get("sub") != null ? String.valueOf(claims.get("sub")) : null;
+        String phoneNumber = claims.get("phoneNumber") != null ? String.valueOf(claims.get("phoneNumber")) : null;
+        String mobileNumber = claims.get("mobileNumber") != null ? String.valueOf(claims.get("mobileNumber")) : null;
+        String userIdClaim = claims.get("userId") != null ? String.valueOf(claims.get("userId")) : null;
+        String merchantIdClaim = claims.get("merchantId") != null ? String.valueOf(claims.get("merchantId")) : null;
+
+        // Backward compatibility: some tokens may carry registrationId as merchantId
+        if ((merchantIdClaim == null || merchantIdClaim.isBlank()) && claims.get("registrationId") != null) {
+            merchantIdClaim = String.valueOf(claims.get("registrationId"));
+        }
+
+        String resolvedUserId = (sub != null && !sub.isBlank()) ? sub
+                : (phoneNumber != null && !phoneNumber.isBlank()) ? phoneNumber
+                        : (mobileNumber != null && !mobileNumber.isBlank()) ? mobileNumber : "";
+
+        if (userIdClaim != null && !userIdClaim.isBlank()) {
+            resolvedUserId = userIdClaim;
+        }
+
+        String usernameClaim = claims.get("username") != null ? String.valueOf(claims.get("username")) : null;
+        if ("null".equalsIgnoreCase(usernameClaim)) usernameClaim = null;
+
+        String emailClaim = claims.get("email") != null ? String.valueOf(claims.get("email")) : null;
+        if ("null".equalsIgnoreCase(emailClaim)) emailClaim = null;
+
+        String resolvedUsername = (usernameClaim != null && !usernameClaim.isBlank()) ? usernameClaim
+                : (emailClaim != null && !emailClaim.isBlank()) ? emailClaim
+                        : (phoneNumber != null && !phoneNumber.isBlank()) ? phoneNumber
+                                : (mobileNumber != null && !mobileNumber.isBlank()) ? mobileNumber
+                                        : (resolvedUserId != null && !resolvedUserId.isBlank()) ? resolvedUserId : null;
+
+        // Determine best role
+        String bestRole = null;
+        Object rolesClaim = claims.get("roles");
+        if (rolesClaim == null) rolesClaim = claims.get("authorities");
+
+        if (rolesClaim instanceof String rs) {
+            String up = rs.toUpperCase();
+            if (up.contains("MAIN_ADMIN")) bestRole = "MAIN_ADMIN";
+            else if (up.contains("SUB_ADMIN")) bestRole = "SUB_ADMIN";
+        } else if (rolesClaim instanceof java.util.Collection<?> col) {
+            for (Object r : col) {
+                if (r == null) continue;
+                String up = String.valueOf(r).toUpperCase();
+                if (up.contains("MAIN_ADMIN")) {
+                    bestRole = "MAIN_ADMIN";
+                    break;
+                }
+                if (up.contains("SUB_ADMIN")) {
+                    bestRole = bestRole == null ? "SUB_ADMIN" : bestRole;
+                }
+            }
+        }
+
+        if (bestRole == null && claims.get("role") != null) {
+            bestRole = String.valueOf(claims.get("role"));
+        }
+
+        final String finalAuthHeader = authHeader;
+        final String finalResolvedUserId = resolvedUserId;
+        final String finalResolvedUsername = resolvedUsername != null ? resolvedUsername : "";
+        final String finalBestRole = bestRole != null ? bestRole : String.valueOf(claims.get("role"));
+        final String finalSessionId = String.valueOf(claims.get("sessionId"));
+        final String finalMerchantId = merchantIdClaim;
+        final String finalEmail = claims.get("email") != null ? String.valueOf(claims.get("email")) : null;
+        final String finalFullName = claims.get("fullName") != null ? String.valueOf(claims.get("fullName")) : null;
+        final String finalAdminId = claims.get("adminId") != null ? String.valueOf(claims.get("adminId")) : null;
+        final String finalPhone = (phoneNumber != null && !phoneNumber.isBlank()) ? phoneNumber : ((mobileNumber != null && !mobileNumber.isBlank()) ? mobileNumber : null);
+        final String finalIat = claims.get("iat") != null ? String.valueOf(claims.get("iat")) : null;
+        final String finalExp = claims.get("exp") != null ? String.valueOf(claims.get("exp")) : null;
+        final String finalJti = claims.get("jti") != null ? String.valueOf(claims.get("jti")) : null;
+
+        org.springframework.http.HttpHeaders safeHeaders = new org.springframework.http.HttpHeaders();
+        exchange.getRequest().getHeaders().forEach(safeHeaders::addAll);
+        
+        safeHeaders.set("X-User-Id", finalResolvedUserId);
+        safeHeaders.set("X-Username", finalResolvedUsername);
+        safeHeaders.set("X-User-Role", finalBestRole);
+        safeHeaders.set("X-Session-Id", finalSessionId);
+        
+        if (finalAuthHeader != null && !finalAuthHeader.isBlank()) {
+            safeHeaders.set(org.springframework.http.HttpHeaders.AUTHORIZATION, finalAuthHeader);
+        }
+        if (finalMerchantId != null && !finalMerchantId.isBlank()) {
+            safeHeaders.set("X-Merchant-Id", finalMerchantId);
+        }
+        if (finalEmail != null) {
+            safeHeaders.set("X-User-Email", finalEmail);
+        }
+        if (finalFullName != null) {
+            safeHeaders.set("X-User-FullName", finalFullName);
+        }
+        if (finalAdminId != null) {
+            safeHeaders.set("X-Admin-Id", finalAdminId);
+        }
+        if (finalPhone != null) {
+            safeHeaders.set("X-User-Phone", finalPhone);
+        }
+        if (finalIat != null) {
+            safeHeaders.set("X-Token-IssuedAt", finalIat);
+        }
+        if (finalExp != null) {
+            safeHeaders.set("X-Token-ExpiresAt", finalExp);
+        }
+        if (finalJti != null) {
+            safeHeaders.set("X-Token-Id", finalJti);
+        }
+        
+        ServerHttpRequest mutatedRequest = new org.springframework.http.server.reactive.ServerHttpRequestDecorator(exchange.getRequest()) {
+            @Override
+            public org.springframework.http.HttpHeaders getHeaders() {
+                return safeHeaders;
+            }
+        };
+
+        return exchange.mutate().request(mutatedRequest).build();
     }
 
 

@@ -11,4 +11,12 @@ public class CourseInCartResponse {
     private String courseId;
     private String title;
     private Double price;
+    private Integer quantity;
+
+    public CourseInCartResponse(String courseId, String title, Double price) {
+        this.courseId = courseId;
+        this.title = title;
+        this.price = price;
+        this.quantity = 1;
+    }
 }
