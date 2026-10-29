@@ -182,7 +182,7 @@ public class CourseService {
                 // ================= ANALYTICS =================
                 long enrolledStudents = enrollmentRepository.countByCourse(course);
                 long activeLearners = enrollmentRepository.countActiveByCourse(course);
-                double completionRate = enrollmentRepository.calculateCompletionRate(course);
+                double completionRate = Optional.ofNullable(enrollmentRepository.calculateCompletionRate(course)).orElse(0.0);
                 double averageRating = reviewRepository.averageRatingByCourse(course);
                 long totalReviews = reviewRepository.countByCourse(course);
                 double totalRevenue = paymentRepository.totalRevenueByCourse(course);
@@ -716,7 +716,7 @@ public class CourseService {
                 // 2️⃣ Analytics calculations
                 long enrolledStudents = enrollmentRepository.countByCourse(course);
                 long activeLearners = enrollmentRepository.countActiveByCourse(course);
-                double completionRate = enrollmentRepository.calculateCompletionRate(course);
+                double completionRate = Optional.ofNullable(enrollmentRepository.calculateCompletionRate(course)).orElse(0.0);
                 double averageRating = reviewRepository.averageRatingByCourse(course);
                 long totalReviews = reviewRepository.countByCourse(course);
                 double totalRevenue = paymentRepository.totalRevenueByCourse(course);

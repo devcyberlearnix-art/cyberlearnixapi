@@ -20,7 +20,7 @@ public class CourseMessageController {
     @PostMapping("/{id}/courses/{courseId}/messages")
     public ResponseEntity<CourseMessageResponse> sendMessage(
             @PathVariable("id") UUID instructorId,
-            @PathVariable UUID courseId,
+            @PathVariable Long courseId,
             @RequestBody CourseMessageRequest request
     ) {
         return ResponseEntity.ok(

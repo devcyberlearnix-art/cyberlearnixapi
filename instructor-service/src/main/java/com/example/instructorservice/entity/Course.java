@@ -44,7 +44,7 @@ public class Course {
     @Enumerated(EnumType.STRING)
     private CourseStatus status;
 
-    @ElementCollection
+    @ElementCollection(fetch = FetchType.EAGER)
     private List<String> tags = new java.util.ArrayList<>();
 
     // Custom setter to handle builder pattern with @ElementCollection

@@ -20,11 +20,11 @@ public class CourseMessageService {
 
     public CourseMessageResponse sendMessage(
             UUID instructorId,
-            UUID courseId,
+            Long courseId,
             CourseMessageRequest request
     ) {
 
-        Course course = courseRepository.findById(Long.valueOf(courseId.toString()))
+        Course course = courseRepository.findById(courseId)
                 .orElseThrow(() -> new RuntimeException("Course not found"));
 
         if (!course.getInstructor().getId().equals(instructorId)) {
@@ -42,7 +42,7 @@ public class CourseMessageService {
         // dynamic response
         return CourseMessageResponse.builder()
                 .messageId(message.getId())
-                .courseId(Long.valueOf(courseId.toString()))
+                .courseId(courseId)
                 .instructorId(instructorId)
                 .subject(message.getSubject())
                 .message(message.getMessage())
