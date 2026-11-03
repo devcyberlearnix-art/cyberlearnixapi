@@ -322,6 +322,8 @@ public class UserService {
 
                 .profilePhoto(profilePhoto)
 
+                .coverPhoto(user.getCoverPhoto())
+
                 .photoURL(profilePhoto) // Deprecated field for backward compatibility
 
                 .avatar(profilePhoto) // Deprecated field for backward compatibility
@@ -940,6 +942,7 @@ public class UserService {
                 .phone(mobile)
                 .dob(decrypt(user.getDob()))
                 .profilePhoto(null)
+                .coverPhoto(user.getCoverPhoto())
                 .photoURL(null)
                 .avatar(null)
                 .city(decrypt(user.getCity()))
@@ -1175,6 +1178,8 @@ public class UserService {
 
                 .profilePhoto(profilePhoto)
 
+                .coverPhoto(user.getCoverPhoto())
+
                 .photoURL(profilePhoto)
 
                 .avatar(profilePhoto)
@@ -1366,6 +1371,7 @@ public class UserService {
                         .mobile(decrypt(user.getMobile()))
                         .dob(decrypt(user.getDob()))
                         .profilePhoto(user.getProfilePhoto())
+                        .coverPhoto(user.getCoverPhoto())
                         .city(decrypt(user.getCity()))
                         .state(decrypt(user.getState()))
                         .country(decrypt(user.getCountry()))
@@ -1425,6 +1431,8 @@ public class UserService {
                 .dob(decrypt(user.getDob()))
 
                 .profilePhoto(user.getProfilePhoto())
+
+                .coverPhoto(user.getCoverPhoto())
 
                 .city(decrypt(user.getCity()))
 

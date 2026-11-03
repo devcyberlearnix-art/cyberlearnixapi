@@ -10,6 +10,7 @@ import java.time.Instant;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ReviewSubmissionResponse {
+    private Long id;
     private String reviewId;
     private String courseId;
     private String studentId;

@@ -39,7 +39,12 @@ public class Course {
 
     private UUID instructorId;
 
-    private String status; // Draft, Published, Archived
+    private String instructorName;
+
+    private String status;
+
+    @Column(insertable = false, updatable = false)
+    private Boolean isPublished; // Draft, Published, Archived
 
     @Builder.Default
     private Boolean premium = false;

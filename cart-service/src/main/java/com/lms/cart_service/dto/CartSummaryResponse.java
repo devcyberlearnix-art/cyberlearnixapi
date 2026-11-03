@@ -14,4 +14,5 @@ public class CartSummaryResponse {
     private Double subtotal;
     private Double discount;
     private Double totalAmount;
+    private String couponCode;
 }

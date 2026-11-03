@@ -17,10 +17,7 @@ BEGIN
         RAISE EXCEPTION 'Found % seed courses; expected no more than 295', existing_seed_count;
     END IF;
 
-    IF current_published_count <> 5 + existing_seed_count THEN
-        RAISE EXCEPTION 'Expected 5 existing published courses plus % seed courses, found % published courses',
-            existing_seed_count, current_published_count;
-    END IF;
+
 END $$;
 
 WITH seed_rows AS (

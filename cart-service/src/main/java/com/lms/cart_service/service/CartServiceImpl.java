@@ -84,7 +84,17 @@ public class CartServiceImpl implements CartService {
                         item.getQuantity()))
                 .toList();
 
-        return new MyCartResponse(cartId, courses.size(), courses);
+        CartSummaryResponse summary = getCartSummary(userId);
+
+        return MyCartResponse.builder()
+                .cartId(cartId)
+                .totalCourses(courses.size())
+                .courses(courses)
+                .subtotal(summary.getSubtotal())
+                .discount(summary.getDiscount())
+                .totalAmount(summary.getTotalAmount())
+                .couponCode(summary.getCouponCode())
+                .build();
     }
 
     private CartResponse buildCartResponse(String userId) {
@@ -131,12 +141,14 @@ public class CartServiceImpl implements CartService {
         }
 
         double totalAmount = Math.max(0.0, subtotal - discount);
+        String appliedCoupon = (!items.isEmpty()) ? items.get(0).getCouponCode() : null;
 
         return CartSummaryResponse.builder()
                 .totalCourses(cart.getItems().size())
                 .subtotal(subtotal)
                 .discount(discount)
                 .totalAmount(totalAmount)
+                .couponCode(appliedCoupon)
                 .build();
     }
 

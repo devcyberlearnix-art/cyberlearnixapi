@@ -32,7 +32,7 @@ public class KafkaProducerConfig {
         config.put(ProducerConfig.ACKS_CONFIG, "all");
         config.put(ProducerConfig.RETRIES_CONFIG, 10);
         config.put(ProducerConfig.RETRY_BACKOFF_MS_CONFIG, 1000);
-        config.put(ProducerConfig.COMPRESSION_TYPE_CONFIG, "snappy");
+        config.put(ProducerConfig.COMPRESSION_TYPE_CONFIG, "none");
         config.put(JsonSerializer.ADD_TYPE_INFO_HEADERS, false);
 
         return new DefaultKafkaProducerFactory<>(config);

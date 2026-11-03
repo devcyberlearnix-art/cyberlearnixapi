@@ -50,7 +50,7 @@ public class ReviewController {
     @PutMapping("/{reviewId}")
     @Operation(summary = "Update own review", security = @SecurityRequirement(name = "bearerAuth"))
     public ResponseEntity<ApiResponse> updateReview(@AuthenticationPrincipal UserPrincipal principal,
-            @PathVariable Long reviewId,
+            @PathVariable String reviewId,
             @Valid @RequestBody UpdateReviewRequest request) {
         return ResponseEntity.ok(reviewService.updateReview(principal, reviewId, request));
     }
@@ -58,14 +58,14 @@ public class ReviewController {
     @DeleteMapping("/{reviewId}")
     @Operation(summary = "Delete own review", security = @SecurityRequirement(name = "bearerAuth"))
     public ResponseEntity<ApiResponse> deleteReview(@AuthenticationPrincipal UserPrincipal principal,
-            @PathVariable Long reviewId) {
+            @PathVariable String reviewId) {
         return ResponseEntity.ok(reviewService.deleteReview(principal, reviewId));
     }
 
     @GetMapping("/{reviewId}")
     @Operation(summary = "Get review by ID", security = @SecurityRequirement(name = "bearerAuth"))
     public ResponseEntity<MyReviewResponse> getReviewById(@AuthenticationPrincipal UserPrincipal principal,
-            @PathVariable Long reviewId) {
+            @PathVariable String reviewId) {
         return ResponseEntity.ok(reviewService.getReviewById(principal, reviewId));
     }
 

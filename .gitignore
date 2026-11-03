@@ -52,3 +52,10 @@ docker/docker/
 
 # Local test media
 test_profile*.png
+ 
+temp_*.txt
+admin_api_ui_audit_prompt.md
+telemetry_snapshots/
+scripts/__pycache__/
+seed_permanent_*.sql
+seed_test_*.sql

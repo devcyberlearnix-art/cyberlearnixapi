@@ -2,7 +2,6 @@ package com.user.register.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.UuidGenerator;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -16,8 +15,7 @@ import java.util.UUID;
 public class InstructorApplication {
 
     @Id
-    @GeneratedValue
-    @UuidGenerator
+    @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
     @Column(nullable = false)
@@ -51,6 +49,23 @@ public class InstructorApplication {
     @Column(columnDefinition = "TEXT")
     private String additionalNotes;
 
+    private String subject;
+    private String specialization;
+    private String experience;
+
+    @Column(columnDefinition = "TEXT")
+    private String bio;
+
+    private String phone;
+    private String linkedinUrl;
+    private String websiteUrl;
+
+    @Column(columnDefinition = "TEXT")
+    private String adminNotes;
+
+    @Column(columnDefinition = "TEXT")
+    private String requestedInfo;
+
     @Column(updatable = false)
     @Builder.Default
     private LocalDateTime submittedAt = LocalDateTime.now();
@@ -60,6 +75,6 @@ public class InstructorApplication {
     private String rejectionReason;
 
     public enum ApplicationStatus {
-        PENDING, APPROVED, REJECTED
+        DRAFT, PENDING, UNDER_REVIEW, NEED_MORE_INFO, APPROVED, REJECTED, WITHDRAWN
     }
 }

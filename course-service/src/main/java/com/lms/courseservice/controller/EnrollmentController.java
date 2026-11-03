@@ -51,6 +51,34 @@ public class EnrollmentController {
         );
     }
 
+    @PostMapping("/free/{courseId}")
+    public EnrollCourseResponse enrollStudentFree(@PathVariable Long courseId) {
+        UUID userId = extractUserIdFromContext();
+        courseService.enrollFreeCourse(courseId, userId);
+
+        Course course = courseService.getCourseById(courseId);
+
+        EnrollmentInfo info = new EnrollmentInfo(
+                course.getId(),
+                course.getTitle(),
+                userId,
+                course.getCategory(),
+                "Enrolled",
+                java.time.LocalDateTime.now().toString()
+        );
+
+        return new EnrollCourseResponse(
+                true,
+                "Student enrolled in the free course successfully.",
+                info
+        );
+    }
+
+    @PostMapping("/{courseId}")
+    public EnrollCourseResponse enrollStudentDirect(@PathVariable Long courseId) {
+        return enrollStudentFree(courseId);
+    }
+
     @GetMapping("/check/{courseId}")
     public EnrollmentCheckDetailResponse checkEnrollment(@PathVariable Long courseId) {
         UUID userId = extractUserIdFromContext();

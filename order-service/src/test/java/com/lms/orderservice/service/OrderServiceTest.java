@@ -12,6 +12,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.List;
 
@@ -39,6 +40,7 @@ class OrderServiceTest {
 
     @Test
     void createOrder_shouldRejectUnknownCourseIds() {
+        ReflectionTestUtils.setField(service, "courseServiceUrl", "http://localhost:8083");
         CreateOrderRequest request = new CreateOrderRequest();
         request.setCourseIds(List.of(999L));
 

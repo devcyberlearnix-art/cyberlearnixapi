@@ -13,6 +13,7 @@ import java.time.Instant;
 @AllArgsConstructor
 public class MyReviewResponse {
 
+    private Long id;
     private String reviewId;
     private String courseId;
     private String studentId;

@@ -1,5 +1,6 @@
 package com.lms.courseservice.repository;
 
+import com.lms.courseservice.dto.SearchSuggestionProjection;
 import com.lms.courseservice.entity.Course;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -14,6 +15,7 @@ import java.util.List;
 
 public interface CourseRepository extends JpaRepository<Course, Long>, JpaSpecificationExecutor<Course> {
 	List<Course> findByStatusIgnoreCase(String status);
+	Page<Course> findByStatusIgnoreCase(String status, Pageable pageable);
 
 	@Modifying
 	@Query("UPDATE Course c SET c.viewCount = COALESCE(c.viewCount, 0) + 1 WHERE c.id = :courseId")
@@ -73,4 +75,14 @@ public interface CourseRepository extends JpaRepository<Course, Long>, JpaSpecif
 	    Pageable pageable
 	);
 
+	@Query(value = 
+		"(SELECT DISTINCT 'TITLE' as type, title as value FROM courses WHERE (LOWER(title) LIKE LOWER(CONCAT(:prefix, '%')) OR LOWER(title) LIKE LOWER(CONCAT('% ', :prefix, '%'))) AND (is_published = true OR LOWER(status) = 'published') LIMIT 3) " +
+		"UNION ALL " +
+		"(SELECT DISTINCT 'SUBTITLE' as type, subtitle as value FROM courses WHERE (LOWER(subtitle) LIKE LOWER(CONCAT(:prefix, '%')) OR LOWER(subtitle) LIKE LOWER(CONCAT('% ', :prefix, '%'))) AND (is_published = true OR LOWER(status) = 'published') LIMIT 2) " +
+		"UNION ALL " +
+		"(SELECT DISTINCT 'CATEGORY' as type, category as value FROM courses WHERE (LOWER(category) LIKE LOWER(CONCAT(:prefix, '%')) OR LOWER(category) LIKE LOWER(CONCAT('% ', :prefix, '%'))) AND (is_published = true OR LOWER(status) = 'published') LIMIT 2) " +
+		"UNION ALL " +
+		"(SELECT DISTINCT 'INSTRUCTOR' as type, instructor_name as value FROM courses WHERE instructor_name IS NOT NULL AND (LOWER(instructor_name) LIKE LOWER(CONCAT(:prefix, '%')) OR LOWER(instructor_name) LIKE LOWER(CONCAT('% ', :prefix, '%'))) AND (is_published = true OR LOWER(status) = 'published') LIMIT 2)", 
+		nativeQuery = true)
+	List<SearchSuggestionProjection> fetchFastSuggestions(@Param("prefix") String prefix);
 }

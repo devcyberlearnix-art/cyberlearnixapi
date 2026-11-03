@@ -14,6 +14,8 @@ import com.lms.courseservice.entity.Course;
 import com.lms.courseservice.entity.Enrollment;
 import com.lms.courseservice.entity.Lecture;
 import com.lms.courseservice.repository.CourseRepository;
+import com.lms.courseservice.security.CourseSecurityService;
+import org.springframework.dao.DataIntegrityViolationException;
 import com.lms.courseservice.repository.CourseSpecifications;
 import com.lms.courseservice.repository.EnrollmentRepository;
 import com.lms.courseservice.exception.EnrollmentException;
@@ -49,6 +51,7 @@ public class CourseService {
 
     private final ReviewRatingClient reviewRatingClient;
     private final CacheInvalidationService cacheInvalidationService;
+    private final CourseSecurityService courseSecurityService;
 
     public Lecture getLectureById(Long lectureId) {
         return lectureRepository.findByIdWithCourse(lectureId)
@@ -64,6 +67,13 @@ public class CourseService {
     }
 
     public Course createCourseFromDTO(CourseRequestDTO dto) {
+        UUID instructorId = dto.getInstructorId();
+        if (!courseSecurityService.isCallerAdmin()) {
+            UUID callerId = courseSecurityService.getAuthenticatedCallerId();
+            if (callerId != null) {
+                instructorId = callerId;
+            }
+        }
         Course course = Course.builder()
             .title(dto.getTitle())
             .subtitle(dto.getSubtitle())
@@ -73,7 +83,7 @@ public class CourseService {
             .language(dto.getLanguage())
             .price(dto.getPrice())
             .thumbnail(dto.getThumbnail())
-            .instructorId(dto.getInstructorId())
+            .instructorId(instructorId)
             .status(dto.getStatus() != null ? dto.getStatus() : "DRAFT")
             .premium(dto.getPremium() != null ? dto.getPremium() : false)
             .searchCount(0L)
@@ -86,7 +96,7 @@ public class CourseService {
     @Transactional(readOnly = true)
     public org.springframework.data.domain.Page<Course> getAllCourses(int page, int size, String sortBy, org.springframework.data.domain.Sort.Direction direction) {
         org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(page, size, org.springframework.data.domain.Sort.by(direction, sortBy));
-        return courseRepository.findAll(pageable);
+        return courseRepository.findByStatusIgnoreCase("PUBLISHED", pageable);
     }
 
     public Map<String, Object> getCourseStats() {
@@ -197,6 +207,12 @@ public class CourseService {
 
         Course course = courseRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Course not found with id: " + id));
+
+        // Enforce instructor ownership and status transition rules
+        courseSecurityService.validateCourseOwnership(course);
+        if (updatedCourse.getStatus() != null && !updatedCourse.getStatus().equalsIgnoreCase(course.getStatus())) {
+            courseSecurityService.validateCourseStatusTransition(course, updatedCourse.getStatus());
+        }
 
         if (updatedCourse.getTitle() != null)
             course.setTitle(updatedCourse.getTitle());
@@ -314,10 +330,27 @@ public class CourseService {
                 .toList();
     }
 
-    // Enroll student in course (free or paid)
+    // Enroll student in free course with strict validations
+    @Transactional
     public void enrollFreeCourse(Long courseId, UUID userId) {
-        // Verify course exists
-        getCourseById(courseId);
+        if (userId == null) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    HttpStatus.UNAUTHORIZED, "User authentication required for enrollment");
+        }
+        Course course = getCourseById(courseId);
+        if (course == null) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    HttpStatus.NOT_FOUND, "Course not found");
+        }
+        if (course.getStatus() == null || !"PUBLISHED".equalsIgnoreCase(course.getStatus())) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    HttpStatus.BAD_REQUEST, "Only published courses are eligible for enrollment.");
+        }
+        boolean isFree = (course.getPrice() == null || course.getPrice().compareTo(BigDecimal.ZERO) == 0);
+        if (!isFree) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    HttpStatus.BAD_REQUEST, "Course is not free. Paid courses require checkout through order service.");
+        }
         createEnrollment(courseId, userId);
     }
 
@@ -337,7 +370,11 @@ public class CourseService {
         enrollment.setEnrolledAt(java.time.LocalDateTime.now());
         enrollment.setStatus("ACTIVE");
 
-        enrollmentRepository.save(enrollment);
+        try {
+            enrollmentRepository.save(enrollment);
+        } catch (DataIntegrityViolationException ex) {
+            throw new EnrollmentException("Student is already enrolled.");
+        }
     }
 
     public TrendingCoursesResponse getTrendingCourses(int page, int size, String category, String level) {

@@ -1,19 +1,24 @@
 package com.user.register.service;
 
+import java.io.IOException;
 import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.Resource;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.user.register.dto.InstructorApplyDetailedResponse;
+import com.user.register.dto.InstructorApplyRequest;
 import com.user.register.entity.InstructorApplication;
 import com.user.register.entity.User;
 import com.user.register.repository.InstructorApplicationRepository;
@@ -22,6 +27,7 @@ import com.user.register.security.JwtUtil;
 import com.user.register.util.BearerTokenResolver;
 import com.user.register.util.SecurityUtils;
 
+@Slf4j
 @Service
 public class InstructorService {
 
@@ -43,6 +49,122 @@ public class InstructorService {
         this.documentStorageService = documentStorageService;
     }
 
+    public List<Map<String, Object>> getTeachingSubjects() {
+        return List.of(
+                Map.of("id", "web-development", "name", "Web Development", "category", "Development", "description", "Full-Stack, React, Node.js, Spring Boot & APIs"),
+                Map.of("id", "data-science-ai", "name", "Data Science & AI", "category", "AI & Data", "description", "Machine Learning, Deep Learning, Big Data & Python"),
+                Map.of("id", "cybersecurity", "name", "Cybersecurity & InfoSec", "category", "Security", "description", "Ethical Hacking, Network Security, SOC & Pentesting"),
+                Map.of("id", "cloud-devops", "name", "Cloud Computing & DevOps", "category", "Cloud Infrastructure", "description", "AWS, Azure, Docker, Kubernetes & CI/CD Pipelines"),
+                Map.of("id", "mobile-app-dev", "name", "Mobile App Development", "category", "Development", "description", "Android (Kotlin), iOS (Swift), React Native & Flutter"),
+                Map.of("id", "ui-ux-design", "name", "UI/UX & Product Design", "category", "Design", "description", "Figma, User Research, Wireframing & Design Systems"),
+                Map.of("id", "business-finance", "name", "Business & Finance", "category", "Business", "description", "Financial Modeling, Product Management, Growth & Analytics"),
+                Map.of("id", "software-architecture", "name", "Software Architecture", "category", "Architecture", "description", "System Design, Microservices, Event-Driven & Scalability")
+        );
+    }
+
+    @Transactional
+    public InstructorApplyDetailedResponse saveDraft(String authorization, InstructorApplyRequest draftRequest) {
+        UUID userId = BearerTokenResolver.resolveUserAccessToken(authorization, jwtUtil, userRepository);
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+
+        if (user.getRole() == User.Role.MAIN_ADMIN || user.getRole() == User.Role.SUB_ADMIN) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Admin accounts cannot apply for instructor role");
+        }
+
+        // Find existing draft or pending application
+        InstructorApplication application = applicationRepository
+                .findTopByUserIdOrderBySubmittedAtDesc(userId)
+                .filter(a -> a.getStatus() == InstructorApplication.ApplicationStatus.DRAFT || a.getStatus() == InstructorApplication.ApplicationStatus.NEED_MORE_INFO)
+                .orElse(null);
+
+        if (application == null) {
+            // Check if already pending or approved
+            if (applicationRepository.existsByUserIdAndStatus(userId, InstructorApplication.ApplicationStatus.PENDING)) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT, "You already have an application pending review.");
+            }
+            if (applicationRepository.existsByUserIdAndStatus(userId, InstructorApplication.ApplicationStatus.APPROVED)) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT, "You are already an approved instructor.");
+            }
+
+            application = InstructorApplication.builder()
+                    .userId(userId)
+                    .status(InstructorApplication.ApplicationStatus.DRAFT)
+                    .submittedAt(LocalDateTime.now())
+                    .build();
+        }
+
+        if (draftRequest != null) {
+            if (draftRequest.getSubject() != null) application.setSubject(draftRequest.getSubject());
+            if (draftRequest.getSpecialization() != null) application.setSpecialization(draftRequest.getSpecialization());
+            if (draftRequest.getExperience() != null) application.setExperience(draftRequest.getExperience());
+            if (draftRequest.getBio() != null) application.setBio(draftRequest.getBio());
+            if (draftRequest.getPhone() != null) application.setPhone(draftRequest.getPhone());
+            if (draftRequest.getLinkedinUrl() != null) application.setLinkedinUrl(draftRequest.getLinkedinUrl());
+            if (draftRequest.getWebsiteUrl() != null) application.setWebsiteUrl(draftRequest.getWebsiteUrl());
+            if (draftRequest.getBankAccountNumber() != null) application.setBankAccountNumber(draftRequest.getBankAccountNumber());
+            if (draftRequest.getBankIfsc() != null) application.setBankIfsc(draftRequest.getBankIfsc());
+            if (draftRequest.getBankName() != null) application.setBankName(draftRequest.getBankName());
+            if (draftRequest.getPanNumber() != null) application.setPanNumber(draftRequest.getPanNumber());
+            if (draftRequest.getAdditionalNotes() != null) application.setAdditionalNotes(draftRequest.getAdditionalNotes());
+        }
+
+        applicationRepository.save(application);
+        log.info("Saved instructor application draft for user: {}", userId);
+
+        return buildResponse(user, application);
+    }
+
+    @Transactional
+    public InstructorApplyDetailedResponse uploadSingleDocument(String authorization, String docType, MultipartFile file) {
+        UUID userId = BearerTokenResolver.resolveUserAccessToken(authorization, jwtUtil, userRepository);
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+
+        if (file == null || file.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "File is required");
+        }
+
+        InstructorApplication application = applicationRepository
+                .findTopByUserIdOrderBySubmittedAtDesc(userId)
+                .filter(a -> a.getStatus() == InstructorApplication.ApplicationStatus.DRAFT || a.getStatus() == InstructorApplication.ApplicationStatus.NEED_MORE_INFO)
+                .orElseGet(() -> {
+                    InstructorApplication newDraft = InstructorApplication.builder()
+                            .userId(userId)
+                            .status(InstructorApplication.ApplicationStatus.DRAFT)
+                            .submittedAt(LocalDateTime.now())
+                            .build();
+                    return applicationRepository.save(newDraft);
+                });
+
+        try {
+            String storedPath = documentStorageService.store(userId, docType, file);
+            setDocumentPath(application, docType, storedPath);
+            applicationRepository.save(application);
+            return buildResponse(user, application);
+        } catch (IOException e) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to upload document: " + e.getMessage());
+        }
+    }
+
+    @Transactional
+    public InstructorApplyDetailedResponse removeDocument(String authorization, String docType) {
+        UUID userId = BearerTokenResolver.resolveUserAccessToken(authorization, jwtUtil, userRepository);
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+
+        InstructorApplication application = applicationRepository
+                .findTopByUserIdOrderBySubmittedAtDesc(userId)
+                .filter(a -> a.getStatus() == InstructorApplication.ApplicationStatus.DRAFT || a.getStatus() == InstructorApplication.ApplicationStatus.NEED_MORE_INFO)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "No editable draft found to remove document"));
+
+        setDocumentPath(application, docType, null);
+        applicationRepository.save(application);
+
+        return buildResponse(user, application);
+    }
+
+    @Transactional
     public InstructorApplyDetailedResponse applyForInstructor(
             String authorization,
             MultipartFile resume,
@@ -59,15 +181,20 @@ public class InstructorService {
             MultipartFile bankDetails,
             MultipartFile panDocument,
             MultipartFile applicationForm,
+            String subject,
+            String specialization,
+            String experience,
+            String bio,
+            String phone,
+            String linkedinUrl,
+            String websiteUrl,
             String bankAccountNumber,
             String bankIfsc,
             String bankName,
             String panNumber,
             String additionalNotes
     ) {
-        String tokenRole = BearerTokenResolver.resolveTokenRole(authorization, jwtUtil);
         UUID userId = BearerTokenResolver.resolveUserAccessToken(authorization, jwtUtil, userRepository);
-
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
 
@@ -75,76 +202,144 @@ public class InstructorService {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Admin accounts cannot apply for instructor role");
         }
 
-        // Check if user has a pending application
+        // Check if user has an active pending application
         if (applicationRepository.existsByUserIdAndStatus(userId, InstructorApplication.ApplicationStatus.PENDING)) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "An instructor application is already pending review");
         }
 
-        // Check if user has an approved application (prevent re-application by approved instructors)
-        if (applicationRepository.existsByUserIdAndStatus(userId, InstructorApplication.ApplicationStatus.APPROVED)) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "You already have an approved instructor application");
-        }
-
-        // Allow re-application after rejection, but reset user state
-        if (Boolean.TRUE.equals(user.getIsInstructorApproved()) && user.getRole() == User.Role.INSTRUCTOR) {
+        // Check if already approved instructor
+        if (applicationRepository.existsByUserIdAndStatus(userId, InstructorApplication.ApplicationStatus.APPROVED) ||
+                (Boolean.TRUE.equals(user.getIsInstructorApproved()) && user.getRole() == User.Role.INSTRUCTOR)) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "You are already an approved instructor and cannot re-apply");
         }
 
-        validateRequiredFile(resume, "resume");
-        validateRequiredFile(educationalCertificates, "educationalCertificates");
-        validateRequiredFile(governmentIdProof, "governmentIdProof");
-        validateRequiredFile(passportPhoto, "passportPhoto");
-        validateRequiredFile(bankDetails, "bankDetails");
-        validateRequiredFile(panDocument, "panDocument");
+        // Look for existing draft or resubmission
+        InstructorApplication application = applicationRepository
+                .findTopByUserIdOrderBySubmittedAtDesc(userId)
+                .filter(a -> a.getStatus() == InstructorApplication.ApplicationStatus.DRAFT ||
+                             a.getStatus() == InstructorApplication.ApplicationStatus.NEED_MORE_INFO ||
+                             a.getStatus() == InstructorApplication.ApplicationStatus.REJECTED)
+                .orElse(null);
+
+        if (application == null) {
+            application = InstructorApplication.builder()
+                    .userId(userId)
+                    .build();
+        } else {
+            if (application.getStatus() == InstructorApplication.ApplicationStatus.NEED_MORE_INFO) {
+                log.info("Applicant {} is resubmitting application {} following NEED_MORE_INFO request", userId, application.getId());
+                application.setRequestedInfo(null);
+            } else if (application.getStatus() == InstructorApplication.ApplicationStatus.REJECTED) {
+                log.info("Applicant {} is submitting revised application {} following previous rejection", userId, application.getId());
+                application.setRejectionReason(null);
+            }
+        }
+
+        // Fallbacks from existing draft if not provided in multipart body
+        if (subject != null && !subject.isBlank()) application.setSubject(subject);
+        if (specialization != null && !specialization.isBlank()) application.setSpecialization(specialization);
+        if (experience != null && !experience.isBlank()) application.setExperience(experience);
+        if (bio != null && !bio.isBlank()) application.setBio(bio);
+        if (phone != null && !phone.isBlank()) application.setPhone(phone);
+        if (linkedinUrl != null && !linkedinUrl.isBlank()) application.setLinkedinUrl(linkedinUrl);
+        if (websiteUrl != null && !websiteUrl.isBlank()) application.setWebsiteUrl(websiteUrl);
+
+        if (bankAccountNumber != null) application.setBankAccountNumber(bankAccountNumber);
+        if (bankIfsc != null) application.setBankIfsc(bankIfsc);
+        if (bankName != null) application.setBankName(bankName);
+        if (panNumber != null) application.setPanNumber(panNumber);
+        if (additionalNotes != null) application.setAdditionalNotes(additionalNotes);
+
+        // Strict Step 1 Validations
+        if (application.getSubject() == null || application.getSubject().isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Teaching Subject / Content Type is required");
+        }
+        if (application.getSpecialization() == null || application.getSpecialization().isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Specialization is required");
+        }
+        if (application.getExperience() == null || application.getExperience().isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Years of Experience is required");
+        }
+        if (application.getBio() == null || application.getBio().trim().length() < 30) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Professional bio must be at least 30 characters in length");
+        }
 
         try {
-            InstructorApplication application = InstructorApplication.builder()
-                    .userId(userId)
-                    .status(InstructorApplication.ApplicationStatus.PENDING)
-                    .resumePath(documentStorageService.store(userId, "resume", resume))
-                    .educationalCertificatesPath(documentStorageService.store(userId, "education", educationalCertificates))
-                    .governmentIdProofPath(documentStorageService.store(userId, "gov_id", governmentIdProof))
-                    .experienceLetterPath(documentStorageService.store(userId, "experience", experienceLetter))
-                    .internshipCertificatePath(documentStorageService.store(userId, "internship", internshipCertificate))
-                    .skillCertificatesPath(documentStorageService.store(userId, "skills", skillCertificates))
-                    .portfolioPath(documentStorageService.store(userId, "portfolio", portfolio))
-                    .demoLecturePptPath(documentStorageService.store(userId, "demo_ppt", demoLecturePpt))
-                    .demoLectureRecordingPath(documentStorageService.store(userId, "demo_recording", demoLectureRecording))
-                    .projectsPath(documentStorageService.store(userId, "projects", projects))
-                    .passportPhotoPath(documentStorageService.store(userId, "passport_photo", passportPhoto))
-                    .bankDetailsPath(documentStorageService.store(userId, "bank_details", bankDetails))
-                    .panDocumentPath(documentStorageService.store(userId, "pan", panDocument))
-                    .applicationFormPath(documentStorageService.store(userId, "application_form", applicationForm))
-                    .bankAccountNumber(bankAccountNumber)
-                    .bankIfsc(bankIfsc)
-                    .bankName(bankName)
-                    .panNumber(panNumber)
-                    .additionalNotes(additionalNotes)
-                    .submittedAt(LocalDateTime.now())
-                    .build();
+            // Upload provided files or retain existing draft files
+            if (resume != null && !resume.isEmpty()) {
+                application.setResumePath(documentStorageService.store(userId, "resume", resume));
+            }
+            if (educationalCertificates != null && !educationalCertificates.isEmpty()) {
+                application.setEducationalCertificatesPath(documentStorageService.store(userId, "education", educationalCertificates));
+            }
+            if (governmentIdProof != null && !governmentIdProof.isEmpty()) {
+                application.setGovernmentIdProofPath(documentStorageService.store(userId, "gov_id", governmentIdProof));
+            }
+            if (passportPhoto != null && !passportPhoto.isEmpty()) {
+                application.setPassportPhotoPath(documentStorageService.store(userId, "passport_photo", passportPhoto));
+            }
+            if (bankDetails != null && !bankDetails.isEmpty()) {
+                application.setBankDetailsPath(documentStorageService.store(userId, "bank_details", bankDetails));
+            }
+            if (panDocument != null && !panDocument.isEmpty()) {
+                application.setPanDocumentPath(documentStorageService.store(userId, "pan", panDocument));
+            }
 
+            // Optionals
+            if (portfolio != null && !portfolio.isEmpty()) {
+                application.setPortfolioPath(documentStorageService.store(userId, "portfolio", portfolio));
+            }
+            if (experienceLetter != null && !experienceLetter.isEmpty()) {
+                application.setExperienceLetterPath(documentStorageService.store(userId, "experience", experienceLetter));
+            }
+            if (internshipCertificate != null && !internshipCertificate.isEmpty()) {
+                application.setInternshipCertificatePath(documentStorageService.store(userId, "internship", internshipCertificate));
+            }
+            if (skillCertificates != null && !skillCertificates.isEmpty()) {
+                application.setSkillCertificatesPath(documentStorageService.store(userId, "skills", skillCertificates));
+            }
+            if (demoLecturePpt != null && !demoLecturePpt.isEmpty()) {
+                application.setDemoLecturePptPath(documentStorageService.store(userId, "demo_ppt", demoLecturePpt));
+            }
+            if (demoLectureRecording != null && !demoLectureRecording.isEmpty()) {
+                application.setDemoLectureRecordingPath(documentStorageService.store(userId, "demo_recording", demoLectureRecording));
+            }
+            if (projects != null && !projects.isEmpty()) {
+                application.setProjectsPath(documentStorageService.store(userId, "projects", projects));
+            }
+            if (applicationForm != null && !applicationForm.isEmpty()) {
+                application.setApplicationFormPath(documentStorageService.store(userId, "application_form", applicationForm));
+            }
+
+            // Strict Step 2 Validations
+            validateDocumentRequired(application.getResumePath(), "Resume / CV");
+            validateDocumentRequired(application.getEducationalCertificatesPath(), "Educational Certificates");
+            validateDocumentRequired(application.getGovernmentIdProofPath(), "Government ID Proof");
+            validateDocumentRequired(application.getPassportPhotoPath(), "Passport Photo");
+            validateDocumentRequired(application.getBankDetailsPath(), "Bank Details");
+            validateDocumentRequired(application.getPanDocumentPath(), "PAN Document");
+
+            // Final state promotion
+            application.setStatus(InstructorApplication.ApplicationStatus.PENDING);
+            application.setSubmittedAt(LocalDateTime.now());
             applicationRepository.save(application);
 
-            // Reset user state for new application
             user.setAppliedRole(User.Role.INSTRUCTOR);
             user.setApplicationStatus(User.ApplicationStatus.PENDING_VERIFICATION);
-            // Don't reset isInstructorApproved here - it should only be set during approval/rejection
             user.setUpdatedAt(LocalDateTime.now());
             userRepository.save(user);
 
+            log.info("Successfully submitted instructor application {} for user {}", application.getId(), userId);
             return buildResponse(user, application);
         } catch (ResponseStatusException e) {
             throw e;
         } catch (Exception e) {
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
-                    "Failed to store application documents: " + e.getMessage());
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to submit application: " + e.getMessage());
         }
     }
 
     public InstructorApplyDetailedResponse getApplicationStatus(String authorization) {
-        String tokenRole = BearerTokenResolver.resolveTokenRole(authorization, jwtUtil);
         UUID userId = BearerTokenResolver.resolveUserAccessToken(authorization, jwtUtil, userRepository);
-
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
 
@@ -155,22 +350,22 @@ public class InstructorService {
         return buildResponse(user, application);
     }
 
-    public List<InstructorApplyDetailedResponse> getAllApplications() {
-        List<InstructorApplication> applications = applicationRepository.findAll();
+    public InstructorApplyDetailedResponse getApplicationById(UUID applicationId) {
+        InstructorApplication application = applicationRepository.findById(applicationId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Instructor application not found with ID: " + applicationId));
 
-        return applications.stream().map(application -> {
-            User user = userRepository.findById(application.getUserId()).orElse(null);
-            if (user == null) {
-                user = new User();
-                user.setId(application.getUserId());
-            }
-            return buildResponse(user, application);
-        }).toList();
+        User user = userRepository.findById(application.getUserId()).orElse(null);
+        if (user == null) {
+            user = new User();
+            user.setId(application.getUserId());
+        }
+
+        return buildResponse(user, application);
     }
 
     public Map<String, Object> getAllApplicationsPaginated(int page, int size) {
-        org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(page, size, org.springframework.data.domain.Sort.by("submittedAt").descending());
-        org.springframework.data.domain.Page<InstructorApplication> applicationPage = applicationRepository.findAll(pageable);
+        Pageable pageable = PageRequest.of(page, size, Sort.by("submittedAt").descending());
+        Page<InstructorApplication> applicationPage = applicationRepository.findAll(pageable);
 
         List<InstructorApplyDetailedResponse> applications = applicationPage.stream().map(application -> {
             User user = userRepository.findById(application.getUserId()).orElse(null);
@@ -192,8 +387,8 @@ public class InstructorService {
     }
 
     public Map<String, Object> getApplicationsByStatusPaginated(InstructorApplication.ApplicationStatus status, int page, int size) {
-        org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(page, size, org.springframework.data.domain.Sort.by("submittedAt").descending());
-        org.springframework.data.domain.Page<InstructorApplication> applicationPage = applicationRepository.findByStatus(status, pageable);
+        Pageable pageable = PageRequest.of(page, size, Sort.by("submittedAt").descending());
+        Page<InstructorApplication> applicationPage = applicationRepository.findByStatus(status, pageable);
 
         List<InstructorApplyDetailedResponse> applications = applicationPage.stream().map(application -> {
             User user = userRepository.findById(application.getUserId()).orElse(null);
@@ -215,100 +410,221 @@ public class InstructorService {
         return response;
     }
 
+    @Transactional
     public InstructorApplyDetailedResponse approveApplicationById(UUID applicationId, UUID adminId) {
-        InstructorApplication application = applicationRepository.findById(applicationId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
-                        "Instructor application not found with ID: " + applicationId));
+        InstructorApplication application = applicationRepository.findByIdForUpdate(applicationId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Instructor application not found with ID: " + applicationId));
 
         User user = userRepository.findById(application.getUserId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found with ID: " + application.getUserId()));
 
-        // Only check the current application's status, not user history
+        // Prevent self-approval
+        if (adminId != null && adminId.equals(application.getUserId())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Security violation: Administrators are strictly prohibited from approving their own instructor applications.");
+        }
+
+        // Idempotent return if already approved
         if (application.getStatus() == InstructorApplication.ApplicationStatus.APPROVED) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Application is already approved");
+            log.info("Application {} is already APPROVED. Returning idempotent response.", applicationId);
+            return buildResponse(user, application);
         }
 
+        // State Machine transition rules
+        if (application.getStatus() == InstructorApplication.ApplicationStatus.DRAFT) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Cannot approve an unsubmitted DRAFT application.");
+        }
         if (application.getStatus() == InstructorApplication.ApplicationStatus.REJECTED) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT,
-                    "This application has already been rejected. User must submit a new application.");
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Cannot approve an application that was REJECTED. Applicant must resubmit.");
         }
 
-        // Check if user is already an approved instructor (from a different application)
-        // Find all approved applications for this user, excluding the current one
-        List<InstructorApplication> userApprovedApps = applicationRepository.findByStatus(
-            InstructorApplication.ApplicationStatus.APPROVED,
-            org.springframework.data.domain.PageRequest.of(0, 100)
-        ).getContent().stream()
-            .filter(app -> app.getUserId().equals(user.getId()) && !app.getId().equals(applicationId))
-            .toList();
-
-        if (!userApprovedApps.isEmpty() || (Boolean.TRUE.equals(user.getIsInstructorApproved()) && user.getRole() == User.Role.INSTRUCTOR)) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT,
-                    "User is already an approved instructor. Cannot approve another application.");
-        }
-
-        // Approve the application
+        // Approve application
         application.setStatus(InstructorApplication.ApplicationStatus.APPROVED);
         application.setReviewedAt(LocalDateTime.now());
-        application.setReviewedBy(adminId.toString());
+        application.setReviewedBy(adminId != null ? adminId.toString() : "ADMIN");
         applicationRepository.save(application);
 
-        // Update user: set role to INSTRUCTOR, mark as approved
+        // Promote user role to INSTRUCTOR
         user.setRole(User.Role.INSTRUCTOR);
         user.setIsInstructorApproved(true);
         user.setApplicationStatus(User.ApplicationStatus.APPROVED);
         user.setUpdatedAt(LocalDateTime.now());
         userRepository.save(user);
 
+        log.info("Admin {} approved instructor application {} for user {}", adminId, applicationId, user.getId());
         return buildResponse(user, application);
     }
-    public InstructorApplyDetailedResponse rejectApplicationById(UUID applicationId, UUID adminId) {
-        InstructorApplication application = applicationRepository.findById(applicationId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
-                        "Instructor application not found with ID: " + applicationId));
+
+    @Transactional
+    public InstructorApplyDetailedResponse rejectApplicationById(UUID applicationId, UUID adminId, String reason) {
+        InstructorApplication application = applicationRepository.findByIdForUpdate(applicationId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Instructor application not found with ID: " + applicationId));
 
         User user = userRepository.findById(application.getUserId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found with ID: " + application.getUserId()));
 
-        if (application.getStatus() == InstructorApplication.ApplicationStatus.REJECTED) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Application is already rejected");
+        // Prevent self-rejection
+        if (adminId != null && adminId.equals(application.getUserId())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Security violation: Administrators cannot reject their own applications.");
         }
 
-        // Reject the application
+        // State Machine transition rules
+        if (application.getStatus() == InstructorApplication.ApplicationStatus.APPROVED) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Cannot reject an application that is already APPROVED.");
+        }
+        if (application.getStatus() == InstructorApplication.ApplicationStatus.DRAFT) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Cannot reject an unsubmitted DRAFT application.");
+        }
+
+        if (reason == null || reason.trim().length() < 5) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "A meaningful rejection reason of at least 5 characters is strictly mandatory.");
+        }
+
         application.setStatus(InstructorApplication.ApplicationStatus.REJECTED);
+        application.setRejectionReason(reason.trim());
         application.setReviewedAt(LocalDateTime.now());
-        application.setReviewedBy(adminId.toString());
+        application.setReviewedBy(adminId != null ? adminId.toString() : "ADMIN");
         applicationRepository.save(application);
 
-        // Update user state
         user.setIsInstructorApproved(false);
         user.setApplicationStatus(User.ApplicationStatus.REJECTED);
-
-        // Only demote user if this was their active approved application
-        // Check if user has any other approved applications
-        boolean hasOtherApprovedApps = applicationRepository.existsByUserIdAndStatus(
-            user.getId(), InstructorApplication.ApplicationStatus.APPROVED);
-
-        // Only demote if no other approved applications exist
-        if (user.getRole() == User.Role.INSTRUCTOR && !hasOtherApprovedApps) {
+        if (user.getRole() == User.Role.INSTRUCTOR) {
             user.setRole(User.Role.STUDENT);
         }
-
         user.setUpdatedAt(LocalDateTime.now());
         userRepository.save(user);
+
+        log.info("Admin {} rejected instructor application {} with reason: {}", adminId, applicationId, reason);
+        return buildResponse(user, application);
+    }
+
+    @Transactional
+    public InstructorApplyDetailedResponse requestInfoById(UUID applicationId, UUID adminId, String requestedInfo) {
+        InstructorApplication application = applicationRepository.findByIdForUpdate(applicationId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Instructor application not found with ID: " + applicationId));
+
+        User user = userRepository.findById(application.getUserId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found with ID: " + application.getUserId()));
+
+        // Prevent self-request
+        if (adminId != null && adminId.equals(application.getUserId())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Security violation: Administrators cannot request info from themselves.");
+        }
+
+        // State Machine transition rules
+        if (application.getStatus() == InstructorApplication.ApplicationStatus.APPROVED) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Cannot request additional info for an application that is already APPROVED.");
+        }
+        if (application.getStatus() == InstructorApplication.ApplicationStatus.REJECTED) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Cannot request additional info for an application that was REJECTED. Applicant must resubmit.");
+        }
+        if (application.getStatus() == InstructorApplication.ApplicationStatus.DRAFT) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Cannot request additional info on an unsubmitted DRAFT application.");
+        }
+
+        if (requestedInfo == null || requestedInfo.trim().length() < 5) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Specific details on requested information (minimum 5 characters) are mandatory.");
+        }
+
+        application.setStatus(InstructorApplication.ApplicationStatus.NEED_MORE_INFO);
+        application.setRequestedInfo(requestedInfo.trim());
+        application.setReviewedAt(LocalDateTime.now());
+        application.setReviewedBy(adminId != null ? adminId.toString() : "ADMIN");
+        applicationRepository.save(application);
 
         return buildResponse(user, application);
     }
 
+    public Resource getDocumentResource(UUID applicationId, String docType, UUID requestingUserId, String requestingRole) {
+        InstructorApplication application = applicationRepository.findById(applicationId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Application not found"));
+
+        boolean isAdmin = requestingRole != null && (requestingRole.contains("ADMIN") || requestingRole.contains("MAIN_ADMIN") || requestingRole.contains("SUB_ADMIN"));
+        boolean isOwner = requestingUserId != null && application.getUserId().equals(requestingUserId);
+
+        if (!isAdmin && !isOwner) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Access denied. Private document can only be viewed by applicant or authorized administrator.");
+        }
+
+        String pathStr = getDocumentPath(application, docType);
+        if (pathStr == null || pathStr.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Document " + docType + " not found for this application");
+        }
+
+        return documentStorageService.loadAsResource(pathStr);
+    }
+
+    private void validateDocumentRequired(String path, String docName) {
+        if (path == null || path.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Required document missing: " + docName);
+        }
+    }
+
+    private void setDocumentPath(InstructorApplication app, String docType, String path) {
+        switch (docType) {
+            case "resume" -> app.setResumePath(path);
+            case "educationalCertificates", "education" -> app.setEducationalCertificatesPath(path);
+            case "governmentIdProof", "gov_id" -> app.setGovernmentIdProofPath(path);
+            case "passportPhoto", "passport_photo" -> app.setPassportPhotoPath(path);
+            case "bankDetails", "bank_details" -> app.setBankDetailsPath(path);
+            case "panDocument", "pan" -> app.setPanDocumentPath(path);
+            case "portfolio" -> app.setPortfolioPath(path);
+            case "experienceLetter", "experience" -> app.setExperienceLetterPath(path);
+            case "internshipCertificate", "internship" -> app.setInternshipCertificatePath(path);
+            case "skillCertificates", "skills" -> app.setSkillCertificatesPath(path);
+            case "demoLecturePpt", "demo_ppt" -> app.setDemoLecturePptPath(path);
+            case "demoLectureRecording", "demo_recording" -> app.setDemoLectureRecordingPath(path);
+            case "projects" -> app.setProjectsPath(path);
+            case "applicationForm", "application_form" -> app.setApplicationFormPath(path);
+            default -> throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unknown document type: " + docType);
+        }
+    }
+
+    private String getDocumentPath(InstructorApplication app, String docType) {
+        return switch (docType) {
+            case "resume" -> app.getResumePath();
+            case "educationalCertificates", "education" -> app.getEducationalCertificatesPath();
+            case "governmentIdProof", "gov_id" -> app.getGovernmentIdProofPath();
+            case "passportPhoto", "passport_photo" -> app.getPassportPhotoPath();
+            case "bankDetails", "bank_details" -> app.getBankDetailsPath();
+            case "panDocument", "pan" -> app.getPanDocumentPath();
+            case "portfolio" -> app.getPortfolioPath();
+            case "experienceLetter", "experience" -> app.getExperienceLetterPath();
+            case "internshipCertificate", "internship" -> app.getInternshipCertificatePath();
+            case "skillCertificates", "skills" -> app.getSkillCertificatesPath();
+            case "demoLecturePpt", "demo_ppt" -> app.getDemoLecturePptPath();
+            case "demoLectureRecording", "demo_recording" -> app.getDemoLectureRecordingPath();
+            case "projects" -> app.getProjectsPath();
+            case "applicationForm", "application_form" -> app.getApplicationFormPath();
+            default -> null;
+        };
+    }
 
     private InstructorApplyDetailedResponse buildResponse(User user, InstructorApplication application) {
-
-        // Application info
         String reviewMessage = switch (application.getStatus()) {
-            case PENDING -> "Your application is under admin review.";
+            case DRAFT -> "Application draft saved. Complete all steps and submit for review.";
+            case PENDING, UNDER_REVIEW -> "Your application is under admin review.";
+            case NEED_MORE_INFO -> "Additional information requested: " + (application.getRequestedInfo() != null ? application.getRequestedInfo() : "Please update your application.");
             case APPROVED -> "Approved. You can switch to INSTRUCTOR role using POST /auth/switch-role.";
-            case REJECTED -> "Application rejected. Contact support or re-apply after updating documents.";
+            case REJECTED -> "Application rejected. Reason: " + (application.getRejectionReason() != null ? application.getRejectionReason() : "Contact support or re-apply.");
+            case WITHDRAWN -> "Application withdrawn.";
         };
+
+        Map<String, String> documentUrls = new LinkedHashMap<>();
+        UUID appId = application.getId();
+        if (application.getResumePath() != null) documentUrls.put("resume", "/api/v1/instructors/applications/" + appId + "/documents/resume");
+        if (application.getEducationalCertificatesPath() != null) documentUrls.put("educationalCertificates", "/api/v1/instructors/applications/" + appId + "/documents/educationalCertificates");
+        if (application.getGovernmentIdProofPath() != null) documentUrls.put("governmentIdProof", "/api/v1/instructors/applications/" + appId + "/documents/governmentIdProof");
+        if (application.getPassportPhotoPath() != null) documentUrls.put("passportPhoto", "/api/v1/instructors/applications/" + appId + "/documents/passportPhoto");
+        if (application.getBankDetailsPath() != null) documentUrls.put("bankDetails", "/api/v1/instructors/applications/" + appId + "/documents/bankDetails");
+        if (application.getPanDocumentPath() != null) documentUrls.put("panDocument", "/api/v1/instructors/applications/" + appId + "/documents/panDocument");
+        if (application.getPortfolioPath() != null) documentUrls.put("portfolio", "/api/v1/instructors/applications/" + appId + "/documents/portfolio");
+        if (application.getExperienceLetterPath() != null) documentUrls.put("experienceLetter", "/api/v1/instructors/applications/" + appId + "/documents/experienceLetter");
+        if (application.getInternshipCertificatePath() != null) documentUrls.put("internshipCertificate", "/api/v1/instructors/applications/" + appId + "/documents/internshipCertificate");
+        if (application.getSkillCertificatesPath() != null) documentUrls.put("skillCertificates", "/api/v1/instructors/applications/" + appId + "/documents/skillCertificates");
+        if (application.getDemoLecturePptPath() != null) documentUrls.put("demoLecturePpt", "/api/v1/instructors/applications/" + appId + "/documents/demoLecturePpt");
+        if (application.getDemoLectureRecordingPath() != null) documentUrls.put("demoLectureRecording", "/api/v1/instructors/applications/" + appId + "/documents/demoLectureRecording");
+        if (application.getProjectsPath() != null) documentUrls.put("projects", "/api/v1/instructors/applications/" + appId + "/documents/projects");
+        if (application.getApplicationFormPath() != null) documentUrls.put("applicationForm", "/api/v1/instructors/applications/" + appId + "/documents/applicationForm");
 
         InstructorApplyDetailedResponse.ApplicationInfo applicationInfo =
                 InstructorApplyDetailedResponse.ApplicationInfo.builder()
@@ -316,19 +632,44 @@ public class InstructorService {
                         .status(application.getStatus().name())
                         .reviewMessage(reviewMessage)
                         .submittedAt(application.getSubmittedAt())
+                        .reviewedAt(application.getReviewedAt())
+                        .reviewedBy(application.getReviewedBy())
+                        .rejectionReason(application.getRejectionReason())
+                        .adminNotes(application.getAdminNotes())
+                        .requestedInfo(application.getRequestedInfo())
+                        .subject(application.getSubject())
+                        .specialization(application.getSpecialization())
+                        .experience(application.getExperience())
+                        .bio(application.getBio())
+                        .phone(application.getPhone())
+                        .linkedinUrl(application.getLinkedinUrl())
+                        .websiteUrl(application.getWebsiteUrl())
+                        .bankAccountNumber(application.getBankAccountNumber())
+                        .bankIfsc(application.getBankIfsc())
+                        .bankName(application.getBankName())
+                        .panNumber(application.getPanNumber())
+                        .additionalNotes(application.getAdditionalNotes())
+                        .documentUrls(documentUrls)
                         .build();
 
-        // User info
+        String fullName = "";
+        if (user.getFirstName() != null) fullName += user.getFirstName();
+        if (user.getLastName() != null) fullName += (fullName.isEmpty() ? "" : " ") + user.getLastName();
+
         InstructorApplyDetailedResponse.UserInfo userInfo = InstructorApplyDetailedResponse.UserInfo.builder()
                 .userId(user.getId())
                 .email(user.getEmail())
+                .firstName(user.getFirstName())
+                .lastName(user.getLastName())
+                .fullName(fullName.isEmpty() ? "Applicant" : fullName)
+                .mobile(user.getMobile())
+                .profilePhoto(user.getProfilePhoto())
                 .currentRole(user.getRole() != null ? user.getRole().name() : null)
                 .appliedRole(user.getAppliedRole() != null ? user.getAppliedRole().name() : "INSTRUCTOR")
                 .accountStatus(user.getStatus() != null ? user.getStatus().name() : null)
                 .isInstructorApproved(user.getIsInstructorApproved())
                 .build();
 
-        // Documents - required
         Map<String, Boolean> requiredDocs = new LinkedHashMap<>();
         requiredDocs.put("resume", application.getResumePath() != null);
         requiredDocs.put("educationalCertificates", application.getEducationalCertificatesPath() != null);
@@ -337,7 +678,6 @@ public class InstructorService {
         requiredDocs.put("bankDetails", application.getBankDetailsPath() != null);
         requiredDocs.put("panDocument", application.getPanDocumentPath() != null);
 
-        // Documents - optional
         Map<String, Boolean> optionalDocs = new LinkedHashMap<>();
         optionalDocs.put("portfolio", application.getPortfolioPath() != null);
         optionalDocs.put("experienceLetter", application.getExperienceLetterPath() != null);
@@ -354,12 +694,11 @@ public class InstructorService {
                         .optional(optionalDocs)
                         .build();
 
-        // Next steps
         List<String> nextSteps = List.of(
                 "Admin will review your application and documents",
                 "You will be notified once approved",
                 "After approval, switch role using POST /auth/switch-role with {\"switchRole\":\"INSTRUCTOR\"}",
-                "Track status via GET /instructors/application/status"
+                "Track status via GET /instructors/applications/me"
         );
 
         return InstructorApplyDetailedResponse.builder()
@@ -368,79 +707,5 @@ public class InstructorService {
                 .documents(documentsInfo)
                 .nextSteps(nextSteps)
                 .build();
-    }
-
-    private void validateRequiredFile(MultipartFile file, String name) {
-        if (file == null || file.isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Required document missing: " + name);
-        }
-    }
-
-    private String decrypt(String value) {
-        if (value == null) return null;
-        try {
-            return SecurityUtils.decrypt(value, encryptionKey);
-        } catch (Exception e) {
-            return value;
-        }
-    }
-
-    /**
-     * Validates and fixes user-application state consistency
-     * This ensures that user state matches their latest application status
-     * Can be called manually to fix inconsistent states
-     */
-    public void validateAndFixUserState(UUID userId) {
-        User user = userRepository.findById(userId)
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
-
-        // Get the latest application for this user
-        InstructorApplication latestApplication = applicationRepository
-            .findTopByUserIdOrderBySubmittedAtDesc(userId)
-            .orElse(null);
-
-        if (latestApplication == null) {
-            // No applications found, reset user to default state
-            if (user.getRole() == User.Role.INSTRUCTOR) {
-                user.setRole(User.Role.STUDENT);
-            }
-            user.setIsInstructorApproved(false);
-            user.setApplicationStatus(null);
-            userRepository.save(user);
-            return;
-        }
-
-        // Ensure user's isInstructorApproved matches latest application status
-        boolean shouldBeApproved = latestApplication.getStatus() == InstructorApplication.ApplicationStatus.APPROVED;
-
-        if (Boolean.TRUE.equals(user.getIsInstructorApproved()) != shouldBeApproved) {
-            user.setIsInstructorApproved(shouldBeApproved);
-        }
-
-        // Ensure user's applicationStatus matches latest application status
-        User.ApplicationStatus expectedStatus = switch (latestApplication.getStatus()) {
-            case PENDING -> User.ApplicationStatus.PENDING_VERIFICATION;
-            case APPROVED -> User.ApplicationStatus.APPROVED;
-            case REJECTED -> User.ApplicationStatus.REJECTED;
-        };
-
-        if (user.getApplicationStatus() != expectedStatus) {
-            user.setApplicationStatus(expectedStatus);
-        }
-
-        // Ensure user's role matches approval status
-        if (shouldBeApproved && user.getRole() != User.Role.INSTRUCTOR) {
-            user.setRole(User.Role.INSTRUCTOR);
-        } else if (!shouldBeApproved && user.getRole() == User.Role.INSTRUCTOR) {
-            // Check if user has any other approved applications before demoting
-            boolean hasOtherApprovedApps = applicationRepository.existsByUserIdAndStatus(
-                user.getId(), InstructorApplication.ApplicationStatus.APPROVED);
-            if (!hasOtherApprovedApps) {
-                user.setRole(User.Role.STUDENT);
-            }
-        }
-
-        user.setUpdatedAt(LocalDateTime.now());
-        userRepository.save(user);
     }
 }

@@ -229,7 +229,7 @@ services:
     image: cyberlearnix/api-gateway:latest
     container_name: cyberlearnix-apigateway
     ports:
-      - "8080:8080"
+      - "${GATEWAY_PORT:-8080}:8080"
     environment:
       SERVER_PORT: 8080
       JAVA_TOOL_OPTIONS: ${API_GATEWAY_JAVA_OPTS:--Xms128m -Xmx384m -XX:+UseG1GC -XX:+ExitOnOutOfMemoryError}
@@ -414,6 +414,7 @@ services:
       JWT_ISSUER: ${JWT_ISSUER:-cyberlearnix}
       JWT_AUDIENCE: ${JWT_AUDIENCE:-cyberlearnix-clients}
       COURSE_SERVICE_URL: http://course-service:8083
+      CART_SERVICE_URL: http://cart-service:8081
       DB_HOST: postgres
       DB_PORT: 5432
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-dummy-client-id}
@@ -444,6 +445,7 @@ services:
       JWT_ISSUER: ${JWT_ISSUER:-cyberlearnix}
       JWT_AUDIENCE: ${JWT_AUDIENCE:-cyberlearnix-clients}
       COURSE_SERVICE_URL: http://course-service:8083
+      CART_SERVICE_URL: http://cart-service:8081
       DB_HOST: postgres
       DB_PORT: 5432
     depends_on:

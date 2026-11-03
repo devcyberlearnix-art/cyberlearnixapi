@@ -124,21 +124,61 @@ public class PaymentService {
                                String email,
                                String hash,
                                String payuId) {
+        handleCallback(status, txnId, amount, productInfo, firstName, email, hash, payuId, null, null);
+    }
+
+    public void handleCallback(String status,
+                               String txnId,
+                               String amount,
+                               String productInfo,
+                               String firstName,
+                               String email,
+                               String hash,
+                               String payuId,
+                               String callbackKey,
+                               String additionalCharges) {
 
         if (txnId == null || txnId.isBlank() ||
                 status == null || status.isBlank()) {
             throw new BadRequestException("Invalid callback data");
         }
 
+        // Rejection of altered merchant identifiers (Item 9)
+        if (callbackKey != null && !callbackKey.isBlank() && !callbackKey.trim().equalsIgnoreCase(key.trim())) {
+            throw new BadRequestException("Invalid merchant key");
+        }
+
         Payment payment = paymentRepository.findByTxnId(txnId)
                 .orElseThrow(() -> new BadRequestException("Payment not found"));
+
+        // Rejection of altered amounts (Item 8)
+        if (amount != null && !amount.isBlank()) {
+            try {
+                double parsedAmount = Double.parseDouble(amount.trim());
+                if (Math.abs(parsedAmount - payment.getAmount()) > 0.05) {
+                    throw new BadRequestException("Altered payment amount detected: callback=" + parsedAmount + " expected=" + payment.getAmount());
+                }
+            } catch (NumberFormatException e) {
+                throw new BadRequestException("Malformed callback amount");
+            }
+        }
+
+        // State Machine Integrity (Phase 5):
+        // 1. Idempotent duplicate callback delivery
+        if (payment.getStatus() == PaymentStatus.SUCCESS) {
+            return;
+        }
+        // 2. A failed payment cannot be promoted by invalid or subsequent callback
+        if (payment.getStatus() == PaymentStatus.FAILED && "success".equalsIgnoreCase(status)) {
+            throw new BadRequestException("Cannot promote failed payment to success");
+        }
 
         String normalizedAmount = normalizeAmount(amount, payment.getAmount());
         String normalizedProductInfo = getFirstNonBlank(productInfo, payment.getProductInfo());
         String normalizedFirstName = getFirstNonBlank(firstName, payment.getFirstName());
         String normalizedEmail = getFirstNonBlank(email, payment.getEmail());
 
-        // 1) Validate with callback payload values
+        // 1) Validate with callback payload values (including optional additionalCharges)
         boolean isValid = payUHashService.validatePaymentHash(
                 status,
                 txnId,
@@ -146,6 +186,7 @@ public class PaymentService {
                 normalizedProductInfo,
                 normalizedFirstName,
                 normalizedEmail,
+                additionalCharges,
                 hash
         );
         // 2) Fallback for minor callback formatting differences in manual tests
@@ -157,6 +198,7 @@ public class PaymentService {
                     payment.getProductInfo(),
                     payment.getFirstName(),
                     payment.getEmail(),
+                    additionalCharges,
                     hash
             );
         }
@@ -170,14 +212,13 @@ public class PaymentService {
         if ("success".equalsIgnoreCase(status)) {
             payment.setStatus(PaymentStatus.SUCCESS);
 
-            // ✅ ENROLL STUDENT IN COURSE (after successful payment)
+            // ✅ ENROLL STUDENT IN COURSE (after confirmed payment)
             try {
                 Long courseId = Long.parseLong(payment.getCourseId());
                 UUID studentId = UUID.fromString(payment.getPayerUserId());
                 enrollmentClient.enrollStudentAfterPayment(courseId, studentId);
             } catch (IllegalArgumentException e) {
                 System.err.println("⚠️ Invalid courseId or studentId format for enrollment: " + e.getMessage());
-                // Continue with payment processing even if enrollment fails - can be retried
             }
         } else {
             payment.setStatus(PaymentStatus.FAILED);
@@ -287,7 +328,7 @@ public class PaymentService {
                 .surl(callbackBaseUrl + "/payments/callback/success")
                 .furl(callbackBaseUrl + "/payments/callback/failure")
                 .actionUrl(callbackBaseUrl + "/payments/checkout/" + payment.getTxnId())
-                .payuActionUrl(payuBaseUrl + "/_payment")
+                .payuActionUrl(payuBaseUrl.endsWith("/_payment") ? payuBaseUrl : (payuBaseUrl + "/_payment"))
                 .build();
     }
 

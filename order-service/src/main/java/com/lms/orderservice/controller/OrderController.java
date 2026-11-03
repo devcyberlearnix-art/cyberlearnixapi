@@ -15,7 +15,7 @@ public class OrderController {
     @Autowired
     private OrderService orderService;
 
-    @PostMapping("/create")
+    @PostMapping({"/create", "/stage", ""})
     public ResponseEntity<?> createOrder(Authentication authentication,
                                          @RequestBody CreateOrderRequest request) {
 
@@ -43,7 +43,7 @@ public class OrderController {
                 .anyMatch(a -> a.getAuthority().toUpperCase().contains("ADMIN"));
     }
 
-    @GetMapping("/{orderId}")
+    @GetMapping({"/{orderId}", "/staged/{orderId}"})
     public ResponseEntity<?> getOrder(Authentication authentication, @PathVariable String orderId) {
         var order = isAdmin(authentication)
                 ? orderService.getOrder(orderId)
@@ -52,7 +52,7 @@ public class OrderController {
             "Order retrieved successfully", order));
     }
 
-    @GetMapping
+    @GetMapping({"", "/my-orders"})
     public ResponseEntity<?> getAllOrders(Authentication authentication) {
         return ResponseEntity.ok(ApiResponse.success(
             "Orders retrieved successfully", orderService.getOrdersByUser(authentication != null ? authentication.getName() : null)));

@@ -6,6 +6,7 @@ import com.lms.courseservice.entity.Lecture;
 import com.lms.courseservice.repository.CourseRepository;
 import com.lms.courseservice.repository.SectionRepository;
 import com.lms.courseservice.repository.LectureRepository;
+import com.lms.courseservice.security.CourseSecurityService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -22,6 +23,7 @@ public class SectionService {
     private final CourseRepository courseRepository;
     private final LectureRepository lectureRepository;
     private final CacheInvalidationService cacheInvalidationService;
+    private final CourseSecurityService courseSecurityService;
 
     // Create Section
     public Section createSection(Long courseId, Section section) {
@@ -39,6 +41,7 @@ public class SectionService {
             throw new RuntimeException("Section order index must be a non-negative integer");
         }
 
+        courseSecurityService.validateCourseOwnership(course);
         section.setCourse(course);
 
         Section savedSection = sectionRepository.save(section);
@@ -59,6 +62,7 @@ public class SectionService {
 
         Section section = sectionRepository.findById(sectionId)
                 .orElseThrow(() -> new RuntimeException("Section not found"));
+        courseSecurityService.validateCourseOwnership(section.getCourse());
 
         if (updatedSection.getTitle() != null) {
             if (updatedSection.getTitle().trim().isEmpty()) {
@@ -77,6 +81,7 @@ public class SectionService {
         Section savedSection = sectionRepository.save(section);
 
         // Evict cache for this course
+        courseSecurityService.validateCourseOwnership(section.getCourse());
         Long courseId = section.getCourse().getId();
         cacheInvalidationService.evictCurriculumForCourse(courseId);
 

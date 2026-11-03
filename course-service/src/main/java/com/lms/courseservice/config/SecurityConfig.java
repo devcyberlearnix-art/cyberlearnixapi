@@ -49,7 +49,7 @@ public class SecurityConfig {
                         .hasAnyRole("MAIN_ADMIN", "SUB_ADMIN")
                         // ============== PUBLIC ENDPOINTS (No Auth Required) ==============
                         // GET all courses
-                        .requestMatchers(HttpMethod.GET, "/api/v1/courses", "/api/v1/courses/list", "/api/v1/courses/featured").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/courses", "/api/v1/courses/list", "/api/v1/courses/featured", "/api/v1/courses/suggestions").permitAll()
                         // GET trending courses (public landing page) - specific pattern first
                         .requestMatchers(HttpMethod.GET, "/api/v1/courses/trending").permitAll()
                         // GET specific course and course list (wildcard matches /list, /{id})
@@ -81,7 +81,7 @@ public class SecurityConfig {
                         // Enrollment lookup by user (from admin service)
                         .requestMatchers(HttpMethod.GET, "/api/v1/enrollments/users/*").permitAll()
                         // Admin service operations (with service token)
-                        .requestMatchers(HttpMethod.PATCH, "/api/v1/courses/*/status").permitAll()
+                        .requestMatchers(HttpMethod.PATCH, "/api/v1/courses/*/status").hasAnyRole("MAIN_ADMIN", "SUB_ADMIN", "INSTRUCTOR")
 
                         // ============== AUTHENTICATED ENDPOINTS ==============
                         // Enrollment check (requires auth)
@@ -92,7 +92,7 @@ public class SecurityConfig {
 
                         // ============== STUDENT-ONLY ENDPOINTS ==============
                         // Enroll in course (Student)
-                        .requestMatchers(HttpMethod.POST, "/api/v1/courses/*/enroll", "/api/v1/courses/*/enroll/")
+                        .requestMatchers(HttpMethod.POST, "/api/v1/courses/*/enroll", "/api/v1/courses/*/enroll/", "/api/v1/enrollments/free/*", "/api/v1/enrollments/free/**", "/api/v1/enrollments/*")
                         .hasAnyRole("STUDENT", "USER", "INSTRUCTOR", "MAIN_ADMIN", "SUB_ADMIN")
 
                         // ============== INSTRUCTOR/ADMIN ENDPOINTS ==============
@@ -236,7 +236,7 @@ public class SecurityConfig {
                         // Get lecture progress
                         .requestMatchers(HttpMethod.GET, "/api/v1/progress/lectures/*").authenticated()
                         // Get course progress
-                        .requestMatchers(HttpMethod.GET, "/api/v1/progress/courses/*").authenticated()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/progress/courses", "/api/v1/progress/courses/**").authenticated()
                         // Resume learning
                         .requestMatchers(HttpMethod.GET, "/api/v1/progress/courses/*/resume").authenticated()
 

@@ -42,15 +42,14 @@ public class AdminReviewService {
     }
 
     @Transactional(readOnly = true)
-    public AdminReviewResponse getReviewById(UUID reviewUuid) {
-        Review review = reviewRepository.findByUuid(reviewUuid)
-                .orElseThrow(() -> new BusinessException("Review not found", HttpStatus.NOT_FOUND));
+    public AdminReviewResponse getReviewById(String identifier) {
+        Review review = getReviewOrThrow(identifier);
         return toAdminResponse(review);
     }
 
     @Transactional
-    public ApiResponse hideReview(UUID reviewUuid) {
-        Review review = getReviewOrThrow(reviewUuid);
+    public ApiResponse hideReview(String identifier) {
+        Review review = getReviewOrThrow(identifier);
         review.setStatus(ReviewStatus.HIDDEN);
         reviewRepository.save(review);
 
@@ -61,8 +60,8 @@ public class AdminReviewService {
     }
 
     @Transactional
-    public ApiResponse unhideReview(UUID reviewUuid) {
-        Review review = getReviewOrThrow(reviewUuid);
+    public ApiResponse unhideReview(String identifier) {
+        Review review = getReviewOrThrow(identifier);
         review.setStatus(ReviewStatus.ACTIVE);
         reviewRepository.save(review);
 
@@ -73,8 +72,8 @@ public class AdminReviewService {
     }
 
     @Transactional
-    public ApiResponse deleteReview(UUID reviewUuid) {
-        Review review = getReviewOrThrow(reviewUuid);
+    public ApiResponse deleteReview(String identifier) {
+        Review review = getReviewOrThrow(identifier);
         review.setStatus(ReviewStatus.DELETED);
         reviewRepository.save(review);
 
@@ -84,9 +83,23 @@ public class AdminReviewService {
                 .build();
     }
 
-    private Review getReviewOrThrow(UUID reviewUuid) {
-        return reviewRepository.findByUuid(reviewUuid)
-                .orElseThrow(() -> new BusinessException("Review not found", HttpStatus.NOT_FOUND));
+    private Review getReviewOrThrow(String identifier) {
+        if (identifier == null || identifier.isBlank()) {
+            throw new BusinessException("Review identifier is required", HttpStatus.BAD_REQUEST);
+        }
+        try {
+            UUID uuid = UUID.fromString(identifier);
+            return reviewRepository.findByUuid(uuid)
+                    .orElseThrow(() -> new BusinessException("Review not found", HttpStatus.NOT_FOUND));
+        } catch (IllegalArgumentException e) {
+            try {
+                Long id = Long.parseLong(identifier);
+                return reviewRepository.findById(id)
+                        .orElseThrow(() -> new BusinessException("Review not found", HttpStatus.NOT_FOUND));
+            } catch (NumberFormatException nfe) {
+                throw new BusinessException("Invalid review identifier format", HttpStatus.BAD_REQUEST);
+            }
+        }
     }
 
     private AdminReviewResponse toAdminResponse(Review review) {

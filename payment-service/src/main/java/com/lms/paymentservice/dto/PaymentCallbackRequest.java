@@ -12,4 +12,6 @@ public class PaymentCallbackRequest {
     private String email;
     private String hash;
     private String mihpayid;
+    private String key;
+    private String additionalCharges;
 }

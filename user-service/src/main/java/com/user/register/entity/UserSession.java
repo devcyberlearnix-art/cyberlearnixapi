@@ -2,7 +2,6 @@ package com.user.register.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.UuidGenerator;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -16,8 +15,7 @@ import java.util.UUID;
 public class UserSession {
 
     @Id
-    @GeneratedValue
-    @UuidGenerator
+    @GeneratedValue(strategy = GenerationType.UUID)
 
     private UUID id;
 

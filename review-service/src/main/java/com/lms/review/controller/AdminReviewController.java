@@ -19,8 +19,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.UUID;
-
 @RestController
 @RequestMapping("/api/v1/admin/reviews")
 @RequiredArgsConstructor
@@ -39,25 +37,25 @@ public class AdminReviewController {
 
     @GetMapping("/{reviewUuid}")
     @Operation(summary = "Get review details")
-    public ResponseEntity<AdminReviewResponse> getReviewById(@PathVariable UUID reviewUuid) {
+    public ResponseEntity<AdminReviewResponse> getReviewById(@PathVariable String reviewUuid) {
         return ResponseEntity.ok(adminReviewService.getReviewById(reviewUuid));
     }
 
     @PatchMapping("/{reviewUuid}/hide")
     @Operation(summary = "Hide a review")
-    public ResponseEntity<ApiResponse> hideReview(@PathVariable UUID reviewUuid) {
+    public ResponseEntity<ApiResponse> hideReview(@PathVariable String reviewUuid) {
         return ResponseEntity.ok(adminReviewService.hideReview(reviewUuid));
     }
 
     @PatchMapping("/{reviewUuid}/unhide")
     @Operation(summary = "Unhide a review")
-    public ResponseEntity<ApiResponse> unhideReview(@PathVariable UUID reviewUuid) {
+    public ResponseEntity<ApiResponse> unhideReview(@PathVariable String reviewUuid) {
         return ResponseEntity.ok(adminReviewService.unhideReview(reviewUuid));
     }
 
     @DeleteMapping("/{reviewUuid}")
     @Operation(summary = "Delete any review")
-    public ResponseEntity<ApiResponse> deleteReview(@PathVariable UUID reviewUuid) {
+    public ResponseEntity<ApiResponse> deleteReview(@PathVariable String reviewUuid) {
         return ResponseEntity.ok(adminReviewService.deleteReview(reviewUuid));
     }
 }

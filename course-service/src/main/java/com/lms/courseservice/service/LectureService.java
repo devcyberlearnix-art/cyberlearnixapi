@@ -10,6 +10,7 @@ import com.lms.courseservice.repository.LectureRepository;
 import com.lms.courseservice.repository.SectionRepository;
 
 import com.lms.courseservice.repository.EnrollmentRepository;
+import com.lms.courseservice.security.CourseSecurityService;
 
 
 import lombok.RequiredArgsConstructor;
@@ -41,6 +42,7 @@ public class LectureService {
     private final EnrollmentRepository enrollmentRepository;
 
     private final SectionService sectionService;
+    private final CourseSecurityService courseSecurityService;
 
 
     // 🔒 Common method to validate enrollment
@@ -93,8 +95,8 @@ public class LectureService {
 
 
         Section section = sectionRepository.findById(sectionId)
-
                 .orElseThrow(() -> new RuntimeException("Section not found"));
+        courseSecurityService.validateCourseOwnership(section.getCourse());
 
         // Validate lecture title
         if (lecture.getTitle() == null || lecture.getTitle().trim().isEmpty()) {
@@ -150,8 +152,8 @@ public class LectureService {
 
 
         Lecture lecture = lectureRepository.findById(lectureId)
-
                 .orElseThrow(() -> new RuntimeException("Lecture not found"));
+        courseSecurityService.validateCourseOwnership(lecture.getSection().getCourse());
 
 
         if (updatedLecture.getTitle() != null) {
@@ -202,6 +204,7 @@ public class LectureService {
 
         // ❌ REMOVE enrollment validation here
 
+        courseSecurityService.validateCourseOwnership(lecture.getSection().getCourse());
         lectureRepository.delete(lecture);
         return lecture;
     }

@@ -57,11 +57,32 @@ public class PayUHashService {
                                        String firstName,
                                        String email,
                                        String hash) {
+        return validatePaymentHash(status, txnId, amount, productInfo, firstName, email, null, hash);
+    }
 
+    public boolean validatePaymentHash(String status,
+                                       String txnId,
+                                       String amount,
+                                       String productInfo,
+                                       String firstName,
+                                       String email,
+                                       String additionalCharges,
+                                       String hash) {
         try {
-            String calculatedHash = generateCallbackHash(status, txnId, amount, productInfo, firstName, email);
-            return calculatedHash.equalsIgnoreCase(getValue(hash).trim());
+            if (hash == null || hash.isBlank()) {
+                return false;
+            }
+            String targetHash = hash.trim();
 
+            if (additionalCharges != null && !additionalCharges.isBlank()) {
+                String hashWithCharges = generateCallbackHash(status, txnId, amount, productInfo, firstName, email, additionalCharges);
+                if (hashWithCharges.equalsIgnoreCase(targetHash)) {
+                    return true;
+                }
+            }
+
+            String standardHash = generateCallbackHash(status, txnId, amount, productInfo, firstName, email, null);
+            return standardHash.equalsIgnoreCase(targetHash);
         } catch (Exception e) {
             return false;
         }
@@ -73,15 +94,32 @@ public class PayUHashService {
                                        String productInfo,
                                        String firstName,
                                        String email) {
+        return generateCallbackHash(status, txnId, amount, productInfo, firstName, email, null);
+    }
+
+    public String generateCallbackHash(String status,
+                                       String txnId,
+                                       String amount,
+                                       String productInfo,
+                                       String firstName,
+                                       String email,
+                                       String additionalCharges) {
         try {
-            String sequence = salt + "|" + getValue(status).trim() +
-                    "|||||||||||" +
-                    getValue(email).trim() + "|" +
-                    getValue(firstName).trim() + "|" +
-                    getValue(productInfo).trim() + "|" +
-                    getValue(amount).trim() + "|" +
-                    getValue(txnId).trim() + "|" + key;
-            return hashSHA512(sequence);
+            StringBuilder sb = new StringBuilder();
+            if (additionalCharges != null && !additionalCharges.isBlank()) {
+                sb.append(additionalCharges.trim()).append("|");
+            }
+            sb.append(salt).append("|")
+              .append(getValue(status).trim())
+              .append("|||||||||||")
+              .append(getValue(email).trim()).append("|")
+              .append(getValue(firstName).trim()).append("|")
+              .append(getValue(productInfo).trim()).append("|")
+              .append(getValue(amount).trim()).append("|")
+              .append(getValue(txnId).trim()).append("|")
+              .append(key);
+
+            return hashSHA512(sb.toString());
         } catch (Exception e) {
             throw new RuntimeException("Callback hash generation failed", e);
         }

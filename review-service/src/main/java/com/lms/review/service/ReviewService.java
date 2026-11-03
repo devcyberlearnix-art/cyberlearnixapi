@@ -77,6 +77,7 @@ public class ReviewService {
         String reviewId = savedReview.getUuid() != null ? savedReview.getUuid().toString() : null;
 
         ReviewSubmissionResponse responseData = new ReviewSubmissionResponse(
+                savedReview.getId(),
                 reviewId,
                 savedReview.getCourseId().toString(),
                 savedReview.getUserId().toString(),
@@ -93,7 +94,7 @@ public class ReviewService {
     }
 
     @Transactional
-    public ApiResponse updateReview(UserPrincipal principal, Long reviewId, UpdateReviewRequest request) {
+    public ApiResponse updateReview(UserPrincipal principal, String reviewId, UpdateReviewRequest request) {
         validateReviewUpdateRequest(request);
         Review review = getReviewForModification(principal, reviewId);
         review.setRating(request.getRating());
@@ -107,7 +108,7 @@ public class ReviewService {
     }
 
     @Transactional
-    public ApiResponse deleteReview(UserPrincipal principal, Long reviewId) {
+    public ApiResponse deleteReview(UserPrincipal principal, String reviewId) {
         Review review = getReviewForModification(principal, reviewId);
         review.setStatus(ReviewStatus.DELETED);
         reviewRepository.save(review);
@@ -119,10 +120,11 @@ public class ReviewService {
     }
 
     @Transactional(readOnly = true)
-    public MyReviewResponse getReviewById(UserPrincipal principal, Long reviewId) {
+    public MyReviewResponse getReviewById(UserPrincipal principal, String reviewId) {
         Review review = getReviewForModification(principal, reviewId);
 
         return MyReviewResponse.builder()
+                .id(review.getId())
                 .reviewId(review.getUuid() != null ? review.getUuid().toString() : null)
                 .courseId(review.getCourseId() != null ? review.getCourseId().toString() : null)
                 .studentId(review.getUserId() != null ? review.getUserId().toString() : null)
@@ -140,6 +142,7 @@ public class ReviewService {
                         HttpStatus.NOT_FOUND));
 
         return MyReviewResponse.builder()
+                .id(review.getId())
                 .reviewId(review.getUuid() != null ? review.getUuid().toString() : null)
                 .courseId(review.getCourseId() != null ? review.getCourseId().toString() : null)
                 .studentId(review.getUserId() != null ? review.getUserId().toString() : null)
@@ -210,9 +213,8 @@ public class ReviewService {
                 .build();
     }
 
-    private Review getReviewForModification(UserPrincipal principal, Long reviewId) {
-        Review review = reviewRepository.findById(reviewId)
-                .orElseThrow(() -> new BusinessException("Review not found", HttpStatus.NOT_FOUND));
+    private Review getReviewForModification(UserPrincipal principal, String reviewId) {
+        Review review = findReviewByIdOrUuid(reviewId);
 
         if (review.getStatus() == ReviewStatus.DELETED) {
             throw new BusinessException("Cannot modify a deleted review", HttpStatus.BAD_REQUEST);
@@ -225,6 +227,25 @@ public class ReviewService {
             throw new BusinessException("You can only modify your own review", HttpStatus.FORBIDDEN);
         }
         return review;
+    }
+
+    private Review findReviewByIdOrUuid(String identifier) {
+        if (identifier == null || identifier.isBlank()) {
+            throw new BusinessException("Review identifier is required", HttpStatus.BAD_REQUEST);
+        }
+        try {
+            UUID uuid = UUID.fromString(identifier);
+            return reviewRepository.findByUuid(uuid)
+                    .orElseThrow(() -> new BusinessException("Review not found", HttpStatus.NOT_FOUND));
+        } catch (IllegalArgumentException e) {
+            try {
+                Long id = Long.parseLong(identifier);
+                return reviewRepository.findById(id)
+                        .orElseThrow(() -> new BusinessException("Review not found", HttpStatus.NOT_FOUND));
+            } catch (NumberFormatException nfe) {
+                throw new BusinessException("Invalid review identifier format", HttpStatus.BAD_REQUEST);
+            }
+        }
     }
 
     private void validateReviewRequest(CreateReviewRequest request) {

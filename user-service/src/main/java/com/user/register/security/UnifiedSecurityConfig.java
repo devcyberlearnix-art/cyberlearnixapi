@@ -95,7 +95,7 @@ public class UnifiedSecurityConfig {
                         .requestMatchers("/api/v1/users/me").authenticated()
                         .requestMatchers(HttpMethod.DELETE, "/api/v1/users/me/photo").authenticated()
                         .requestMatchers(HttpMethod.PUT, "/api/v1/users/me/photo").authenticated()
-                        .requestMatchers("/api/v1/users/photo/**").authenticated()
+                        .requestMatchers("/api/v1/users/photo/**").permitAll()
                         .requestMatchers("/api/v1/users/me/sessions/**").authenticated()
 
                         // Email change — all three steps require an authenticated user
@@ -112,7 +112,8 @@ public class UnifiedSecurityConfig {
                         .requestMatchers("/api/v1/users/{id}/**").permitAll()
 
                         // Instructor application endpoints
-                        .requestMatchers("/api/v1/instructors/applications").authenticated()
+                        .requestMatchers("/api/v1/instructors/subjects").permitAll()
+                        .requestMatchers("/api/v1/instructors/applications", "/api/v1/instructors/applications/**").authenticated()
                         .requestMatchers("/api/v1/instructors/applications/me").authenticated()
                         .requestMatchers("/api/v1/instructors/*/profile", "/api/v1/instructors/{instructorId}/profile").authenticated()
 

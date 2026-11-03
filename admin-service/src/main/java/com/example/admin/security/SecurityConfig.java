@@ -60,6 +60,7 @@ public class SecurityConfig {
                         // called internally by User Service's unified /api/v1/auth/** fallback)
                         .requestMatchers(
                             "/actuator/health",
+                            "/api/v1/public/**",
                             "/api/v1/admin/internal/users/*/refresh-eligibility",
                                 "/api/v1/admins/register",
                                 "/api/v1/admin/register",

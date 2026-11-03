@@ -39,12 +39,12 @@ public class AdminCourseServiceClient {
 
     public List<CourseDTO> getAllCourses() {
         try {
-            String url = courseServiceUrl + "/api/v1/courses";
-            ResponseEntity<Object[]> response = restTemplate.exchange(
+            String url = courseServiceUrl + "/api/v1/courses?page=0&size=1000";
+            ResponseEntity<Object> response = restTemplate.exchange(
                     url,
                     org.springframework.http.HttpMethod.GET,
                     new HttpEntity<>(createHeaders()),
-                    Object[].class
+                    Object.class
             );
             return parseCourseList(response.getBody());
         } catch (RestClientException e) {
@@ -123,12 +123,12 @@ public class AdminCourseServiceClient {
 
     public List<CourseDTO> getCoursesByInstructor(String instructorId) {
         try {
-            String courseUrl = courseServiceUrl + "/api/v1/courses?instructorId=" + instructorId;
-            ResponseEntity<Object[]> response = restTemplate.exchange(
+            String courseUrl = courseServiceUrl + "/api/v1/courses?page=0&size=1000&instructorId=" + instructorId;
+            ResponseEntity<Object> response = restTemplate.exchange(
                     courseUrl,
                     org.springframework.http.HttpMethod.GET,
                     new HttpEntity<>(createHeaders()),
-                    Object[].class
+                    Object.class
             );
             return parseCourseList(response.getBody());
         } catch (RestClientException e) {
@@ -268,15 +268,38 @@ public class AdminCourseServiceClient {
         }
     }
 
-    private List<CourseDTO> parseCourseList(Object[] body) {
+    private List<CourseDTO> parseCourseList(Object body) {
         if (body == null) {
             return List.of();
         }
-        List<CourseDTO> result = new ArrayList<>();
-        for (Object item : body) {
-            result.add(mapToCourseDto(item));
+        if (body instanceof Object[] arr) {
+            List<CourseDTO> result = new ArrayList<>();
+            for (Object item : arr) {
+                CourseDTO dto = mapToCourseDto(item);
+                if (dto != null) result.add(dto);
+            }
+            return result;
         }
-        return result;
+        if (body instanceof List<?> list) {
+            List<CourseDTO> result = new ArrayList<>();
+            for (Object item : list) {
+                CourseDTO dto = mapToCourseDto(item);
+                if (dto != null) result.add(dto);
+            }
+            return result;
+        }
+        if (body instanceof Map<?, ?> map) {
+            if (map.get("content") instanceof List<?> contentList) {
+                return parseCourseList(contentList);
+            }
+            if (map.get("data") instanceof List<?> dataList) {
+                return parseCourseList(dataList);
+            }
+            if (map.get("courses") instanceof List<?> coursesList) {
+                return parseCourseList(coursesList);
+            }
+        }
+        return List.of();
     }
 
     private CourseDTO mapToCourseDto(Object body) {

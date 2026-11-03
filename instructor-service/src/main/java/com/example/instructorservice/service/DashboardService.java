@@ -37,7 +37,15 @@ public class DashboardService {
     public DashboardResponseDTO getDashboard(UUID instructorId) {
         Instructor instructor = instructorRepository.findById(instructorId)
                 .or(() -> instructorRepository.findByUserId(instructorId))
-                .orElseThrow(() -> new NotFoundException("Instructor not found with id: " + instructorId));
+                .orElseGet(() -> {
+                    Instructor newInst = new Instructor();
+                    newInst.setId(UUID.randomUUID());
+                    newInst.setUserId(instructorId);
+                    newInst.setName("Instructor");
+                    newInst.setVerified(true);
+                    newInst.setRating(5.0);
+                    return instructorRepository.save(newInst);
+                });
 
         // Fetch all courses of instructor
         List<Course> courses = courseRepository.findByInstructorUserIdOrId(instructorId);

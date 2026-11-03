@@ -3,8 +3,6 @@ package com.lms.courseservice.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
-import org.hibernate.annotations.SQLDelete;
-import org.hibernate.annotations.Where;
 
 import java.time.Instant;
 
@@ -26,8 +24,6 @@ import java.time.Instant;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@SQLDelete(sql = "UPDATE banners SET deleted_at = CURRENT_TIMESTAMP WHERE id = ?")
-@Where(clause = "deleted_at IS NULL")
 public class Banner {
 
     @Id

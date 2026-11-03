@@ -1,0 +1,2366 @@
+openapi: 3.0.3
+info:
+  title: CyberLearnix Admin Platform API
+  description: |
+    # CyberLearnix Admin Microservice API Specification
+    Source-verified OpenAPI 3.0.3 reference covering all 73 backend endpoints across 10 controllers in `admin-service` (Port 8087) and routed via API Gateway (Port 8079).
+    
+    ## RBAC Security Matrix
+    * **ROLE_MAIN_ADMIN / ROLE_SUPER_ADMIN**: Global unrestricted access across all controllers.
+    * **ROLE_SUB_ADMIN**: Restricted to the designated `assignedService` claim:
+      * `COURSE_SERVICE`: Access to Banners, Courses, Reviews.
+      * `PAYMENT_SERVICE`: Access to Payments.
+      * `ORDER_SERVICE`: Access to Orders.
+      * `USER_SERVICE`: Access to Users, Instructors, Applications.
+    
+    ## Ingress Gateways
+    * Local Dev Gateway: `http://localhost:8079`
+    * Admin Direct Port: `http://localhost:8087`
+  version: 1.0.0
+servers:
+  - url: http://localhost:8079
+    description: API Gateway Ingress (Active Port)
+  - url: http://localhost:8087
+    description: Admin Service Direct Container
+paths:
+  /api/v1/admin/banners:
+    post:
+      tags: ["Admin Banner"]
+      summary: "createBanner (POST /api/v1/admin/banners)"
+      description: "Controller: `AdminBannerController.java` at line 32. Required RBAC: ROLE_MAIN_ADMIN / assignedService."
+      operationId: "createBanner_POST"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          description: "Successful operation"
+        "400":
+          description: "Bad Request - Validation or parameter error"
+        "401":
+          description: "Unauthorized - Missing or invalid JWT Bearer token"
+        "403":
+          description: "Forbidden - Insufficient RBAC role or mismatched assignedService claim"
+        "404":
+          description: "Not Found - Resource does not exist"
+        "500":
+          description: "Internal Server Error"
+      security:
+        - bearerAuth: []
+    get:
+      tags: ["Admin Banner"]
+      summary: "getAllBanners (GET /api/v1/admin/banners)"
+      description: "Controller: `AdminBannerController.java` at line 55. Required RBAC: ROLE_MAIN_ADMIN / assignedService."
+      operationId: "getAllBanners_GET"
+      responses:
+        "200":
+          description: "Successful operation"
+        "400":
+          description: "Bad Request - Validation or parameter error"
+        "401":
+          description: "Unauthorized - Missing or invalid JWT Bearer token"
+        "403":
+          description: "Forbidden - Insufficient RBAC role or mismatched assignedService claim"
+        "404":
+          description: "Not Found - Resource does not exist"
+        "500":
+          description: "Internal Server Error"
+      security:
+        - bearerAuth: []
+  /api/v1/admin/banners/{bannerId}:
+    get:
+      tags: ["Admin Banner"]
+      summary: "getBannerById (GET /api/v1/admin/banners/{bannerId})"
+      description: "Controller: `AdminBannerController.java` at line 71. Required RBAC: ROLE_MAIN_ADMIN / assignedService."
+      operationId: "getBannerById_GET"
+      parameters:
+        - name: "bannerId"
+          in: "path"
+          required: true
+          description: "Unique identifier for bannerId"
+          schema:
+            type: "integer"
+      responses:
+        "200":
+          description: "Successful operation"
+        "400":
+          description: "Bad Request - Validation or parameter error"
+        "401":
+          description: "Unauthorized - Missing or invalid JWT Bearer token"
+        "403":
+          description: "Forbidden - Insufficient RBAC role or mismatched assignedService claim"
+        "404":
+          description: "Not Found - Resource does not exist"
+        "500":
+          description: "Internal Server Error"
+      security:
+        - bearerAuth: []
+    put:
+      tags: ["Admin Banner"]
+      summary: "updateBanner (PUT /api/v1/admin/banners/{bannerId})"
+      description: "Controller: `AdminBannerController.java` at line 90. Required RBAC: ROLE_MAIN_ADMIN / assignedService."
+      operationId: "updateBanner_PUT"
+      parameters:
+        - name: "bannerId"
+          in: "path"
+          required: true
+          description: "Unique identifier for bannerId"
+          schema:
+            type: "integer"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          description: "Successful operation"
+        "400":
+          description: "Bad Request - Validation or parameter error"
+        "401":
+          description: "Unauthorized - Missing or invalid JWT Bearer token"
+        "403":
+          description: "Forbidden - Insufficient RBAC role or mismatched assignedService claim"
+        "404":
+          description: "Not Found - Resource does not exist"
+        "500":
+          description: "Internal Server Error"
+      security:
+        - bearerAuth: []
+    patch:
+      tags: ["Admin Banner"]
+      summary: "partialUpdateBanner (PATCH /api/v1/admin/banners/{bannerId})"
+      description: "Controller: `AdminBannerController.java` at line 113. Required RBAC: ROLE_MAIN_ADMIN / assignedService."
+      operationId: "partialUpdateBanner_PATCH"
+      parameters:
+        - name: "bannerId"
+          in: "path"
+          required: true
+          description: "Unique identifier for bannerId"
+          schema:
+            type: "integer"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          description: "Successful operation"
+        "400":
+          description: "Bad Request - Validation or parameter error"
+        "401":
+          description: "Unauthorized - Missing or invalid JWT Bearer token"
+        "403":
+          description: "Forbidden - Insufficient RBAC role or mismatched assignedService claim"
+        "404":
+          description: "Not Found - Resource does not exist"
+        "500":
+          description: "Internal Server Error"
+      security:
+        - bearerAuth: []
+    delete:
+      tags: ["Admin Banner"]
+      summary: "deleteBanner (DELETE /api/v1/admin/banners/{bannerId})"
+      description: "Controller: `AdminBannerController.java` at line 175. Required RBAC: ROLE_MAIN_ADMIN / assignedService."
+      operationId: "deleteBanner_DELETE"
+      parameters:
+        - name: "bannerId"
+          in: "path"
+          required: true
+          description: "Unique identifier for bannerId"
+          schema:
+            type: "integer"
+      responses:
+        "200":
+          description: "Successful operation"
+        "400":
+          description: "Bad Request - Validation or parameter error"
+        "401":
+          description: "Unauthorized - Missing or invalid JWT Bearer token"
+        "403":
+          description: "Forbidden - Insufficient RBAC role or mismatched assignedService claim"
+        "404":
+          description: "Not Found - Resource does not exist"
+        "500":
+          description: "Internal Server Error"
+      security:
+        - bearerAuth: []
+  /api/v1/admin/banners/{bannerId}/status:
+    patch:
+      tags: ["Admin Banner"]
+      summary: "updateBannerStatus (PATCH /api/v1/admin/banners/{bannerId}/status)"
+      description: "Controller: `AdminBannerController.java` at line 136. Required RBAC: ROLE_MAIN_ADMIN / assignedService."
+      operationId: "updateBannerStatus_PATCH"
+      parameters:
+        - name: "bannerId"
+          in: "path"
+          required: true
+          description: "Unique identifier for bannerId"
+          schema:
+            type: "integer"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          description: "Successful operation"
+        "400":
+          description: "Bad Request - Validation or parameter error"
+        "401":
+          description: "Unauthorized - Missing or invalid JWT Bearer token"
+        "403":
+          description: "Forbidden - Insufficient RBAC role or mismatched assignedService claim"
+        "404":
+          description: "Not Found - Resource does not exist"
+        "500":
+          description: "Internal Server Error"
+      security:
+        - bearerAuth: []
+  /api/v1/admin/banners/reorder:
+    patch:
+      tags: ["Admin Banner"]
+      summary: "reorderBanners (PATCH /api/v1/admin/banners/reorder)"
+      description: "Controller: `AdminBannerController.java` at line 159. Required RBAC: ROLE_MAIN_ADMIN / assignedService."
+      operationId: "reorderBanners_PATCH"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          description: "Successful operation"
+        "400":
+          description: "Bad Request - Validation or parameter error"
+        "401":
+          description: "Unauthorized - Missing or invalid JWT Bearer token"
+        "403":
+          description: "Forbidden - Insufficient RBAC role or mismatched assignedService claim"
+        "404":
+          description: "Not Found - Resource does not exist"
+        "500":
+          description: "Internal Server Error"
+      security:
+        - bearerAuth: []
+  /api/v1/admin/banners/{bannerId}/analytics:
+    get:
+      tags: ["Admin Banner"]
+      summary: "getBannerAnalytics (GET /api/v1/admin/banners/{bannerId}/analytics)"
+      description: "Controller: `AdminBannerController.java` at line 194. Required RBAC: ROLE_MAIN_ADMIN / assignedService."
+      operationId: "getBannerAnalytics_GET"
+      parameters:
+        - name: "bannerId"
+          in: "path"
+          required: true
+          description: "Unique identifier for bannerId"
+          schema:
+            type: "integer"
+      responses:
+        "200":
+          description: "Successful operation"
+        "400":
+          description: "Bad Request - Validation or parameter error"
+        "401":
+          description: "Unauthorized - Missing or invalid JWT Bearer token"
+        "403":
+          description: "Forbidden - Insufficient RBAC role or mismatched assignedService claim"
+        "404":
+          description: "Not Found - Resource does not exist"
+        "500":
+          description: "Internal Server Error"
+      security:
+        - bearerAuth: []
+  /api/v1/admin/banners/upload-image:
+    post:
+      tags: ["Admin Banner"]
+      summary: "uploadBannerImage (POST /api/v1/admin/banners/upload-image)"
+      description: "Controller: `AdminBannerController.java` at line 213. Required RBAC: ROLE_MAIN_ADMIN / assignedService."
+      operationId: "uploadBannerImage_POST"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          description: "Successful operation"
+        "400":
+          description: "Bad Request - Validation or parameter error"
+        "401":
+          description: "Unauthorized - Missing or invalid JWT Bearer token"
+        "403":
+          description: "Forbidden - Insufficient RBAC role or mismatched assignedService claim"
+        "404":
+          description: "Not Found - Resource does not exist"
+        "500":
+          description: "Internal Server Error"
+      security:
+        - bearerAuth: []
+  /api/v1/admin/banners/validate-image:
+    post:
+      tags: ["Admin Banner"]
+      summary: "validateBannerImage (POST /api/v1/admin/banners/validate-image)"
+      description: "Controller: `AdminBannerController.java` at line 244. Required RBAC: ROLE_MAIN_ADMIN / assignedService."
+      operationId: "validateBannerImage_POST"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          description: "Successful operation"
+        "400":
+          description: "Bad Request - Validation or parameter error"
+        "401":
+          description: "Unauthorized - Missing or invalid JWT Bearer token"
+        "403":
+          description: "Forbidden - Insufficient RBAC role or mismatched assignedService claim"
+        "404":
+          description: "Not Found - Resource does not exist"
+        "500":
+          description: "Internal Server Error"
+      security:
+        - bearerAuth: []
+  /api/v1/admin/banners/deleted:
+    get:
+      tags: ["Admin Banner"]
+      summary: "getDeletedBanners (GET /api/v1/admin/banners/deleted)"
+      description: "Controller: `AdminBannerController.java` at line 273. Required RBAC: ROLE_MAIN_ADMIN / assignedService."
+      operationId: "getDeletedBanners_GET"
+      responses:
+        "200":
+          description: "Successful operation"
+        "400":
+          description: "Bad Request - Validation or parameter error"
+        "401":
+          description: "Unauthorized - Missing or invalid JWT Bearer token"
+        "403":
+          description: "Forbidden - Insufficient RBAC role or mismatched assignedService claim"
+        "404":
+          description: "Not Found - Resource does not exist"
+        "500":
+          description: "Internal Server Error"
+      security:
+        - bearerAuth: []
+  /api/v1/admin/banners/{bannerId}/restore:
+    post:
+      tags: ["Admin Banner"]
+      summary: "restoreBanner (POST /api/v1/admin/banners/{bannerId}/restore)"
+      description: "Controller: `AdminBannerController.java` at line 289. Required RBAC: ROLE_MAIN_ADMIN / assignedService."
+      operationId: "restoreBanner_POST"
+      parameters:
+        - name: "bannerId"
+          in: "path"
+          required: true
+          description: "Unique identifier for bannerId"
+          schema:
+            type: "integer"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          description: "Successful operation"
+        "400":
+          description: "Bad Request - Validation or parameter error"
+        "401":
+          description: "Unauthorized - Missing or invalid JWT Bearer token"
+        "403":
+          description: "Forbidden - Insufficient RBAC role or mismatched assignedService claim"
+        "404":
+          description: "Not Found - Resource does not exist"
+        "500":
+          description: "Internal Server Error"
+      security:
+        - bearerAuth: []
+  /api/v1/admin/banners/target/{targetType}:
+    get:
+      tags: ["Admin Banner"]
+      summary: "getActiveBannersByTargetType (GET /api/v1/admin/banners/target/{targetType})"
+      description: "Controller: `AdminBannerController.java` at line 308. Required RBAC: ROLE_MAIN_ADMIN / assignedService."
+      operationId: "getActiveBannersByTargetType_GET"
+      parameters:
+        - name: "targetType"
+          in: "path"
+          required: true
+          description: "Unique identifier for targetType"
+          schema:
+            type: "string"
+      responses:
+        "200":
+          description: "Successful operation"
+        "400":
+          description: "Bad Request - Validation or parameter error"
+        "401":
+          description: "Unauthorized - Missing or invalid JWT Bearer token"
+        "403":
+          description: "Forbidden - Insufficient RBAC role or mismatched assignedService claim"
+        "404":
+          description: "Not Found - Resource does not exist"
+        "500":
+          description: "Internal Server Error"
+      security:
+        - bearerAuth: []
+  /api/v1/admin/banners/{bannerId}/conversion:
+    post:
+      tags: ["Admin Banner"]
+      summary: "trackBannerConversion (POST /api/v1/admin/banners/{bannerId}/conversion)"
+      description: "Controller: `AdminBannerController.java` at line 324. Required RBAC: ROLE_MAIN_ADMIN / assignedService."
+      operationId: "trackBannerConversion_POST"
+      parameters:
+        - name: "bannerId"
+          in: "path"
+          required: true
+          description: "Unique identifier for bannerId"
+          schema:
+            type: "integer"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          description: "Successful operation"
+        "400":
+          description: "Bad Request - Validation or parameter error"
+        "401":
+          description: "Unauthorized - Missing or invalid JWT Bearer token"
+        "403":
+          description: "Forbidden - Insufficient RBAC role or mismatched assignedService claim"
+        "404":
+          description: "Not Found - Resource does not exist"
+        "500":
+          description: "Internal Server Error"
+      security:
+        - bearerAuth: []
+  /api/v1/admin/register:
+    post:
+      tags: ["Admin "]
+      summary: "unknown (POST /api/v1/admin/register)"
+      description: "Controller: `AdminController.java` at line 25. Required RBAC: ROLE_MAIN_ADMIN / assignedService."
+      operationId: "unknown_POST"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          description: "Successful operation"
+        "400":
+          description: "Bad Request - Validation or parameter error"
+        "401":
+          description: "Unauthorized - Missing or invalid JWT Bearer token"
+        "403":
+          description: "Forbidden - Insufficient RBAC role or mismatched assignedService claim"
+        "404":
+          description: "Not Found - Resource does not exist"
+        "500":
+          description: "Internal Server Error"
+      security:
+        - bearerAuth: []
+  /api/v1/admin/login:
+    post:
+      tags: ["Admin "]
+      summary: "login (POST /api/v1/admin/login)"
+      description: "Controller: `AdminController.java` at line 42. Required RBAC: ROLE_MAIN_ADMIN / assignedService."
+      operationId: "login_POST"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          description: "Successful operation"
+        "400":
+          description: "Bad Request - Validation or parameter error"
+        "401":
+          description: "Unauthorized - Missing or invalid JWT Bearer token"
+        "403":
+          description: "Forbidden - Insufficient RBAC role or mismatched assignedService claim"
+        "404":
+          description: "Not Found - Resource does not exist"
+        "500":
+          description: "Internal Server Error"
+      security:
+        - bearerAuth: []
+  /api/v1/admin/login/otp/request:
+    post:
+      tags: ["Admin "]
+      summary: "requestLoginOtp (POST /api/v1/admin/login/otp/request)"
+      description: "Controller: `AdminController.java` at line 56. Required RBAC: ROLE_MAIN_ADMIN / assignedService."
+      operationId: "requestLoginOtp_POST"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          description: "Successful operation"
+        "400":
+          description: "Bad Request - Validation or parameter error"
+        "401":
+          description: "Unauthorized - Missing or invalid JWT Bearer token"
+        "403":
+          description: "Forbidden - Insufficient RBAC role or mismatched assignedService claim"
+        "404":
+          description: "Not Found - Resource does not exist"
+        "500":
+          description: "Internal Server Error"
+      security:
+        - bearerAuth: []
+  /api/v1/admin/login/otp/verify:
+    post:
+      tags: ["Admin "]
+      summary: "verifyLoginOtp (POST /api/v1/admin/login/otp/verify)"
+      description: "Controller: `AdminController.java` at line 75. Required RBAC: ROLE_MAIN_ADMIN / assignedService."
+      operationId: "verifyLoginOtp_POST"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          description: "Successful operation"
+        "400":
+          description: "Bad Request - Validation or parameter error"
+        "401":
+          description: "Unauthorized - Missing or invalid JWT Bearer token"
+        "403":
+          description: "Forbidden - Insufficient RBAC role or mismatched assignedService claim"
+        "404":
+          description: "Not Found - Resource does not exist"
+        "500":
+          description: "Internal Server Error"
+      security:
+        - bearerAuth: []
+  /api/v1/admin/login/otp/resend:
+    post:
+      tags: ["Admin "]
+      summary: "resendLoginOtp (POST /api/v1/admin/login/otp/resend)"
+      description: "Controller: `AdminController.java` at line 89. Required RBAC: ROLE_MAIN_ADMIN / assignedService."
+      operationId: "resendLoginOtp_POST"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          description: "Successful operation"
+        "400":
+          description: "Bad Request - Validation or parameter error"
+        "401":
+          description: "Unauthorized - Missing or invalid JWT Bearer token"
+        "403":
+          description: "Forbidden - Insufficient RBAC role or mismatched assignedService claim"
+        "404":
+          description: "Not Found - Resource does not exist"
+        "500":
+          description: "Internal Server Error"
+      security:
+        - bearerAuth: []
+  /api/v1/admin/password/forgot:
+    post:
+      tags: ["Admin "]
+      summary: "forgotPassword (POST /api/v1/admin/password/forgot)"
+      description: "Controller: `AdminController.java` at line 106. Required RBAC: ROLE_MAIN_ADMIN / assignedService."
+      operationId: "forgotPassword_POST"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          description: "Successful operation"
+        "400":
+          description: "Bad Request - Validation or parameter error"
+        "401":
+          description: "Unauthorized - Missing or invalid JWT Bearer token"
+        "403":
+          description: "Forbidden - Insufficient RBAC role or mismatched assignedService claim"
+        "404":
+          description: "Not Found - Resource does not exist"
+        "500":
+          description: "Internal Server Error"
+      security:
+        - bearerAuth: []
+  /api/v1/admin/password/verify-otp:
+    post:
+      tags: ["Admin "]
+      summary: "verifyPasswordOtp (POST /api/v1/admin/password/verify-otp)"
+      description: "Controller: `AdminController.java` at line 125. Required RBAC: ROLE_MAIN_ADMIN / assignedService."
+      operationId: "verifyPasswordOtp_POST"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          description: "Successful operation"
+        "400":
+          description: "Bad Request - Validation or parameter error"
+        "401":
+          description: "Unauthorized - Missing or invalid JWT Bearer token"
+        "403":
+          description: "Forbidden - Insufficient RBAC role or mismatched assignedService claim"
+        "404":
+          description: "Not Found - Resource does not exist"
+        "500":
+          description: "Internal Server Error"
+      security:
+        - bearerAuth: []
+  /api/v1/admin/password/otp/resend:
+    post:
+      tags: ["Admin "]
+      summary: "resendPasswordOtp (POST /api/v1/admin/password/otp/resend)"
+      description: "Controller: `AdminController.java` at line 144. Required RBAC: ROLE_MAIN_ADMIN / assignedService."
+      operationId: "resendPasswordOtp_POST"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          description: "Successful operation"
+        "400":
+          description: "Bad Request - Validation or parameter error"
+        "401":
+          description: "Unauthorized - Missing or invalid JWT Bearer token"
+        "403":
+          description: "Forbidden - Insufficient RBAC role or mismatched assignedService claim"
+        "404":
+          description: "Not Found - Resource does not exist"
+        "500":
+          description: "Internal Server Error"
+      security:
+        - bearerAuth: []
+  /api/v1/admin/password/reset:
+    post:
+      tags: ["Admin "]
+      summary: "resetPassword (POST /api/v1/admin/password/reset)"
+      description: "Controller: `AdminController.java` at line 161. Required RBAC: ROLE_MAIN_ADMIN / assignedService."
+      operationId: "resetPassword_POST"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          description: "Successful operation"
+        "400":
+          description: "Bad Request - Validation or parameter error"
+        "401":
+          description: "Unauthorized - Missing or invalid JWT Bearer token"
+        "403":
+          description: "Forbidden - Insufficient RBAC role or mismatched assignedService claim"
+        "404":
+          description: "Not Found - Resource does not exist"
+        "500":
+          description: "Internal Server Error"
+      security:
+        - bearerAuth: []
+  /api/v1/admin/profile:
+    get:
+      tags: ["Admin "]
+      summary: "getProfile (GET /api/v1/admin/profile)"
+      description: "Controller: `AdminController.java` at line 200. Required RBAC: ROLE_MAIN_ADMIN / assignedService."
+      operationId: "getProfile_GET"
+      responses:
+        "200":
+          description: "Successful operation"
+        "400":
+          description: "Bad Request - Validation or parameter error"
+        "401":
+          description: "Unauthorized - Missing or invalid JWT Bearer token"
+        "403":
+          description: "Forbidden - Insufficient RBAC role or mismatched assignedService claim"
+        "404":
+          description: "Not Found - Resource does not exist"
+        "500":
+          description: "Internal Server Error"
+      security:
+        - bearerAuth: []
+  /api/v1/admin/courses:
+    get:
+      tags: ["Admin Course"]
+      summary: "getAllCourses (GET /api/v1/admin/courses)"
+      description: "Controller: `AdminCourseController.java` at line 34. Required RBAC: ROLE_MAIN_ADMIN / assignedService."
+      operationId: "getAllCourses_GET"
+      parameters:
+        - name: "page"
+          in: "query"
+          required: false
+          description: "Zero-based page index"
+          schema:
+            type: "integer"
+            default: 0
+        - name: "size"
+          in: "query"
+          required: false
+          description: "Number of records per page"
+          schema:
+            type: "integer"
+            default: 10
+        - name: "sort"
+          in: "query"
+          required: false
+          description: "Sorting criteria"
+          schema:
+            type: "string"
+            default: createdAt,desc
+      responses:
+        "200":
+          description: "Successful operation"
+        "400":
+          description: "Bad Request - Validation or parameter error"
+        "401":
+          description: "Unauthorized - Missing or invalid JWT Bearer token"
+        "403":
+          description: "Forbidden - Insufficient RBAC role or mismatched assignedService claim"
+        "404":
+          description: "Not Found - Resource does not exist"
+        "500":
+          description: "Internal Server Error"
+      security:
+        - bearerAuth: []
+  /api/v1/admin/courses/{courseId}:
+    get:
+      tags: ["Admin Course"]
+      summary: "getCourseById (GET /api/v1/admin/courses/{courseId})"
+      description: "Controller: `AdminCourseController.java` at line 51. Required RBAC: ROLE_MAIN_ADMIN / assignedService."
+      operationId: "getCourseById_GET"
+      parameters:
+        - name: "courseId"
+          in: "path"
+          required: true
+          description: "Unique identifier for courseId"
+          schema:
+            type: "string"
+            format: "uuid"
+        - name: "page"
+          in: "query"
+          required: false
+          description: "Zero-based page index"
+          schema:
+            type: "integer"
+            default: 0
+        - name: "size"
+          in: "query"
+          required: false
+          description: "Number of records per page"
+          schema:
+            type: "integer"
+            default: 10
+        - name: "sort"
+          in: "query"
+          required: false
+          description: "Sorting criteria"
+          schema:
+            type: "string"
+            default: createdAt,desc
+      responses:
+        "200":
+          description: "Successful operation"
+        "400":
+          description: "Bad Request - Validation or parameter error"
+        "401":
+          description: "Unauthorized - Missing or invalid JWT Bearer token"
+        "403":
+          description: "Forbidden - Insufficient RBAC role or mismatched assignedService claim"
+        "404":
+          description: "Not Found - Resource does not exist"
+        "500":
+          description: "Internal Server Error"
+      security:
+        - bearerAuth: []
+    delete:
+      tags: ["Admin Course"]
+      summary: "deleteCourse (DELETE /api/v1/admin/courses/{courseId})"
+      description: "Controller: `AdminCourseController.java` at line 135. Required RBAC: ROLE_MAIN_ADMIN / assignedService."
+      operationId: "deleteCourse_DELETE"
+      parameters:
+        - name: "courseId"
+          in: "path"
+          required: true
+          description: "Unique identifier for courseId"
+          schema:
+            type: "string"
+            format: "uuid"
+      responses:
+        "200":
+          description: "Successful operation"
+        "400":
+          description: "Bad Request - Validation or parameter error"
+        "401":
+          description: "Unauthorized - Missing or invalid JWT Bearer token"
+        "403":
+          description: "Forbidden - Insufficient RBAC role or mismatched assignedService claim"
+        "404":
+          description: "Not Found - Resource does not exist"
+        "500":
+          description: "Internal Server Error"
+      security:
+        - bearerAuth: []
+  /api/v1/admin/content/{courseId}:
+    get:
+      tags: ["Admin Course"]
+      summary: "getCourseContent (GET /api/v1/admin/content/{courseId})"
+      description: "Controller: `AdminCourseController.java` at line 68. Required RBAC: ROLE_MAIN_ADMIN / assignedService."
+      operationId: "getCourseContent_GET"
+      parameters:
+        - name: "courseId"
+          in: "path"
+          required: true
+          description: "Unique identifier for courseId"
+          schema:
+            type: "string"
+            format: "uuid"
+      responses:
+        "200":
+          description: "Successful operation"
+        "400":
+          description: "Bad Request - Validation or parameter error"
+        "401":
+          description: "Unauthorized - Missing or invalid JWT Bearer token"
+        "403":
+          description: "Forbidden - Insufficient RBAC role or mismatched assignedService claim"
+        "404":
+          description: "Not Found - Resource does not exist"
+        "500":
+          description: "Internal Server Error"
+      security:
+        - bearerAuth: []
+  /api/v1/admin/courses/{courseId}/approve:
+    put:
+      tags: ["Admin Course"]
+      summary: "approveCourse (PUT /api/v1/admin/courses/{courseId}/approve)"
+      description: "Controller: `AdminCourseController.java` at line 88. Required RBAC: ROLE_MAIN_ADMIN / assignedService."
+      operationId: "approveCourse_PUT"
+      parameters:
+        - name: "courseId"
+          in: "path"
+          required: true
+          description: "Unique identifier for courseId"
+          schema:
+            type: "string"
+            format: "uuid"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          description: "Successful operation"
+        "400":
+          description: "Bad Request - Validation or parameter error"
+        "401":
+          description: "Unauthorized - Missing or invalid JWT Bearer token"
+        "403":
+          description: "Forbidden - Insufficient RBAC role or mismatched assignedService claim"
+        "404":
+          description: "Not Found - Resource does not exist"
+        "500":
+          description: "Internal Server Error"
+      security:
+        - bearerAuth: []
+  /api/v1/admin/courses/{courseId}/reject:
+    put:
+      tags: ["Admin Course"]
+      summary: "rejectCourse (PUT /api/v1/admin/courses/{courseId}/reject)"
+      description: "Controller: `AdminCourseController.java` at line 115. Required RBAC: ROLE_MAIN_ADMIN / assignedService."
+      operationId: "rejectCourse_PUT"
+      parameters:
+        - name: "courseId"
+          in: "path"
+          required: true
+          description: "Unique identifier for courseId"
+          schema:
+            type: "string"
+            format: "uuid"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          description: "Successful operation"
+        "400":
+          description: "Bad Request - Validation or parameter error"
+        "401":
+          description: "Unauthorized - Missing or invalid JWT Bearer token"
+        "403":
+          description: "Forbidden - Insufficient RBAC role or mismatched assignedService claim"
+        "404":
+          description: "Not Found - Resource does not exist"
+        "500":
+          description: "Internal Server Error"
+      security:
+        - bearerAuth: []
+  /api/v1/admin/courses/{courseId}/sections:
+    post:
+      tags: ["Admin Course"]
+      summary: "createSection (POST /api/v1/admin/courses/{courseId}/sections)"
+      description: "Controller: `AdminCourseController.java` at line 152. Required RBAC: ROLE_MAIN_ADMIN / assignedService."
+      operationId: "createSection_POST"
+      parameters:
+        - name: "courseId"
+          in: "path"
+          required: true
+          description: "Unique identifier for courseId"
+          schema:
+            type: "string"
+            format: "uuid"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          description: "Successful operation"
+        "400":
+          description: "Bad Request - Validation or parameter error"
+        "401":
+          description: "Unauthorized - Missing or invalid JWT Bearer token"
+        "403":
+          description: "Forbidden - Insufficient RBAC role or mismatched assignedService claim"
+        "404":
+          description: "Not Found - Resource does not exist"
+        "500":
+          description: "Internal Server Error"
+      security:
+        - bearerAuth: []
+  /api/v1/admin/sections/{sectionId}:
+    delete:
+      tags: ["Admin Course"]
+      summary: "deleteSection (DELETE /api/v1/admin/sections/{sectionId})"
+      description: "Controller: `AdminCourseController.java` at line 172. Required RBAC: ROLE_MAIN_ADMIN / assignedService."
+      operationId: "deleteSection_DELETE"
+      parameters:
+        - name: "sectionId"
+          in: "path"
+          required: true
+          description: "Unique identifier for sectionId"
+          schema:
+            type: "string"
+            format: "uuid"
+      responses:
+        "200":
+          description: "Successful operation"
+        "400":
+          description: "Bad Request - Validation or parameter error"
+        "401":
+          description: "Unauthorized - Missing or invalid JWT Bearer token"
+        "403":
+          description: "Forbidden - Insufficient RBAC role or mismatched assignedService claim"
+        "404":
+          description: "Not Found - Resource does not exist"
+        "500":
+          description: "Internal Server Error"
+      security:
+        - bearerAuth: []
+  /api/v1/admin/sections/{sectionId}/lectures:
+    post:
+      tags: ["Admin Course"]
+      summary: "createLecture (POST /api/v1/admin/sections/{sectionId}/lectures)"
+      description: "Controller: `AdminCourseController.java` at line 189. Required RBAC: ROLE_MAIN_ADMIN / assignedService."
+      operationId: "createLecture_POST"
+      parameters:
+        - name: "sectionId"
+          in: "path"
+          required: true
+          description: "Unique identifier for sectionId"
+          schema:
+            type: "string"
+            format: "uuid"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          description: "Successful operation"
+        "400":
+          description: "Bad Request - Validation or parameter error"
+        "401":
+          description: "Unauthorized - Missing or invalid JWT Bearer token"
+        "403":
+          description: "Forbidden - Insufficient RBAC role or mismatched assignedService claim"
+        "404":
+          description: "Not Found - Resource does not exist"
+        "500":
+          description: "Internal Server Error"
+      security:
+        - bearerAuth: []
+  /api/v1/admin/sections/{sectionId}/lectures/{lectureId}/approve:
+    put:
+      tags: ["Admin Course"]
+      summary: "approveLecture (PUT /api/v1/admin/sections/{sectionId}/lectures/{lectureId}/approve)"
+      description: "Controller: `AdminCourseController.java` at line 209. Required RBAC: ROLE_MAIN_ADMIN / assignedService."
+      operationId: "approveLecture_PUT"
+      parameters:
+        - name: "sectionId"
+          in: "path"
+          required: true
+          description: "Unique identifier for sectionId"
+          schema:
+            type: "string"
+            format: "uuid"
+        - name: "lectureId"
+          in: "path"
+          required: true
+          description: "Unique identifier for lectureId"
+          schema:
+            type: "string"
+            format: "uuid"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          description: "Successful operation"
+        "400":
+          description: "Bad Request - Validation or parameter error"
+        "401":
+          description: "Unauthorized - Missing or invalid JWT Bearer token"
+        "403":
+          description: "Forbidden - Insufficient RBAC role or mismatched assignedService claim"
+        "404":
+          description: "Not Found - Resource does not exist"
+        "500":
+          description: "Internal Server Error"
+      security:
+        - bearerAuth: []
+  /api/v1/admin/sections/{sectionId}/lectures/{lectureId}/reject:
+    put:
+      tags: ["Admin Course"]
+      summary: "rejectLecture (PUT /api/v1/admin/sections/{sectionId}/lectures/{lectureId}/reject)"
+      description: "Controller: `AdminCourseController.java` at line 225. Required RBAC: ROLE_MAIN_ADMIN / assignedService."
+      operationId: "rejectLecture_PUT"
+      parameters:
+        - name: "sectionId"
+          in: "path"
+          required: true
+          description: "Unique identifier for sectionId"
+          schema:
+            type: "string"
+            format: "uuid"
+        - name: "lectureId"
+          in: "path"
+          required: true
+          description: "Unique identifier for lectureId"
+          schema:
+            type: "string"
+            format: "uuid"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          description: "Successful operation"
+        "400":
+          description: "Bad Request - Validation or parameter error"
+        "401":
+          description: "Unauthorized - Missing or invalid JWT Bearer token"
+        "403":
+          description: "Forbidden - Insufficient RBAC role or mismatched assignedService claim"
+        "404":
+          description: "Not Found - Resource does not exist"
+        "500":
+          description: "Internal Server Error"
+      security:
+        - bearerAuth: []
+  /api/v1/admin/sections/{sectionId}/lectures/{lectureId}:
+    delete:
+      tags: ["Admin Course"]
+      summary: "deleteLecture (DELETE /api/v1/admin/sections/{sectionId}/lectures/{lectureId})"
+      description: "Controller: `AdminCourseController.java` at line 241. Required RBAC: ROLE_MAIN_ADMIN / assignedService."
+      operationId: "deleteLecture_DELETE"
+      parameters:
+        - name: "sectionId"
+          in: "path"
+          required: true
+          description: "Unique identifier for sectionId"
+          schema:
+            type: "string"
+            format: "uuid"
+        - name: "lectureId"
+          in: "path"
+          required: true
+          description: "Unique identifier for lectureId"
+          schema:
+            type: "string"
+            format: "uuid"
+      responses:
+        "200":
+          description: "Successful operation"
+        "400":
+          description: "Bad Request - Validation or parameter error"
+        "401":
+          description: "Unauthorized - Missing or invalid JWT Bearer token"
+        "403":
+          description: "Forbidden - Insufficient RBAC role or mismatched assignedService claim"
+        "404":
+          description: "Not Found - Resource does not exist"
+        "500":
+          description: "Internal Server Error"
+      security:
+        - bearerAuth: []
+  /api/v1/admin/instructors/{instructorId}/courses:
+    get:
+      tags: ["Admin Course"]
+      summary: "getCoursesByInstructor (GET /api/v1/admin/instructors/{instructorId}/courses)"
+      description: "Controller: `AdminCourseController.java` at line 260. Required RBAC: ROLE_MAIN_ADMIN / assignedService."
+      operationId: "getCoursesByInstructor_GET"
+      parameters:
+        - name: "instructorId"
+          in: "path"
+          required: true
+          description: "Unique identifier for instructorId"
+          schema:
+            type: "string"
+            format: "uuid"
+        - name: "page"
+          in: "query"
+          required: false
+          description: "Zero-based page index"
+          schema:
+            type: "integer"
+            default: 0
+        - name: "size"
+          in: "query"
+          required: false
+          description: "Number of records per page"
+          schema:
+            type: "integer"
+            default: 10
+        - name: "sort"
+          in: "query"
+          required: false
+          description: "Sorting criteria"
+          schema:
+            type: "string"
+            default: createdAt,desc
+      responses:
+        "200":
+          description: "Successful operation"
+        "400":
+          description: "Bad Request - Validation or parameter error"
+        "401":
+          description: "Unauthorized - Missing or invalid JWT Bearer token"
+        "403":
+          description: "Forbidden - Insufficient RBAC role or mismatched assignedService claim"
+        "404":
+          description: "Not Found - Resource does not exist"
+        "500":
+          description: "Internal Server Error"
+      security:
+        - bearerAuth: []
+  /api/v1/admin/email/change-request:
+    post:
+      tags: ["Admin EmailChange"]
+      summary: "initiateEmailChange (POST /api/v1/admin/email/change-request)"
+      description: "Controller: `AdminEmailChangeController.java` at line 86. Required RBAC: ROLE_MAIN_ADMIN / assignedService."
+      operationId: "initiateEmailChange_POST"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          description: "Successful operation"
+        "400":
+          description: "Bad Request - Validation or parameter error"
+        "401":
+          description: "Unauthorized - Missing or invalid JWT Bearer token"
+        "403":
+          description: "Forbidden - Insufficient RBAC role or mismatched assignedService claim"
+        "404":
+          description: "Not Found - Resource does not exist"
+        "500":
+          description: "Internal Server Error"
+      security:
+        - bearerAuth: []
+  /api/v1/admin/email/verify-old:
+    post:
+      tags: ["Admin EmailChange"]
+      summary: "verifyOldEmail (POST /api/v1/admin/email/verify-old)"
+      description: "Controller: `AdminEmailChangeController.java` at line 124. Required RBAC: ROLE_MAIN_ADMIN / assignedService."
+      operationId: "verifyOldEmail_POST"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          description: "Successful operation"
+        "400":
+          description: "Bad Request - Validation or parameter error"
+        "401":
+          description: "Unauthorized - Missing or invalid JWT Bearer token"
+        "403":
+          description: "Forbidden - Insufficient RBAC role or mismatched assignedService claim"
+        "404":
+          description: "Not Found - Resource does not exist"
+        "500":
+          description: "Internal Server Error"
+      security:
+        - bearerAuth: []
+  /api/v1/admin/email/verify-new:
+    post:
+      tags: ["Admin EmailChange"]
+      summary: "verifyNewEmail (POST /api/v1/admin/email/verify-new)"
+      description: "Controller: `AdminEmailChangeController.java` at line 169. Required RBAC: ROLE_MAIN_ADMIN / assignedService."
+      operationId: "verifyNewEmail_POST"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          description: "Successful operation"
+        "400":
+          description: "Bad Request - Validation or parameter error"
+        "401":
+          description: "Unauthorized - Missing or invalid JWT Bearer token"
+        "403":
+          description: "Forbidden - Insufficient RBAC role or mismatched assignedService claim"
+        "404":
+          description: "Not Found - Resource does not exist"
+        "500":
+          description: "Internal Server Error"
+      security:
+        - bearerAuth: []
+  /api/v1/admin/email/resend-otp:
+    post:
+      tags: ["Admin EmailChange"]
+      summary: "resendEmailChangeOtp (POST /api/v1/admin/email/resend-otp)"
+      description: "Controller: `AdminEmailChangeController.java` at line 207. Required RBAC: ROLE_MAIN_ADMIN / assignedService."
+      operationId: "resendEmailChangeOtp_POST"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          description: "Successful operation"
+        "400":
+          description: "Bad Request - Validation or parameter error"
+        "401":
+          description: "Unauthorized - Missing or invalid JWT Bearer token"
+        "403":
+          description: "Forbidden - Insufficient RBAC role or mismatched assignedService claim"
+        "404":
+          description: "Not Found - Resource does not exist"
+        "500":
+          description: "Internal Server Error"
+      security:
+        - bearerAuth: []
+  /api/v1/admin/email/change-request/{sessionId}:
+    get:
+      tags: ["Admin EmailChange"]
+      summary: "getEmailChangeSession (GET /api/v1/admin/email/change-request/{sessionId})"
+      description: "Controller: `AdminEmailChangeController.java` at line 238. Required RBAC: ROLE_MAIN_ADMIN / assignedService."
+      operationId: "getEmailChangeSession_GET"
+      parameters:
+        - name: "sessionId"
+          in: "path"
+          required: true
+          description: "Unique identifier for sessionId"
+          schema:
+            type: "string"
+            format: "uuid"
+      responses:
+        "200":
+          description: "Successful operation"
+        "400":
+          description: "Bad Request - Validation or parameter error"
+        "401":
+          description: "Unauthorized - Missing or invalid JWT Bearer token"
+        "403":
+          description: "Forbidden - Insufficient RBAC role or mismatched assignedService claim"
+        "404":
+          description: "Not Found - Resource does not exist"
+        "500":
+          description: "Internal Server Error"
+      security:
+        - bearerAuth: []
+  /api/v1/admin/orders:
+    get:
+      tags: ["Admin Order"]
+      summary: "getAllOrders (GET /api/v1/admin/orders)"
+      description: "Controller: `AdminOrderController.java` at line 19. Required RBAC: ROLE_MAIN_ADMIN / assignedService."
+      operationId: "getAllOrders_GET"
+      parameters:
+        - name: "page"
+          in: "query"
+          required: false
+          description: "Zero-based page index"
+          schema:
+            type: "integer"
+            default: 0
+        - name: "size"
+          in: "query"
+          required: false
+          description: "Number of records per page"
+          schema:
+            type: "integer"
+            default: 10
+        - name: "sort"
+          in: "query"
+          required: false
+          description: "Sorting criteria"
+          schema:
+            type: "string"
+            default: createdAt,desc
+      responses:
+        "200":
+          description: "Successful operation"
+        "400":
+          description: "Bad Request - Validation or parameter error"
+        "401":
+          description: "Unauthorized - Missing or invalid JWT Bearer token"
+        "403":
+          description: "Forbidden - Insufficient RBAC role or mismatched assignedService claim"
+        "404":
+          description: "Not Found - Resource does not exist"
+        "500":
+          description: "Internal Server Error"
+      security:
+        - bearerAuth: []
+  /api/v1/admin/orders/{id}:
+    get:
+      tags: ["Admin Order"]
+      summary: "getOrderById (GET /api/v1/admin/orders/{id})"
+      description: "Controller: `AdminOrderController.java` at line 31. Required RBAC: ROLE_MAIN_ADMIN / assignedService."
+      operationId: "getOrderById_GET"
+      parameters:
+        - name: "id"
+          in: "path"
+          required: true
+          description: "Unique identifier for id"
+          schema:
+            type: "string"
+        - name: "page"
+          in: "query"
+          required: false
+          description: "Zero-based page index"
+          schema:
+            type: "integer"
+            default: 0
+        - name: "size"
+          in: "query"
+          required: false
+          description: "Number of records per page"
+          schema:
+            type: "integer"
+            default: 10
+        - name: "sort"
+          in: "query"
+          required: false
+          description: "Sorting criteria"
+          schema:
+            type: "string"
+            default: createdAt,desc
+      responses:
+        "200":
+          description: "Successful operation"
+        "400":
+          description: "Bad Request - Validation or parameter error"
+        "401":
+          description: "Unauthorized - Missing or invalid JWT Bearer token"
+        "403":
+          description: "Forbidden - Insufficient RBAC role or mismatched assignedService claim"
+        "404":
+          description: "Not Found - Resource does not exist"
+        "500":
+          description: "Internal Server Error"
+      security:
+        - bearerAuth: []
+  /api/v1/admin/orders/{id}/status:
+    put:
+      tags: ["Admin Order"]
+      summary: "updateOrderStatus (PUT /api/v1/admin/orders/{id}/status)"
+      description: "Controller: `AdminOrderController.java` at line 43. Required RBAC: ROLE_MAIN_ADMIN / assignedService."
+      operationId: "updateOrderStatus_PUT"
+      parameters:
+        - name: "id"
+          in: "path"
+          required: true
+          description: "Unique identifier for id"
+          schema:
+            type: "string"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          description: "Successful operation"
+        "400":
+          description: "Bad Request - Validation or parameter error"
+        "401":
+          description: "Unauthorized - Missing or invalid JWT Bearer token"
+        "403":
+          description: "Forbidden - Insufficient RBAC role or mismatched assignedService claim"
+        "404":
+          description: "Not Found - Resource does not exist"
+        "500":
+          description: "Internal Server Error"
+      security:
+        - bearerAuth: []
+  /api/v1/admin/orders/{id}/refund:
+    post:
+      tags: ["Admin Order"]
+      summary: "processRefund (POST /api/v1/admin/orders/{id}/refund)"
+      description: "Controller: `AdminOrderController.java` at line 56. Required RBAC: ROLE_MAIN_ADMIN / assignedService."
+      operationId: "processRefund_POST"
+      parameters:
+        - name: "id"
+          in: "path"
+          required: true
+          description: "Unique identifier for id"
+          schema:
+            type: "string"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          description: "Successful operation"
+        "400":
+          description: "Bad Request - Validation or parameter error"
+        "401":
+          description: "Unauthorized - Missing or invalid JWT Bearer token"
+        "403":
+          description: "Forbidden - Insufficient RBAC role or mismatched assignedService claim"
+        "404":
+          description: "Not Found - Resource does not exist"
+        "500":
+          description: "Internal Server Error"
+      security:
+        - bearerAuth: []
+  /api/v1/admin/change-password:
+    post:
+      tags: ["Admin PasswordChange"]
+      summary: "initiatePasswordChange (POST /api/v1/admin/change-password)"
+      description: "Controller: `AdminPasswordChangeController.java` at line 43. Required RBAC: ROLE_MAIN_ADMIN / assignedService."
+      operationId: "initiatePasswordChange_POST"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          description: "Successful operation"
+        "400":
+          description: "Bad Request - Validation or parameter error"
+        "401":
+          description: "Unauthorized - Missing or invalid JWT Bearer token"
+        "403":
+          description: "Forbidden - Insufficient RBAC role or mismatched assignedService claim"
+        "404":
+          description: "Not Found - Resource does not exist"
+        "500":
+          description: "Internal Server Error"
+      security:
+        - bearerAuth: []
+  /api/v1/admin/change-password/verify-otp:
+    post:
+      tags: ["Admin PasswordChange"]
+      summary: "verifyPasswordOtp (POST /api/v1/admin/change-password/verify-otp)"
+      description: "Controller: `AdminPasswordChangeController.java` at line 64. Required RBAC: ROLE_MAIN_ADMIN / assignedService."
+      operationId: "verifyPasswordOtp_POST"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          description: "Successful operation"
+        "400":
+          description: "Bad Request - Validation or parameter error"
+        "401":
+          description: "Unauthorized - Missing or invalid JWT Bearer token"
+        "403":
+          description: "Forbidden - Insufficient RBAC role or mismatched assignedService claim"
+        "404":
+          description: "Not Found - Resource does not exist"
+        "500":
+          description: "Internal Server Error"
+      security:
+        - bearerAuth: []
+  /api/v1/admin/change-password/resend-otp:
+    post:
+      tags: ["Admin PasswordChange"]
+      summary: "resendPasswordOtp (POST /api/v1/admin/change-password/resend-otp)"
+      description: "Controller: `AdminPasswordChangeController.java` at line 85. Required RBAC: ROLE_MAIN_ADMIN / assignedService."
+      operationId: "resendPasswordOtp_POST"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          description: "Successful operation"
+        "400":
+          description: "Bad Request - Validation or parameter error"
+        "401":
+          description: "Unauthorized - Missing or invalid JWT Bearer token"
+        "403":
+          description: "Forbidden - Insufficient RBAC role or mismatched assignedService claim"
+        "404":
+          description: "Not Found - Resource does not exist"
+        "500":
+          description: "Internal Server Error"
+      security:
+        - bearerAuth: []
+  /api/v1/admin/payments:
+    get:
+      tags: ["Admin Payment"]
+      summary: "getAllPayments (GET /api/v1/admin/payments)"
+      description: "Controller: `AdminPaymentController.java` at line 19. Required RBAC: ROLE_MAIN_ADMIN / assignedService."
+      operationId: "getAllPayments_GET"
+      parameters:
+        - name: "page"
+          in: "query"
+          required: false
+          description: "Zero-based page index"
+          schema:
+            type: "integer"
+            default: 0
+        - name: "size"
+          in: "query"
+          required: false
+          description: "Number of records per page"
+          schema:
+            type: "integer"
+            default: 10
+        - name: "sort"
+          in: "query"
+          required: false
+          description: "Sorting criteria"
+          schema:
+            type: "string"
+            default: createdAt,desc
+      responses:
+        "200":
+          description: "Successful operation"
+        "400":
+          description: "Bad Request - Validation or parameter error"
+        "401":
+          description: "Unauthorized - Missing or invalid JWT Bearer token"
+        "403":
+          description: "Forbidden - Insufficient RBAC role or mismatched assignedService claim"
+        "404":
+          description: "Not Found - Resource does not exist"
+        "500":
+          description: "Internal Server Error"
+      security:
+        - bearerAuth: []
+  /api/v1/admin/payments/{id}:
+    get:
+      tags: ["Admin Payment"]
+      summary: "getPaymentById (GET /api/v1/admin/payments/{id})"
+      description: "Controller: `AdminPaymentController.java` at line 31. Required RBAC: ROLE_MAIN_ADMIN / assignedService."
+      operationId: "getPaymentById_GET"
+      parameters:
+        - name: "id"
+          in: "path"
+          required: true
+          description: "Unique identifier for id"
+          schema:
+            type: "string"
+        - name: "page"
+          in: "query"
+          required: false
+          description: "Zero-based page index"
+          schema:
+            type: "integer"
+            default: 0
+        - name: "size"
+          in: "query"
+          required: false
+          description: "Number of records per page"
+          schema:
+            type: "integer"
+            default: 10
+        - name: "sort"
+          in: "query"
+          required: false
+          description: "Sorting criteria"
+          schema:
+            type: "string"
+            default: createdAt,desc
+      responses:
+        "200":
+          description: "Successful operation"
+        "400":
+          description: "Bad Request - Validation or parameter error"
+        "401":
+          description: "Unauthorized - Missing or invalid JWT Bearer token"
+        "403":
+          description: "Forbidden - Insufficient RBAC role or mismatched assignedService claim"
+        "404":
+          description: "Not Found - Resource does not exist"
+        "500":
+          description: "Internal Server Error"
+      security:
+        - bearerAuth: []
+  /api/v1/admin/reports/users:
+    get:
+      tags: ["Admin Report"]
+      summary: "unknown (GET /api/v1/admin/reports/users)"
+      description: "Controller: `AdminReportController.java` at line 28. Required RBAC: ROLE_MAIN_ADMIN / assignedService."
+      operationId: "unknown_GET"
+      parameters:
+        - name: "page"
+          in: "query"
+          required: false
+          description: "Zero-based page index"
+          schema:
+            type: "integer"
+            default: 0
+        - name: "size"
+          in: "query"
+          required: false
+          description: "Number of records per page"
+          schema:
+            type: "integer"
+            default: 10
+        - name: "sort"
+          in: "query"
+          required: false
+          description: "Sorting criteria"
+          schema:
+            type: "string"
+            default: createdAt,desc
+      responses:
+        "200":
+          description: "Successful operation"
+        "400":
+          description: "Bad Request - Validation or parameter error"
+        "401":
+          description: "Unauthorized - Missing or invalid JWT Bearer token"
+        "403":
+          description: "Forbidden - Insufficient RBAC role or mismatched assignedService claim"
+        "404":
+          description: "Not Found - Resource does not exist"
+        "500":
+          description: "Internal Server Error"
+      security:
+        - bearerAuth: []
+  /api/v1/admin/reports/courses:
+    get:
+      tags: ["Admin Report"]
+      summary: "unknown (GET /api/v1/admin/reports/courses)"
+      description: "Controller: `AdminReportController.java` at line 44. Required RBAC: ROLE_MAIN_ADMIN / assignedService."
+      operationId: "unknown_GET"
+      parameters:
+        - name: "page"
+          in: "query"
+          required: false
+          description: "Zero-based page index"
+          schema:
+            type: "integer"
+            default: 0
+        - name: "size"
+          in: "query"
+          required: false
+          description: "Number of records per page"
+          schema:
+            type: "integer"
+            default: 10
+        - name: "sort"
+          in: "query"
+          required: false
+          description: "Sorting criteria"
+          schema:
+            type: "string"
+            default: createdAt,desc
+      responses:
+        "200":
+          description: "Successful operation"
+        "400":
+          description: "Bad Request - Validation or parameter error"
+        "401":
+          description: "Unauthorized - Missing or invalid JWT Bearer token"
+        "403":
+          description: "Forbidden - Insufficient RBAC role or mismatched assignedService claim"
+        "404":
+          description: "Not Found - Resource does not exist"
+        "500":
+          description: "Internal Server Error"
+      security:
+        - bearerAuth: []
+  /api/v1/admin/reports/revenue:
+    get:
+      tags: ["Admin Report"]
+      summary: "unknown (GET /api/v1/admin/reports/revenue)"
+      description: "Controller: `AdminReportController.java` at line 60. Required RBAC: ROLE_MAIN_ADMIN / assignedService."
+      operationId: "unknown_GET"
+      responses:
+        "200":
+          description: "Successful operation"
+        "400":
+          description: "Bad Request - Validation or parameter error"
+        "401":
+          description: "Unauthorized - Missing or invalid JWT Bearer token"
+        "403":
+          description: "Forbidden - Insufficient RBAC role or mismatched assignedService claim"
+        "404":
+          description: "Not Found - Resource does not exist"
+        "500":
+          description: "Internal Server Error"
+      security:
+        - bearerAuth: []
+  /api/v1/admin/reports/orders:
+    get:
+      tags: ["Admin Report"]
+      summary: "unknown (GET /api/v1/admin/reports/orders)"
+      description: "Controller: `AdminReportController.java` at line 75. Required RBAC: ROLE_MAIN_ADMIN / assignedService."
+      operationId: "unknown_GET"
+      parameters:
+        - name: "page"
+          in: "query"
+          required: false
+          description: "Zero-based page index"
+          schema:
+            type: "integer"
+            default: 0
+        - name: "size"
+          in: "query"
+          required: false
+          description: "Number of records per page"
+          schema:
+            type: "integer"
+            default: 10
+        - name: "sort"
+          in: "query"
+          required: false
+          description: "Sorting criteria"
+          schema:
+            type: "string"
+            default: createdAt,desc
+      responses:
+        "200":
+          description: "Successful operation"
+        "400":
+          description: "Bad Request - Validation or parameter error"
+        "401":
+          description: "Unauthorized - Missing or invalid JWT Bearer token"
+        "403":
+          description: "Forbidden - Insufficient RBAC role or mismatched assignedService claim"
+        "404":
+          description: "Not Found - Resource does not exist"
+        "500":
+          description: "Internal Server Error"
+      security:
+        - bearerAuth: []
+  /api/v1/admin/settings/platform:
+    put:
+      tags: ["Admin Report"]
+      summary: "unknown (PUT /api/v1/admin/settings/platform)"
+      description: "Controller: `AdminReportController.java` at line 90. Required RBAC: ROLE_MAIN_ADMIN / assignedService."
+      operationId: "unknown_PUT"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          description: "Successful operation"
+        "400":
+          description: "Bad Request - Validation or parameter error"
+        "401":
+          description: "Unauthorized - Missing or invalid JWT Bearer token"
+        "403":
+          description: "Forbidden - Insufficient RBAC role or mismatched assignedService claim"
+        "404":
+          description: "Not Found - Resource does not exist"
+        "500":
+          description: "Internal Server Error"
+      security:
+        - bearerAuth: []
+  /api/v1/admin/settings/payment:
+    put:
+      tags: ["Admin Report"]
+      summary: "unknown (PUT /api/v1/admin/settings/payment)"
+      description: "Controller: `AdminReportController.java` at line 113. Required RBAC: ROLE_MAIN_ADMIN / assignedService."
+      operationId: "unknown_PUT"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          description: "Successful operation"
+        "400":
+          description: "Bad Request - Validation or parameter error"
+        "401":
+          description: "Unauthorized - Missing or invalid JWT Bearer token"
+        "403":
+          description: "Forbidden - Insufficient RBAC role or mismatched assignedService claim"
+        "404":
+          description: "Not Found - Resource does not exist"
+        "500":
+          description: "Internal Server Error"
+      security:
+        - bearerAuth: []
+  /api/v1/admin/settings/notifications:
+    put:
+      tags: ["Admin Report"]
+      summary: "unknown (PUT /api/v1/admin/settings/notifications)"
+      description: "Controller: `AdminReportController.java` at line 136. Required RBAC: ROLE_MAIN_ADMIN / assignedService."
+      operationId: "unknown_PUT"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          description: "Successful operation"
+        "400":
+          description: "Bad Request - Validation or parameter error"
+        "401":
+          description: "Unauthorized - Missing or invalid JWT Bearer token"
+        "403":
+          description: "Forbidden - Insufficient RBAC role or mismatched assignedService claim"
+        "404":
+          description: "Not Found - Resource does not exist"
+        "500":
+          description: "Internal Server Error"
+      security:
+        - bearerAuth: []
+  /api/v1/admin/reviews:
+    get:
+      tags: ["Admin Review"]
+      summary: "getAllReviews (GET /api/v1/admin/reviews)"
+      description: "Controller: `AdminReviewController.java` at line 19. Required RBAC: ROLE_MAIN_ADMIN / assignedService."
+      operationId: "getAllReviews_GET"
+      responses:
+        "200":
+          description: "Successful operation"
+        "400":
+          description: "Bad Request - Validation or parameter error"
+        "401":
+          description: "Unauthorized - Missing or invalid JWT Bearer token"
+        "403":
+          description: "Forbidden - Insufficient RBAC role or mismatched assignedService claim"
+        "404":
+          description: "Not Found - Resource does not exist"
+        "500":
+          description: "Internal Server Error"
+      security:
+        - bearerAuth: []
+  /api/v1/admin/reviews/{id}:
+    delete:
+      tags: ["Admin Review"]
+      summary: "deleteReview (DELETE /api/v1/admin/reviews/{id})"
+      description: "Controller: `AdminReviewController.java` at line 31. Required RBAC: ROLE_MAIN_ADMIN / assignedService."
+      operationId: "deleteReview_DELETE"
+      parameters:
+        - name: "id"
+          in: "path"
+          required: true
+          description: "Unique identifier for id"
+          schema:
+            type: "string"
+      responses:
+        "200":
+          description: "Successful operation"
+        "400":
+          description: "Bad Request - Validation or parameter error"
+        "401":
+          description: "Unauthorized - Missing or invalid JWT Bearer token"
+        "403":
+          description: "Forbidden - Insufficient RBAC role or mismatched assignedService claim"
+        "404":
+          description: "Not Found - Resource does not exist"
+        "500":
+          description: "Internal Server Error"
+      security:
+        - bearerAuth: []
+  /api/v1/admin/internal/users/{id}/refresh-eligibility:
+    get:
+      tags: ["Admin User"]
+      summary: "unknown (GET /api/v1/admin/internal/users/{id}/refresh-eligibility)"
+      description: "Controller: `AdminUserController.java` at line 29. Required RBAC: ROLE_MAIN_ADMIN / assignedService."
+      operationId: "unknown_GET"
+      parameters:
+        - name: "id"
+          in: "path"
+          required: true
+          description: "Unique identifier for id"
+          schema:
+            type: "string"
+        - name: "page"
+          in: "query"
+          required: false
+          description: "Zero-based page index"
+          schema:
+            type: "integer"
+            default: 0
+        - name: "size"
+          in: "query"
+          required: false
+          description: "Number of records per page"
+          schema:
+            type: "integer"
+            default: 10
+        - name: "sort"
+          in: "query"
+          required: false
+          description: "Sorting criteria"
+          schema:
+            type: "string"
+            default: createdAt,desc
+      responses:
+        "200":
+          description: "Successful operation"
+        "400":
+          description: "Bad Request - Validation or parameter error"
+        "401":
+          description: "Unauthorized - Missing or invalid JWT Bearer token"
+        "403":
+          description: "Forbidden - Insufficient RBAC role or mismatched assignedService claim"
+        "404":
+          description: "Not Found - Resource does not exist"
+        "500":
+          description: "Internal Server Error"
+      security:
+        - bearerAuth: []
+  /api/v1/admin/users:
+    get:
+      tags: ["Admin User"]
+      summary: "getAllUsers (GET /api/v1/admin/users)"
+      description: "Controller: `AdminUserController.java` at line 60. Required RBAC: ROLE_MAIN_ADMIN / assignedService."
+      operationId: "getAllUsers_GET"
+      parameters:
+        - name: "page"
+          in: "query"
+          required: false
+          description: "Zero-based page index"
+          schema:
+            type: "integer"
+            default: 0
+        - name: "size"
+          in: "query"
+          required: false
+          description: "Number of records per page"
+          schema:
+            type: "integer"
+            default: 10
+        - name: "sort"
+          in: "query"
+          required: false
+          description: "Sorting criteria"
+          schema:
+            type: "string"
+            default: createdAt,desc
+      responses:
+        "200":
+          description: "Successful operation"
+        "400":
+          description: "Bad Request - Validation or parameter error"
+        "401":
+          description: "Unauthorized - Missing or invalid JWT Bearer token"
+        "403":
+          description: "Forbidden - Insufficient RBAC role or mismatched assignedService claim"
+        "404":
+          description: "Not Found - Resource does not exist"
+        "500":
+          description: "Internal Server Error"
+      security:
+        - bearerAuth: []
+  /api/v1/admin/users/{id}:
+    get:
+      tags: ["Admin User"]
+      summary: "getUserById (GET /api/v1/admin/users/{id})"
+      description: "Controller: `AdminUserController.java` at line 80. Required RBAC: ROLE_MAIN_ADMIN / assignedService."
+      operationId: "getUserById_GET"
+      parameters:
+        - name: "id"
+          in: "path"
+          required: true
+          description: "Unique identifier for id"
+          schema:
+            type: "string"
+        - name: "page"
+          in: "query"
+          required: false
+          description: "Zero-based page index"
+          schema:
+            type: "integer"
+            default: 0
+        - name: "size"
+          in: "query"
+          required: false
+          description: "Number of records per page"
+          schema:
+            type: "integer"
+            default: 10
+        - name: "sort"
+          in: "query"
+          required: false
+          description: "Sorting criteria"
+          schema:
+            type: "string"
+            default: createdAt,desc
+      responses:
+        "200":
+          description: "Successful operation"
+        "400":
+          description: "Bad Request - Validation or parameter error"
+        "401":
+          description: "Unauthorized - Missing or invalid JWT Bearer token"
+        "403":
+          description: "Forbidden - Insufficient RBAC role or mismatched assignedService claim"
+        "404":
+          description: "Not Found - Resource does not exist"
+        "500":
+          description: "Internal Server Error"
+      security:
+        - bearerAuth: []
+    delete:
+      tags: ["Admin User"]
+      summary: "deleteUser (DELETE /api/v1/admin/users/{id})"
+      description: "Controller: `AdminUserController.java` at line 107. Required RBAC: ROLE_MAIN_ADMIN / assignedService."
+      operationId: "deleteUser_DELETE"
+      parameters:
+        - name: "id"
+          in: "path"
+          required: true
+          description: "Unique identifier for id"
+          schema:
+            type: "string"
+      responses:
+        "200":
+          description: "Successful operation"
+        "400":
+          description: "Bad Request - Validation or parameter error"
+        "401":
+          description: "Unauthorized - Missing or invalid JWT Bearer token"
+        "403":
+          description: "Forbidden - Insufficient RBAC role or mismatched assignedService claim"
+        "404":
+          description: "Not Found - Resource does not exist"
+        "500":
+          description: "Internal Server Error"
+      security:
+        - bearerAuth: []
+  /api/v1/admin/users/{id}/status:
+    put:
+      tags: ["Admin User"]
+      summary: "updateUserStatus (PUT /api/v1/admin/users/{id}/status)"
+      description: "Controller: `AdminUserController.java` at line 96. Required RBAC: ROLE_MAIN_ADMIN / assignedService."
+      operationId: "updateUserStatus_PUT"
+      parameters:
+        - name: "id"
+          in: "path"
+          required: true
+          description: "Unique identifier for id"
+          schema:
+            type: "string"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          description: "Successful operation"
+        "400":
+          description: "Bad Request - Validation or parameter error"
+        "401":
+          description: "Unauthorized - Missing or invalid JWT Bearer token"
+        "403":
+          description: "Forbidden - Insufficient RBAC role or mismatched assignedService claim"
+        "404":
+          description: "Not Found - Resource does not exist"
+        "500":
+          description: "Internal Server Error"
+      security:
+        - bearerAuth: []
+  /api/v1/admin/instructors:
+    get:
+      tags: ["Admin User"]
+      summary: "getAllInstructors (GET /api/v1/admin/instructors)"
+      description: "Controller: `AdminUserController.java` at line 121. Required RBAC: ROLE_MAIN_ADMIN / assignedService."
+      operationId: "getAllInstructors_GET"
+      responses:
+        "200":
+          description: "Successful operation"
+        "400":
+          description: "Bad Request - Validation or parameter error"
+        "401":
+          description: "Unauthorized - Missing or invalid JWT Bearer token"
+        "403":
+          description: "Forbidden - Insufficient RBAC role or mismatched assignedService claim"
+        "404":
+          description: "Not Found - Resource does not exist"
+        "500":
+          description: "Internal Server Error"
+      security:
+        - bearerAuth: []
+  /api/v1/admin/instructors/{id}:
+    get:
+      tags: ["Admin User"]
+      summary: "unknown (GET /api/v1/admin/instructors/{id})"
+      description: "Controller: `AdminUserController.java` at line 132. Required RBAC: ROLE_MAIN_ADMIN / assignedService."
+      operationId: "unknown_GET"
+      parameters:
+        - name: "id"
+          in: "path"
+          required: true
+          description: "Unique identifier for id"
+          schema:
+            type: "string"
+      responses:
+        "200":
+          description: "Successful operation"
+        "400":
+          description: "Bad Request - Validation or parameter error"
+        "401":
+          description: "Unauthorized - Missing or invalid JWT Bearer token"
+        "403":
+          description: "Forbidden - Insufficient RBAC role or mismatched assignedService claim"
+        "404":
+          description: "Not Found - Resource does not exist"
+        "500":
+          description: "Internal Server Error"
+      security:
+        - bearerAuth: []
+    delete:
+      tags: ["Admin User"]
+      summary: "deleteInstructor (DELETE /api/v1/admin/instructors/{id})"
+      description: "Controller: `AdminUserController.java` at line 219. Required RBAC: ROLE_MAIN_ADMIN / assignedService."
+      operationId: "deleteInstructor_DELETE"
+      parameters:
+        - name: "id"
+          in: "path"
+          required: true
+          description: "Unique identifier for id"
+          schema:
+            type: "string"
+      responses:
+        "200":
+          description: "Successful operation"
+        "400":
+          description: "Bad Request - Validation or parameter error"
+        "401":
+          description: "Unauthorized - Missing or invalid JWT Bearer token"
+        "403":
+          description: "Forbidden - Insufficient RBAC role or mismatched assignedService claim"
+        "404":
+          description: "Not Found - Resource does not exist"
+        "500":
+          description: "Internal Server Error"
+      security:
+        - bearerAuth: []
+  /api/v1/admin/instructors/applications:
+    get:
+      tags: ["Admin User"]
+      summary: "getAllInstructorApplicationsDetailed (GET /api/v1/admin/instructors/applications)"
+      description: "Controller: `AdminUserController.java` at line 145. Required RBAC: ROLE_MAIN_ADMIN / assignedService."
+      operationId: "getAllInstructorApplicationsDetailed_GET"
+      responses:
+        "200":
+          description: "Successful operation"
+        "400":
+          description: "Bad Request - Validation or parameter error"
+        "401":
+          description: "Unauthorized - Missing or invalid JWT Bearer token"
+        "403":
+          description: "Forbidden - Insufficient RBAC role or mismatched assignedService claim"
+        "404":
+          description: "Not Found - Resource does not exist"
+        "500":
+          description: "Internal Server Error"
+      security:
+        - bearerAuth: []
+  /api/v1/admin/instructors/applications/status/{status}:
+    get:
+      tags: ["Admin User"]
+      summary: "getInstructorApplicationsByStatusLegacy (GET /api/v1/admin/instructors/applications/status/{status})"
+      description: "Controller: `AdminUserController.java` at line 189. Required RBAC: ROLE_MAIN_ADMIN / assignedService."
+      operationId: "getInstructorApplicationsByStatusLegacy_GET"
+      parameters:
+        - name: "status"
+          in: "path"
+          required: true
+          description: "Unique identifier for status"
+          schema:
+            type: "string"
+      responses:
+        "200":
+          description: "Successful operation"
+        "400":
+          description: "Bad Request - Validation or parameter error"
+        "401":
+          description: "Unauthorized - Missing or invalid JWT Bearer token"
+        "403":
+          description: "Forbidden - Insufficient RBAC role or mismatched assignedService claim"
+        "404":
+          description: "Not Found - Resource does not exist"
+        "500":
+          description: "Internal Server Error"
+      security:
+        - bearerAuth: []
+  /api/v1/admin/instructors/applications/{applicationId}/approve:
+    put:
+      tags: ["Admin User"]
+      summary: "approveInstructorApplicationByApplicationId (PUT /api/v1/admin/instructors/applications/{applicationId}/approve)"
+      description: "Controller: `AdminUserController.java` at line 199. Required RBAC: ROLE_MAIN_ADMIN / assignedService."
+      operationId: "approveInstructorApplicationByApplicationId_PUT"
+      parameters:
+        - name: "applicationId"
+          in: "path"
+          required: true
+          description: "Unique identifier for applicationId"
+          schema:
+            type: "string"
+            format: "uuid"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          description: "Successful operation"
+        "400":
+          description: "Bad Request - Validation or parameter error"
+        "401":
+          description: "Unauthorized - Missing or invalid JWT Bearer token"
+        "403":
+          description: "Forbidden - Insufficient RBAC role or mismatched assignedService claim"
+        "404":
+          description: "Not Found - Resource does not exist"
+        "500":
+          description: "Internal Server Error"
+      security:
+        - bearerAuth: []
+  /api/v1/admin/instructors/applications/{applicationId}/reject:
+    put:
+      tags: ["Admin User"]
+      summary: "rejectInstructorApplicationByApplicationId (PUT /api/v1/admin/instructors/applications/{applicationId}/reject)"
+      description: "Controller: `AdminUserController.java` at line 209. Required RBAC: ROLE_MAIN_ADMIN / assignedService."
+      operationId: "rejectInstructorApplicationByApplicationId_PUT"
+      parameters:
+        - name: "applicationId"
+          in: "path"
+          required: true
+          description: "Unique identifier for applicationId"
+          schema:
+            type: "string"
+            format: "uuid"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          description: "Successful operation"
+        "400":
+          description: "Bad Request - Validation or parameter error"
+        "401":
+          description: "Unauthorized - Missing or invalid JWT Bearer token"
+        "403":
+          description: "Forbidden - Insufficient RBAC role or mismatched assignedService claim"
+        "404":
+          description: "Not Found - Resource does not exist"
+        "500":
+          description: "Internal Server Error"
+      security:
+        - bearerAuth: []
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        JWT Access Token containing:
+        * `sub`: User/Admin UUID
+        * `role`: ROLE_MAIN_ADMIN or ROLE_SUB_ADMIN
+        * `assignedService`: COURSE_SERVICE, PAYMENT_SERVICE, ORDER_SERVICE, USER_SERVICE
+        * `type`: access

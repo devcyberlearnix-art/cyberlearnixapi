@@ -2,8 +2,6 @@ package com.example.admin.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.CreationTimestamp;
-import jakarta.persistence.PrePersist;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -19,11 +17,20 @@ public class Admin {
     @Id
     private UUID id;
 
-    @PrePersist
-    public void generateId() {
+        @PrePersist
+    public void onPrePersist() {
         if (id == null) {
             id = UUID.randomUUID();
         }
+        if (createdAt == null) {
+            createdAt = LocalDateTime.now();
+        }
+        updatedAt = LocalDateTime.now();
+    }
+
+    @PreUpdate
+    public void onPreUpdate() {
+        updatedAt = LocalDateTime.now();
     }
 
     @Column(nullable = false, unique = true)
@@ -109,11 +116,9 @@ public class Admin {
     @Column
     private LocalDateTime lockedUntil;
 
-    @CreationTimestamp
     @Column(updatable = false, nullable = false)
     private LocalDateTime createdAt;
 
-    @org.hibernate.annotations.UpdateTimestamp
     @Column
     private LocalDateTime updatedAt;
 }

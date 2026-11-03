@@ -1,0 +1,5 @@
+# Root Docker Compose Orchestrator
+# Delegates to docker/compose.yml
+include:
+  - docker/compose.yml
+

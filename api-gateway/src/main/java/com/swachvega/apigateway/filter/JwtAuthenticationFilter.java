@@ -50,7 +50,10 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
     // actual security rules in the user-service and other downstream services.
 
     private static final List<String> PUBLIC_PATHS = List.of(
-
+            // Public CMS Landing Page endpoints
+            "/api/v1/public/**",
+            "/adminservice/api/v1/public/**",
+            "/api/v1/instructors/subjects",
             // Admin service - public authentication
             "/api/v1/admin/register",
             "/api/v1/admin/login",
@@ -88,6 +91,7 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
             "/oauth2/**",
             "/login/oauth2/**",
             "/api/v1/users/login/social",
+            "/api/v1/users/photo/**",
 
             // Course service – public course browsing
             "/api/v1/courses",
@@ -719,4 +723,5 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
     }
 
 }
+
 

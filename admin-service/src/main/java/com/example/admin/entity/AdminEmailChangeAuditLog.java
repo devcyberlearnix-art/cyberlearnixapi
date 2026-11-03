@@ -2,7 +2,6 @@ package com.example.admin.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.UuidGenerator;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -29,8 +28,7 @@ public class AdminEmailChangeAuditLog {
     public static final String STATUS_FAILURE = "FAILURE";
 
     @Id
-    @GeneratedValue
-    @UuidGenerator
+    @GeneratedValue(strategy = GenerationType.UUID)
     @Column(name = "id", updatable = false, nullable = false)
     private UUID id;
 

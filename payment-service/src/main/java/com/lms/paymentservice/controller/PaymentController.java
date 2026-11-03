@@ -155,7 +155,9 @@ public class PaymentController {
                 params.get("firstname"),
                 params.get("email"),
                 params.get("hash"),
-                params.get("mihpayid")
+                params.get("mihpayid"),
+                params.get("key"),
+                params.get("additionalCharges")
         );
         return ResponseEntity.ok("Payment Success Handled");
     }
@@ -171,7 +173,9 @@ public class PaymentController {
                 request.getFirstname(),
                 request.getEmail(),
                 request.getHash(),
-                request.getMihpayid()
+                request.getMihpayid(),
+                request.getKey(),
+                request.getAdditionalCharges()
         );
         return ResponseEntity.ok("Payment Success Handled");
     }
@@ -187,7 +191,9 @@ public class PaymentController {
                 params.get("firstname"),
                 params.get("email"),
                 params.get("hash"),
-                params.get("mihpayid")
+                params.get("mihpayid"),
+                params.get("key"),
+                params.get("additionalCharges")
         );
         return ResponseEntity.ok("Payment Failure Handled");
     }
@@ -203,7 +209,9 @@ public class PaymentController {
                 request.getFirstname(),
                 request.getEmail(),
                 request.getHash(),
-                request.getMihpayid()
+                request.getMihpayid(),
+                request.getKey(),
+                request.getAdditionalCharges()
         );
         return ResponseEntity.ok("Payment Failure Handled");
     }
@@ -301,7 +309,7 @@ public class PaymentController {
                 req.getUdf5()
         );
 
-        String actionUrl = escapeHtml(payuBaseUrl + "/_payment");
+        String actionUrl = escapeHtml(payuBaseUrl.endsWith("/_payment") ? payuBaseUrl : (payuBaseUrl + "/_payment"));
 
         String html = "<!doctype html><html><body onload=\"document.forms.payu.submit()\">"
                 + "<form name=\"payu\" method=\"post\" action=\"" + actionUrl + "\">"

@@ -591,6 +591,20 @@ public class AdminAuthService {
 
         auditService.logAction(admin.getId(), "ADMIN_OTP_LOGIN");
 
+        String accessToken = jwtService.generateAccessToken(
+                admin.getId().toString(),
+                admin.getEmail(),
+                admin.getRole(),
+                admin.getAdminType() != null ? admin.getAdminType().name() : "MAIN_ADMIN",
+                admin.getAssignedService() != null ? admin.getAssignedService().name() : "ALL"
+        );
+
+        String refreshToken = jwtService.generateRefreshToken(
+                admin.getId().toString(),
+                admin.getEmail(),
+                admin.getRole()
+        );
+
         String firstName = decryptSafely(admin.getFirstName(), "Admin");
         String lastName = decryptSafely(admin.getLastName(), "");
         String mobileNumber = decryptSafely(admin.getMobileNumber(), "");
@@ -607,10 +621,10 @@ public class AdminAuthService {
                         .mobileNumber(mobileNumber)
                         .build())
                 .authentication(AdminLoginResponse.AuthenticationInfo.builder()
-                        .accessToken("")
-                        .accessTokenExpiresIn("")
-                        .refreshToken("")
-                        .refreshTokenExpiresIn("")
+                        .accessToken(accessToken)
+                        .accessTokenExpiresIn("15m")
+                        .refreshToken(refreshToken)
+                        .refreshTokenExpiresIn("7d")
                         .build())
                 .sessionInfo(AdminLoginResponse.SessionInfo.builder()
                         .loginTime(LocalDateTime.now().toString())

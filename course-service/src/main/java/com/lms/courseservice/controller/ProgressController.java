@@ -23,6 +23,7 @@ public class ProgressController {
 
     private final ProgressService progressService;
     private final JwtUtil jwtUtil;
+    private final com.lms.courseservice.service.DashboardService dashboardService;
 
     private UUID extractUserId() {
         Object principal = org.springframework.security.core.context.SecurityContextHolder
@@ -137,4 +138,23 @@ public class ProgressController {
                         .build()
         );
     }
+
+    /**
+     * Get student's enrolled courses with progress or dashboard overview
+     * GET /api/v1/progress/courses
+     */
+    @GetMapping({"", "/courses"})
+    public ResponseEntity<ApiResponse<com.lms.courseservice.dto.StudentDashboardResponse>> getStudentDashboardViaProgress() {
+        UUID studentId = extractUserId();
+        var response = dashboardService.getStudentDashboard(studentId);
+        return ResponseEntity.ok(
+                ApiResponse.<com.lms.courseservice.dto.StudentDashboardResponse>builder()
+                        .success(true)
+                        .message("Course progress retrieved successfully")
+                        .data(response)
+                        .timestamp(getCurrentTimestamp())
+                        .build()
+        );
+    }
+
 }

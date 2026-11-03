@@ -16,9 +16,11 @@ import java.util.Optional;
 @Repository
 public interface BannerRepository extends JpaRepository<Banner, Long> {
 
+    @Query("SELECT b FROM Banner b WHERE b.deletedAt IS NULL ORDER BY b.displayOrder ASC")
     List<Banner> findAllByOrderByDisplayOrderAsc();
 
     @Query("SELECT b FROM Banner b WHERE b.status = 'ACTIVE' " +
+           "AND b.deletedAt IS NULL " +
            "AND (b.startDate IS NULL OR b.startDate <= :currentTime) " +
            "AND (b.endDate IS NULL OR b.endDate >= :currentTime) " +
            "ORDER BY b.displayOrder ASC")
@@ -26,19 +28,21 @@ public interface BannerRepository extends JpaRepository<Banner, Long> {
 
     @Query("SELECT b FROM Banner b WHERE b.id = :id " +
            "AND b.status = 'ACTIVE' " +
+           "AND b.deletedAt IS NULL " +
            "AND (b.startDate IS NULL OR b.startDate <= :currentTime) " +
            "AND (b.endDate IS NULL OR b.endDate >= :currentTime)")
     Optional<Banner> findActiveBannerById(@Param("id") Long id, @Param("currentTime") Instant currentTime);
 
-    @Query("SELECT b FROM Banner b WHERE b.displayOrder = :displayOrder AND b.status = 'ACTIVE'")
+    @Query("SELECT b FROM Banner b WHERE b.displayOrder = :displayOrder AND b.status = 'ACTIVE' AND b.deletedAt IS NULL")
     Optional<Banner> findActiveBannerByDisplayOrder(@Param("displayOrder") Integer displayOrder);
 
     @Query("SELECT b FROM Banner b WHERE b.targetType = :targetType AND b.status = 'ACTIVE' " +
+           "AND b.deletedAt IS NULL " +
            "AND (b.startDate IS NULL OR b.startDate <= :currentTime) " +
            "AND (b.endDate IS NULL OR b.endDate >= :currentTime) " +
            "ORDER BY b.displayOrder ASC")
     List<Banner> findActiveBannersByTargetType(@Param("targetType") BannerTargetType targetType,
-                                                  @Param("currentTime") Instant currentTime);
+                                                   @Param("currentTime") Instant currentTime);
 
     @Modifying
     @Query("UPDATE Banner b SET b.impressions = COALESCE(b.impressions, 0) + 1, b.lastImpressionAt = :timestamp WHERE b.id = :bannerId")
@@ -53,12 +57,15 @@ public interface BannerRepository extends JpaRepository<Banner, Long> {
     int incrementConversions(@Param("bannerId") Long bannerId);
 
     @Query("SELECT CASE WHEN COUNT(b) > 0 THEN true ELSE false END FROM Banner b " +
-           "WHERE b.displayOrder = :displayOrder")
+           "WHERE b.displayOrder = :displayOrder AND b.deletedAt IS NULL")
     boolean existsByDisplayOrder(@Param("displayOrder") Integer displayOrder);
 
     @Query("SELECT CASE WHEN COUNT(b) > 0 THEN true ELSE false END FROM Banner b " +
-           "WHERE b.displayOrder = :displayOrder AND b.id != :excludeId")
+           "WHERE b.displayOrder = :displayOrder AND b.id != :excludeId AND b.deletedAt IS NULL")
     boolean existsByDisplayOrderAndIdNot(@Param("displayOrder") Integer displayOrder, @Param("excludeId") Long excludeId);
+
+    @Query("SELECT COALESCE(MAX(b.displayOrder), 0) FROM Banner b WHERE b.deletedAt IS NULL")
+    Integer findMaxDisplayOrder();
 
     @Query("SELECT b FROM Banner b WHERE b.deletedAt IS NOT NULL ORDER BY b.deletedAt DESC")
     List<Banner> findDeletedBanners();

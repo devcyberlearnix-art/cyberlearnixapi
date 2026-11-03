@@ -16,7 +16,10 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -35,8 +38,11 @@ public class BannerService {
     public Banner createBanner(BannerCreateRequest request, String createdBy) {
         validateDateRange(request.getStartDate(), request.getEndDate());
 
-        if (bannerRepository.existsByDisplayOrder(request.getDisplayOrder())) {
-            throw new BannerException("Display order " + request.getDisplayOrder() + " already exists");
+        Integer displayOrder = request.getDisplayOrder();
+        if (displayOrder == null || displayOrder <= 0) {
+            displayOrder = bannerRepository.findMaxDisplayOrder() + 1;
+        } else if (bannerRepository.existsByDisplayOrder(displayOrder)) {
+            throw new BannerException("Display order " + displayOrder + " already exists");
         }
 
         String mobileImageUrl = request.getMobileImageUrl();
@@ -53,9 +59,9 @@ public class BannerService {
                 .ctaText(request.getCtaText())
                 .ctaUrl(request.getCtaUrl())
                 .courseId(request.getCourseId())
-                .displayOrder(request.getDisplayOrder())
-                .status(request.getStatus())
-                .targetType(request.getTargetType())
+                .displayOrder(displayOrder)
+                .status(request.getStatus() != null ? request.getStatus() : BannerStatus.ACTIVE)
+                .targetType(request.getTargetType() != null ? request.getTargetType() : BannerTargetType.COURSE)
                 .startDate(request.getStartDate())
                 .endDate(request.getEndDate())
                 .createdBy(createdBy)
@@ -79,9 +85,9 @@ public class BannerService {
     }
 
     @Transactional(readOnly = true)
-    // @Cacheable(value = BANNER_CACHE, key = "#id", unless = "#result == null")
     public Banner getBannerById(Long id) {
         return bannerRepository.findById(id)
+                .filter(b -> b.getDeletedAt() == null)
                 .orElseThrow(() -> new BannerException("Banner not found with ID: " + id));
     }
 
@@ -219,21 +225,46 @@ public class BannerService {
     @Transactional
     @CacheEvict(value = {ACTIVE_BANNERS_CACHE, BANNER_CACHE}, allEntries = true)
     public List<Banner> reorderBanners(BannerReorderRequest request, String updatedBy) {
+        if (request == null || request.getBanners() == null || request.getBanners().isEmpty()) {
+            throw new BannerException("Banner reorder list cannot be empty");
+        }
+
+        Set<Integer> requestedOrders = new HashSet<>();
+        Set<Long> requestedIds = new HashSet<>();
+        for (BannerReorderRequest.BannerOrderItem item : request.getBanners()) {
+            if (!requestedOrders.add(item.getDisplayOrder())) {
+                throw new BannerException("Duplicate display order in request: " + item.getDisplayOrder());
+            }
+            if (!requestedIds.add(item.getId())) {
+                throw new BannerException("Duplicate banner ID in request: " + item.getId());
+            }
+        }
+
+        List<Banner> allActiveBanners = bannerRepository.findAllByOrderByDisplayOrderAsc();
+        for (Banner b : allActiveBanners) {
+            if (!requestedIds.contains(b.getId()) && requestedOrders.contains(b.getDisplayOrder())) {
+                throw new BannerException("Display order " + b.getDisplayOrder() + " already exists for banner ID " + b.getId());
+            }
+        }
+
+        // Pass 1: Assign temporary negative display orders to eliminate collision during batch update
+        List<Banner> bannersToUpdate = new ArrayList<>();
+        int tempOffset = 10000;
         for (BannerReorderRequest.BannerOrderItem item : request.getBanners()) {
             Banner banner = getBannerById(item.getId());
-
-            boolean orderExists = bannerRepository.findAllByOrderByDisplayOrderAsc()
-                .stream()
-                .anyMatch(b -> b.getDisplayOrder().equals(item.getDisplayOrder()) && !b.getId().equals(item.getId()));
-
-            if (orderExists) {
-                throw new BannerException("Display order " + item.getDisplayOrder() + " already exists for another banner");
-            }
-
-            banner.setDisplayOrder(item.getDisplayOrder());
+            banner.setDisplayOrder(-1 * (tempOffset++));
             banner.setUpdatedBy(updatedBy);
-            bannerRepository.save(banner);
+            bannersToUpdate.add(banner);
         }
+        bannerRepository.saveAllAndFlush(bannersToUpdate);
+
+        // Pass 2: Set desired final display orders
+        for (int i = 0; i < request.getBanners().size(); i++) {
+            BannerReorderRequest.BannerOrderItem item = request.getBanners().get(i);
+            Banner banner = bannersToUpdate.get(i);
+            banner.setDisplayOrder(item.getDisplayOrder());
+        }
+        bannerRepository.saveAllAndFlush(bannersToUpdate);
 
         log.info("Reordered {} banners by user: {}", request.getBanners().size(), updatedBy);
         return bannerRepository.findAllByOrderByDisplayOrderAsc();
@@ -250,13 +281,10 @@ public class BannerService {
     public void deleteBanner(Long id, String deletedBy) {
         Banner banner = getBannerById(id);
 
-        bannerImageService.deleteImage(banner.getImageUrl());
-        if (banner.getMobileImageUrl() != null && !banner.getMobileImageUrl().equals(banner.getImageUrl())) {
-            bannerImageService.deleteImage(banner.getMobileImageUrl());
-        }
-
         banner.setDeletedBy(deletedBy);
-        bannerRepository.delete(banner);
+        banner.setDeletedAt(Instant.now());
+        banner.setStatus(BannerStatus.INACTIVE);
+        bannerRepository.save(banner);
 
         log.info("Soft deleted banner with ID: {} by user: {}", id, deletedBy);
     }
@@ -275,6 +303,7 @@ public class BannerService {
 
         banner.setDeletedAt(null);
         banner.setDeletedBy(null);
+        banner.setStatus(BannerStatus.ACTIVE);
         banner.setUpdatedBy(restoredBy);
         Banner restoredBanner = bannerRepository.save(banner);
 

@@ -10,7 +10,10 @@ import com.user.register.service.InstructorService;
 import com.user.register.service.UserService;
 import com.user.register.security.JwtUtil;
 import com.user.register.util.BearerTokenResolver;
+import org.springframework.core.io.Resource;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -78,7 +81,6 @@ public class AdminInstructorController {
     /**
      * Get all instructor applications with pagination and optional status filtering
      * Admin only endpoint
-     * Industry standard: uses query parameters for filtering
      */
     @GetMapping("/applications")
     public ResponseEntity<ApiResponse<Map<String, Object>>> getAllInstructorApplications(
@@ -96,13 +98,13 @@ public class AdminInstructorController {
             }
 
             Map<String, Object> applications;
-            if (status != null && !status.isBlank()) {
+            if (status != null && !status.isBlank() && !status.equalsIgnoreCase("ALL")) {
                 try {
                     InstructorApplication.ApplicationStatus applicationStatus = InstructorApplication.ApplicationStatus.valueOf(status.toUpperCase());
                     applications = instructorService.getApplicationsByStatusPaginated(applicationStatus, page, size);
                 } catch (IllegalArgumentException e) {
                     return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                            .body(new ApiResponse<>(false, "Invalid status: " + status + ". Valid values: PENDING, APPROVED, REJECTED", null, LocalDateTime.now()));
+                            .body(new ApiResponse<>(false, "Invalid status: " + status + ". Valid values: DRAFT, PENDING, APPROVED, REJECTED, NEED_MORE_INFO", null, LocalDateTime.now()));
                 }
             } else {
                 applications = instructorService.getAllApplicationsPaginated(page, size);
@@ -121,24 +123,30 @@ public class AdminInstructorController {
     }
 
     /**
-     * Deprecated: Use GET /applications?status={status} instead
-     * This endpoint is kept for backward compatibility
-     *
-     * @deprecated Use query parameter version: GET /applications?status={status}
+     * Get single application details
      */
-    @Deprecated
-    @GetMapping("/applications/status/{status}")
-    public ResponseEntity<ApiResponse<Map<String, Object>>> getInstructorApplicationsByStatusLegacy(
-            @PathVariable String status,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
-        // Redirect to the new query parameter implementation
-        return getAllInstructorApplications(status, page, size);
+    @GetMapping("/applications/{applicationId}")
+    public ResponseEntity<ApiResponse<InstructorApplyDetailedResponse>> getApplicationById(
+            @PathVariable UUID applicationId) {
+        try {
+            InstructorApplyDetailedResponse response = instructorService.getApplicationById(applicationId);
+            return ResponseEntity.ok(new ApiResponse<>(
+                    true,
+                    "Instructor application details fetched successfully",
+                    response,
+                    LocalDateTime.now()
+            ));
+        } catch (ResponseStatusException e) {
+            return ResponseEntity.status(e.getStatusCode())
+                    .body(new ApiResponse<>(false, e.getReason(), null, LocalDateTime.now()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ApiResponse<>(false, "Failed to fetch application details: " + e.getMessage(), null, LocalDateTime.now()));
+        }
     }
 
     /**
      * Approve instructor application by application ID
-     * Admin only endpoint
      */
     @PutMapping("/applications/{applicationId}/approve")
     public ResponseEntity<ApiResponse<InstructorApplyDetailedResponse>> approveInstructorApplication(
@@ -146,10 +154,8 @@ public class AdminInstructorController {
             @RequestHeader(value = "X-User-Authorization", required = false) String userAuthorization,
             @RequestHeader(value = "Authorization", required = false) String serviceAuthorization) {
         try {
-            System.out.println("X-User-Authorization header: " + userAuthorization);
-            System.out.println("Authorization header: " + serviceAuthorization);
-            // Admin user token from X-User-Authorization for business authorization
-            UUID adminId = BearerTokenResolver.resolveAdminAccessToken(userAuthorization, jwtUtil, userRepository);
+            String token = userAuthorization != null ? userAuthorization : serviceAuthorization;
+            UUID adminId = BearerTokenResolver.resolveAdminAccessToken(token, jwtUtil, userRepository);
             InstructorApplyDetailedResponse response = instructorService.approveApplicationById(applicationId, adminId);
             return ResponseEntity.ok(new ApiResponse<>(
                     true,
@@ -167,20 +173,26 @@ public class AdminInstructorController {
     }
 
     /**
-     * Reject instructor application by application ID
-     * Admin only endpoint
+     * Reject instructor application by application ID with mandatory reason
      */
     @PutMapping("/applications/{applicationId}/reject")
     public ResponseEntity<ApiResponse<InstructorApplyDetailedResponse>> rejectInstructorApplication(
             @PathVariable UUID applicationId,
+            @RequestBody(required = false) Map<String, String> body,
+            @RequestParam(required = false) String reason,
             @RequestHeader(value = "X-User-Authorization", required = false) String userAuthorization,
             @RequestHeader(value = "Authorization", required = false) String serviceAuthorization) {
         try {
-            System.out.println("X-User-Authorization header: " + userAuthorization);
-            System.out.println("Authorization header: " + serviceAuthorization);
-            // Admin user token from X-User-Authorization for business authorization
-            UUID adminId = BearerTokenResolver.resolveAdminAccessToken(userAuthorization, jwtUtil, userRepository);
-            InstructorApplyDetailedResponse response = instructorService.rejectApplicationById(applicationId, adminId);
+            String token = userAuthorization != null ? userAuthorization : serviceAuthorization;
+            UUID adminId = BearerTokenResolver.resolveAdminAccessToken(token, jwtUtil, userRepository);
+
+            String rejectionReason = (body != null && body.containsKey("reason")) ? body.get("reason") : reason;
+            if (rejectionReason == null || rejectionReason.isBlank()) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(new ApiResponse<>(false, "A rejection reason is strictly mandatory.", null, LocalDateTime.now()));
+            }
+
+            InstructorApplyDetailedResponse response = instructorService.rejectApplicationById(applicationId, adminId, rejectionReason);
             return ResponseEntity.ok(new ApiResponse<>(
                     true,
                     "Instructor application rejected successfully",
@@ -194,5 +206,76 @@ public class AdminInstructorController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(new ApiResponse<>(false, "Failed to reject application: " + e.getMessage(), null, LocalDateTime.now()));
         }
+    }
+
+    /**
+     * Request additional information from applicant
+     */
+    @PutMapping("/applications/{applicationId}/request-info")
+    public ResponseEntity<ApiResponse<InstructorApplyDetailedResponse>> requestAdditionalInfo(
+            @PathVariable UUID applicationId,
+            @RequestBody(required = false) Map<String, String> body,
+            @RequestParam(required = false) String info,
+            @RequestHeader(value = "X-User-Authorization", required = false) String userAuthorization,
+            @RequestHeader(value = "Authorization", required = false) String serviceAuthorization) {
+        try {
+            String token = userAuthorization != null ? userAuthorization : serviceAuthorization;
+            UUID adminId = BearerTokenResolver.resolveAdminAccessToken(token, jwtUtil, userRepository);
+
+            String requestedInfo = null;
+            if (body != null) {
+                requestedInfo = body.get("requestedInfo");
+                if (requestedInfo == null || requestedInfo.isBlank()) requestedInfo = body.get("reason");
+                if (requestedInfo == null || requestedInfo.isBlank()) requestedInfo = body.get("note");
+                if (requestedInfo == null || requestedInfo.isBlank()) requestedInfo = body.get("message");
+            }
+            if (requestedInfo == null || requestedInfo.isBlank()) requestedInfo = info;
+            if (requestedInfo == null || requestedInfo.isBlank()) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(new ApiResponse<>(false, "Requested info notes are required.", null, LocalDateTime.now()));
+            }
+
+            InstructorApplyDetailedResponse response = instructorService.requestInfoById(applicationId, adminId, requestedInfo);
+            return ResponseEntity.ok(new ApiResponse<>(
+                    true,
+                    "Information request sent to applicant successfully",
+                    response,
+                    LocalDateTime.now()
+            ));
+        } catch (ResponseStatusException e) {
+            return ResponseEntity.status(e.getStatusCode())
+                    .body(new ApiResponse<>(false, e.getReason(), null, LocalDateTime.now()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ApiResponse<>(false, "Failed to request info: " + e.getMessage(), null, LocalDateTime.now()));
+        }
+    }
+
+    /**
+     * Admin view applicant sensitive document
+     */
+    @GetMapping("/applications/{applicationId}/documents/{docType}")
+    public ResponseEntity<Resource> getApplicantDocument(
+            @PathVariable UUID applicationId,
+            @PathVariable String docType,
+            @RequestHeader(value = "X-User-Authorization", required = false) String userAuthorization,
+            @RequestHeader(value = "Authorization", required = false) String serviceAuthorization) {
+        String token = userAuthorization != null ? userAuthorization : serviceAuthorization;
+        UUID adminId = BearerTokenResolver.resolveAdminAccessToken(token, jwtUtil, userRepository);
+        Resource resource = instructorService.getDocumentResource(applicationId, docType, adminId, "ROLE_MAIN_ADMIN");
+
+        String contentType = "application/octet-stream";
+        if (resource.getFilename() != null) {
+            String fn = resource.getFilename().toLowerCase();
+            if (fn.endsWith(".pdf")) contentType = "application/pdf";
+            else if (fn.endsWith(".png")) contentType = "image/png";
+            else if (fn.endsWith(".jpg") || fn.endsWith(".jpeg")) contentType = "image/jpeg";
+            else if (fn.endsWith(".webp")) contentType = "image/webp";
+        }
+
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(contentType))
+                .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + resource.getFilename() + "\"")
+                .body(resource);
     }
 }
