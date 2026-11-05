@@ -13,26 +13,34 @@ import java.util.UUID;
 @AllArgsConstructor
 public class UserResponse {
 
-    private boolean success;
-    private UserProfileData data;
+    private UUID userId;
+    private String firstName;
+    private String lastName;
+    private String fullName;
+    private String username;
+    private String email;
 
-    @Data
-    @Builder
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class UserProfileData {
-        private String firstName;
-        private String lastName;
-        private UUID userId;
+    public String getFullName() {
+        if (fullName != null && !fullName.isBlank()) {
+            return fullName;
+        }
+        String first = firstName != null ? firstName.trim() : "";
+        String last = lastName != null ? lastName.trim() : "";
+        String combined = (first + " " + last).trim();
+        return combined.isBlank() ? null : combined;
     }
 
     public String resolveDisplayName() {
-        if (data == null) {
-            return null;
+        String full = getFullName();
+        if (full != null && !full.isBlank()) {
+            return full;
         }
-        String firstName = data.getFirstName() != null ? data.getFirstName().trim() : "";
-        String lastName = data.getLastName() != null ? data.getLastName().trim() : "";
-        String fullName = (firstName + " " + lastName).trim();
-        return fullName.isBlank() ? null : fullName;
+        if (username != null && !username.isBlank()) {
+            return username;
+        }
+        if (email != null && !email.isBlank()) {
+            return email;
+        }
+        return null;
     }
 }

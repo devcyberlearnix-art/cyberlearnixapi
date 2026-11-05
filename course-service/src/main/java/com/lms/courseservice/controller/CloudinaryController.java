@@ -1,5 +1,6 @@
 package com.lms.courseservice.controller;
 
+import com.lms.courseservice.service.CloudinaryService;
 import com.lms.courseservice.service.GoogleDriveService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
@@ -17,6 +18,7 @@ import java.util.Map;
 public class CloudinaryController {
 
     private final GoogleDriveService googleDriveService;
+    private final CloudinaryService cloudinaryService;
 
     /**
      * Upload a video file to Google Drive and return the public URL.

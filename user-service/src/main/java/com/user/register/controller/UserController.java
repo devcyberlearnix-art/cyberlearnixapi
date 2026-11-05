@@ -58,15 +58,15 @@ public class UserController {
                     .body(new ApiResponse<>(false, "Invalid token: " + e.getMessage(), null, LocalDateTime.now()));
         } catch (RuntimeException e) {
             String msg = e.getMessage() != null ? e.getMessage() : "Authentication failed";
-            if (msg.contains("Missing authentication") || msg.contains("Authorization")) {
-                return ResponseEntity.status(401)
-                        .body(new ApiResponse<>(false, msg, null, LocalDateTime.now()));
-            } else if (msg.contains("deleted") || msg.contains("suspended")) {
+            if (msg.contains("deleted") || msg.contains("suspended")) {
                 return ResponseEntity.status(403)
                         .body(new ApiResponse<>(false, msg, null, LocalDateTime.now()));
-            } else {
+            } else if (msg.contains("Missing authentication")) {
                 return ResponseEntity.status(401)
                         .body(new ApiResponse<>(false, msg, null, LocalDateTime.now()));
+            } else {
+                return ResponseEntity.status(400)
+                        .body(new ApiResponse<>(false, "Missing or invalid Authorization header", null, LocalDateTime.now()));
             }
         }
     }

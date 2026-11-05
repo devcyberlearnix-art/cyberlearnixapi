@@ -122,6 +122,10 @@ public class GatewayErrorHandler implements ErrorWebExceptionHandler {
     private String extractServiceName(Throwable ex) {
         // Try to extract service name from connection exception
         Throwable root = rootCause(ex);
+        log.error("========== GATEWAY ROOT CAUSE ==========");
+        log.error("Exception type: {}", root.getClass().getName());
+        log.error("Exception message: {}", root.getMessage());
+        log.error("Full root cause:", root);
         String message = root.getMessage();
         if (message != null) {
             // Common patterns: "Connection refused: merchantservice:8080"

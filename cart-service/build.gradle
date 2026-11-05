@@ -36,6 +36,7 @@ dependencies {
     annotationProcessor "org.projectlombok:lombok:${lombokVersion}"
     runtimeOnly "org.postgresql:postgresql:${postgresqlVersion}"
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testRuntimeOnly "com.h2database:h2:${h2Version}"
 }
 
 dependencyManagement {

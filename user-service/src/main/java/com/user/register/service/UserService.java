@@ -770,10 +770,39 @@ public class UserService {
             throw new RuntimeException("Failed to process uploaded image: " + e.getMessage(), e);
 
         }
-
     }
 
+    public String uploadPhotoPublic(MultipartFile file) {
+        if (file == null || file.isEmpty()) {
+            throw new RuntimeException("No file uploaded");
+        }
+        if (file.getSize() > 5 * 1024 * 1024) {
+            throw new RuntimeException("File size exceeds 5MB limit");
+        }
+        String contentType = file.getContentType();
+        if (contentType == null ||
+                !(contentType.equals("image/jpeg") || contentType.equals("image/png") || contentType.equals("image/webp"))) {
+            throw new RuntimeException("Only JPG, PNG, or WEBP files are allowed");
+        }
+        try {
+            BufferedImage originalImage = ImageIO.read(file.getInputStream());
+            BufferedImage resizedImage = new BufferedImage(512, 512, BufferedImage.TYPE_INT_ARGB);
+            Graphics2D g = resizedImage.createGraphics();
+            g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+            g.drawImage(originalImage, 0, 0, 512, 512, null);
+            g.dispose();
 
+            String extension = contentType.equals("image/jpeg") ? "jpg" : contentType.split("/")[1];
+            String filename = UUID.randomUUID().toString();
+            ByteArrayOutputStream os = new ByteArrayOutputStream();
+            ImageIO.write(resizedImage, extension, os);
+            byte[] fileBytes = os.toByteArray();
+
+            return googleDriveService.uploadBytes(fileBytes, filename + "." + extension, contentType);
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to process uploaded image: " + e.getMessage(), e);
+        }
+    }
 
     public ApiResponse<UserProfileResponse> softDeleteUser(HttpServletRequest request) {
 

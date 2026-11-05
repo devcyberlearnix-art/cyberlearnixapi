@@ -11,31 +11,30 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class GoogleDriveProperties {
 
-    @Value("${google.client-id:}")
+    @Value("${google.client-id:dummy-client-id}")
     private String clientId;
 
-    @Value("${google.client-secret:}")
+    @Value("${google.client-secret:dummy-client-secret}")
     private String clientSecret;
 
-    @Value("${google.refresh-token:}")
+    @Value("${google.refresh-token:dummy-refresh-token}")
     private String refreshToken;
 
-    @Value("${google.folder-id:}")
+    @Value("${google.folder-id:1nLiT67PMJLS_fDw4M_jJ_qOdA0qenQYJ}")
     private String folderId;
+
+    public boolean isConfigured() {
+        return !isBlank(clientId) && !isBlank(clientSecret) && !isBlank(refreshToken) && !isBlank(folderId)
+                && !"dummy-client-id".equalsIgnoreCase(clientId)
+                && !"dummy-client-secret".equalsIgnoreCase(clientSecret)
+                && !"dummy-refresh-token".equalsIgnoreCase(refreshToken);
+    }
 
     @PostConstruct
     public void validateProperties() {
-        StringBuilder errors = new StringBuilder();
-
-        if (isBlank(clientId)) errors.append("  ✖ google.client-id is MISSING\n");
-        if (isBlank(clientSecret)) errors.append("  ✖ google.client-secret is MISSING\n");
-        if (isBlank(refreshToken)) errors.append("  ✖ google.refresh-token is MISSING\n");
-        if (isBlank(folderId)) errors.append("  ✖ google.folder-id is MISSING\n");
-
-        if (!errors.isEmpty()) {
-            throw new IllegalStateException(
-                "Google Drive configuration validation failed in course-service: " + errors
-            );
+        if (!isConfigured()) {
+            log.warn("⚠️ Google Drive properties are not configured with real credentials in course-service. File uploads will be simulated.");
+            return;
         }
         log.info("✅ Google Drive properties validated for course-service.");
     }

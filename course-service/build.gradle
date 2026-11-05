@@ -66,6 +66,9 @@ dependencies {
     implementation 'com.google.apis:google-api-services-drive:v3-rev20241027-2.0.0'
     implementation 'com.google.http-client:google-http-client-jackson2:1.45.3'
 
+    // Cloudinary SDK for banner image uploads
+    implementation "com.cloudinary:cloudinary-http5:${cloudinaryVersion}"
+
     // iTextPDF for certificate generation
     implementation "com.itextpdf:itext7-core:${itextpdfVersion}"
 

@@ -29,7 +29,7 @@ public class UnifiedJwtService {
     @Value("${jwt.refresh-token.expiration-days:30}")
     private long refreshTokenExpirationDays;
 
-    private Key getSigningKey() {
+    private javax.crypto.SecretKey getSigningKey() {
         byte[] keyBytes = jwtSecret.getBytes(java.nio.charset.StandardCharsets.UTF_8);
         log.debug("JWT Secret length: {}", keyBytes.length);
         log.debug("JWT Secret: {}", jwtSecret);
@@ -99,8 +99,8 @@ public class UnifiedJwtService {
     }
 
     public Claims extractClaims(String token) {
-        var parserBuilder = Jwts.parserBuilder()
-                .setSigningKey(getSigningKey());
+        var parserBuilder = Jwts.parser()
+                .verifyWith(getSigningKey());
 
         if (issuer != null && !issuer.isBlank()) {
             parserBuilder.requireIssuer(issuer);
@@ -110,8 +110,8 @@ public class UnifiedJwtService {
         }
 
         return parserBuilder.build()
-                .parseClaimsJws(token)
-                .getBody();
+                .parseSignedClaims(token)
+                .getPayload();
     }
 
     /**
@@ -120,11 +120,11 @@ public class UnifiedJwtService {
      */
     public Claims extractClaimsIgnoreExpiry(String token) {
         try {
-            return Jwts.parserBuilder()
-                    .setSigningKey(getSigningKey())
+            return Jwts.parser()
+                    .verifyWith(getSigningKey())
                     .build()
-                    .parseClaimsJws(token)
-                    .getBody();
+                    .parseSignedClaims(token)
+                    .getPayload();
         } catch (ExpiredJwtException e) {
             // Return the claims from the expired token — signature is still valid
             return e.getClaims();

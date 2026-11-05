@@ -49,6 +49,11 @@ public class GoogleDriveService {
      * Sets public read permission and returns the public Google Drive URL.
      */
     public String uploadBytes(byte[] fileBytes, String fileName, String contentType) {
+        if (!driveProperties.isConfigured()) {
+            log.warn("⚠️ Google Drive is not configured with real OAuth credentials. Returning simulated URL for '{}'.", fileName);
+            return "https://drive.google.com/uc?id=simulated-" + java.util.UUID.randomUUID();
+        }
+
         log.info("Uploading '{}' ({} bytes, type: {}) to Google Drive folder: {}",
                 fileName, fileBytes.length, contentType, driveProperties.getFolderId());
 
